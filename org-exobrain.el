@@ -1,17 +1,15 @@
 ;;; org-exobrain.el --- advanced knowledge management system in Org-mode -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020 Willy Rempel  
-
 ;; Author: Willy Rempel <willy.rempel@acm.org>
 ;; URL: http://example.com/org-exobrain.el
 ;; Version: 0.1-pre
-;; Package-Requires: ((emacs "25.2"))
+;; Package-Requires: ((emacs "25.2") (dash))
 ;; Keywords: something
 
 ;; This file is not part of GNU Emacs.
 
 ;;; Commentary:
-
 ;; Making the most of org-mode. Another attempt at an exo-brain inspired by: zettlekasten, wikis, roam, and all the other ways to organize ourselves. 
 
 ;;;; Installation
@@ -70,7 +68,7 @@
 
 ;;;; Requirements
 
-(require 'org-mode)
+;; (require 'org-mode)
 ;; (require 'bar)
 
 ;;;; Customization
@@ -85,8 +83,8 @@
 
 ;;;; Variables
 
-(defvar org-exobrain-var nil
-  "A variable.")
+(defvar org-exobrain-syncedp nil
+  "Buffer local variable that indicates whether the current contents of a buffer have not been synced with the Knowledge Base.")
 
 (defvar org-exobrain-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
@@ -121,8 +119,10 @@
   ;;            map)
   :group 'org-exobrain
   :require 'org-exobrain
-  :global t
-  ;; ()
+  ;; :global t
+  (progn 
+    (setq-local org-exobrain-syncedp nil)
+    (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-exobrain-syncedp nil 'APPEND 'LOCAL))))
   )
 
 ;;;;; Commands
@@ -160,23 +160,29 @@
 (defun org-exobrain-sync ()
   "Update KB from all active nodes."
   (interactive)
-  (when (buffer-list))
-  (dolist (buf (buffer-list))
-    (with-current-buffer buf
-      (when org-exobrain-minor-mode 
-        (when (buffer-modified-p)
-          (mapc 'org-exobrain-sync-node
-                (org-exo-brain-nodes-in-buffer buf)))))))
+  (dolist (buf (remove-if-not org-exobrain-syncedp
+                              (org-exobrain--active-buffers)))
+    (if
+        (mapc #'org-exobrain--sync-node (org-exobrain--nodes-in-buffer buf))
+        (set (make-local-variable 'org-exobrain-syncedp) t)
+      (progn
+        (set (make-local-variable 'org-exobrain-syncedp) nil)
+        (message (format "sync failed for buffer %s" buf))))))
+
+(defun org-exobrain--active-buffers ()
+  "Returns list of all active exobrain buffers"
+  (remove-if-not (lambda (buf) (with-current-buffer buf org-exobrain)) (buffer-list)))
 
 
 (defun org-exobrain--nodes-in-buffer (buff)
-  ;; traverse headings, check if node, append ID to list
-
+ ;; traverse headings, check if node, append ID to list
+ nil 
   )
 
 (defun org-exobrain--sync-node (node)
   "Update entry based on local edits."
   (interactive)
+  nil
   )
 
 ;; (defun org-exobrain--new-node-diff (nodeID)
@@ -194,25 +200,28 @@
 
 ;;;;; Support
 ;;;;;; Parsing
-(defun org-exobrain-)
+;; (defun org-exobrain-)
 ;;;;;; Clocking
 ;; (defun org-exobrain--auto-clock-in ())
 ;; (defun org-exobrain--auto-clock-out ())
 ;;;;;; KB Traversal
 
-(defun org-exobrain-)
+;; (defun org-exobrain-)
 ;;;;;; KB Management
 (defun org-exobrain-rebuild ()
   "Traverse all nodes and correct any meta errors."
   (interactive)
+  nil
   )
 
 (defun org-exobrain--select-location ()
   "Determine location for next node in the brain files."
+  nil
   )
 
 (defun org-exobrain--new-KB-file ()
   "Determine location for next node in the brain files."
+  nil
   )
 
 
