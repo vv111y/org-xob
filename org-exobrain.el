@@ -84,10 +84,22 @@
 ;;;; Variables
 
 (defvar org-exobrain-syncedp nil
-  "Buffer local variable that indicates whether the current contents of a buffer have not been synced with the Knowledge Base.")
+  "Buffer local variable that indicates whether the current contents of a buffer have been synced with the Knowledge Base.")
 
 (defvar org-exobrain-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
+
+(defvar org-exobrain--KB-file nil
+  "The currently active knowledge base file to append new nodes.")
+
+(defvar org-exo-brain--KB-files nil
+  "List of all knowledge base files.")
+
+(defvar org-exobrain--archive-file nil
+  "The currently active archive file to store previous versions of nodes.")
+
+(defvar org-exo-brain--archive-files nil
+  "List of all archive files in the knowledge base.")
 
 ;;;;; Keymaps
 
@@ -127,6 +139,7 @@
 
 ;;;;; Commands
 
+;;;;;; Live Buffers
 ;;;###autoload
 (defun org-exobrain-now ()
   (interactive)
@@ -169,6 +182,7 @@
         (set (make-local-variable 'org-exobrain-syncedp) nil)
         (message (format "sync failed for buffer %s" buf))))))
 
+
 (defun org-exobrain--active-buffers ()
   "Returns list of all active exobrain buffers"
   (remove-if-not (lambda (buf) (with-current-buffer buf org-exobrain)) (buffer-list)))
@@ -179,17 +193,25 @@
  nil 
   )
 
+
 (defun org-exobrain--sync-node (node)
   "Update entry based on local edits."
   (interactive)
+  ;; is node in KB? no, add, else
+  ;; is node different? no, ignore, else sync/update
   nil
   )
 
-;; (defun org-exobrain--new-node-diff (nodeID)
-;;   (let ((old-id (org-id-store-link node)))
 
-;;     )
-;;   )
+(defun org-exobrain--diff-node (now-node last-node)
+  "Creates a diff using =org-exobrain--delta-executable=.
+The order of versions is reversed; the diff allows the reconstruction of
+the last-node from the now-node.
+The diff is stored in the currently active =org-exobrain--archive-file=."
+  (shell-command))
+;; (defun org-exobrain--new-node-diff (nodeID)
+;;   (let ((old-id (org-id-store-link node)))))
+
 
 (defun org-exobrain--diff-filename (node)
   (concat
