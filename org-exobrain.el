@@ -89,17 +89,17 @@
 (defvar org-exobrain-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
 
-(defvar org-exobrain--KB-file nil
-  "The currently active knowledge base file to append new nodes.")
-
 (defvar org-exo-brain--KB-files nil
   "List of all knowledge base files.")
 
-(defvar org-exobrain--archive-file nil
-  "The currently active archive file to store previous versions of nodes.")
+(defvar org-exobrain--KB-file nil
+  "The currently active KB file to store previous versions of nodes.")
 
-(defvar org-exo-brain--archive-files nil
-  "List of all archive files in the knowledge base.")
+(defvar org-exobrain--KB-filename-prefix "KB-file-"
+  "prefix for KB filenames. A simple filecount value is appended for a new name")
+
+(defvar org-exobrain--active-nodes nil
+  "a-list of active nodes. Those that were extracted from the KB and into the workspace.")
 
 ;;;;; Keymaps
 
@@ -139,21 +139,55 @@
 
 ;;;;; Commands
 
-;;;;;; Live Buffers
+;;;;;; Active Buffers
 ;;;###autoload
-(defun org-exobrain-now ()
+(defun org-exobrain-open-day ()
   (interactive)
-  ;; open NOW buffer
-  ;; maybe last day stuff?
-  ;;  
+  ;; open buffer for a selected day node
   )
+
 
 ;;;;;; Node Objects
 ;;;###autoload
+(defun org-exobrain-get-node ()
+  (interactive)
+  ;; call --find-node
+  ;; if not in exo buffer, open new exo buffer, name: day+node?
+  ;; if no today node, add one
+  ;; exo-link this buffer to today node 
+  ;; insert node contents
+  ;; if no node found, prompt to add new one, OR helm option to add new
+  )
+
+(defun org-exobrain--find-node ()
+  ;;
+  ;; fuzzy search node titles
+  )
+
+;;;###autoload
+(defun org-exobrain-clone-node ()
+  (interactive)
+  ;; copy whole node
+  ;; generate new ID
+  ;; add vparent property, and/or exo-link to parent
+  ;; parent backlink has subheading 'clones' 
+  )
+
+;;;###autoload
+(defun org-exobrain-add-link ()
+  "Insert node exo-link here."
+  (interactive)
+  ;; call find-node 
+  ;; make link 
+  ;; is backlink already there?
+  ;; else make backlink 
+  )
+
+;;;###autoload
 (defun org-exobrain-add-node ()
   (interactive)
-  ()
-  (org-id-get-create)
+  ;; (org-id-get-create)
+  ;; maybe internal fn? like roam just use find-node
   )
 
 ;;;###autoload
@@ -161,12 +195,18 @@
   (interactive)
   ;; delete node
   ;; delete context footprint
+  ;; for each exo-link in body, visit node and remove backlink
+  ;; for each exo-link in backlinks, visite node and kill link, leave link text
+  nil
   )
 
 ;;;###autoload
 (defun org-exobrain-heading-to-node ()
   (interactive)
+  nil
   )
+
+
 
 ;;;;;; Node Versioning
 ;;;###autoload
@@ -207,7 +247,7 @@
   "Creates a diff using =org-exobrain--delta-executable=.
 The order of versions is reversed; the diff allows the reconstruction of
 the last-node from the now-node.
-The diff is stored in the currently active =org-exobrain--archive-file=."
+The diff is stored in the currently active =org-exobrain--KB-file=."
   (shell-command))
 ;; (defun org-exobrain--new-node-diff (nodeID)
 ;;   (let ((old-id (org-id-store-link node)))))
@@ -220,7 +260,36 @@ The diff is stored in the currently active =org-exobrain--archive-file=."
    (format-time-string "%j-%H-%M")))
 
 
+;;;;;; Contexts
+
+;;;###autoload
+(defun org-exobrain-context-inline ()
+  "Show the contextual nodes as a subheading."
+  (interactive)
+  )
+
+;;;###autoload
+(defun org-exobrain-context-sideline ()
+  "Show the contextual nodes in an adjacent buffer & window."
+  (interactive)
+  )
+
+;;;###autoload
+(defun org-exobrain-context-outline ()
+  "Show the contextual nodes as adjacent headings."
+  (interactive)
+  )
+
 ;;;;; Support
+;;;;;; Global Mode functions
+(defun org-exobrain--save-state ()
+  ;; open /KB/statefile
+  ;; save org-exobrain--KB-file
+  ;; save org-exobrain--KB-files
+  ;; save org-exobrain--active-nodes
+  ;; don't save workspace files, they are in workspace already
+  )
+
 ;;;;;; Parsing
 ;; (defun org-exobrain-)
 ;;;;;; Clocking
