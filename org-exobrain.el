@@ -83,13 +83,24 @@
 
 ;;;; Variables
 
-(defvar org-exobrain-syncedp nil
-  "Buffer local variable that indicates whether the current contents of a buffer have been synced with the Knowledge Base.")
+(defvar org-exobrain--dir nil
+  "Directory for all exobrain files.")
+
+(defvar org-exobrain--table-size 1000000
+  "Size of the hash tables.")
+
+(defvar org-exobrain--title-id (make-hash-table
+                              :test 'equal
+                              :size org-exobrain--table-size))
+
+(defvar org-exobrain--id-node (make-hash-table
+                              :test 'equal
+                              :size org-exobrain--table-size))
 
 (defvar org-exobrain-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
 
-(defvar org-exo-brain--KB-files nil
+(defvar org-exobrain--KB-files nil
   "List of all knowledge base files.")
 
 (defvar org-exobrain--KB-file nil
@@ -100,6 +111,9 @@
 
 (defvar org-exobrain--active-nodes nil
   "a-list of active nodes. Those that were extracted from the KB and into the workspace.")
+
+(defvar org-exobrain-syncedp nil
+  "Buffer local variable that indicates whether the current contents of a buffer have been synced with the Knowledge Base.")
 
 ;;;;; Keymaps
 
@@ -134,23 +148,25 @@
   ;; :global t
   (progn 
     (setq-local org-exobrain-syncedp nil)
-    (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-exobrain-syncedp nil 'APPEND 'LOCAL))))
+    (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-exobrain-syncedp nil 'APPEND 'LOCAL)))
+    ;; TODO check it works
+    (setq-local org-id-extra-files 'org-exobrain--KB-files))
   )
 
 ;;;;; Commands
 
-;;;;;; Active Buffers
 ;;;###autoload
 (defun org-exobrain-open-day ()
   (interactive)
   ;; open buffer for a selected day node
+  ;; can open yesterdays file as well? 
+  ;; is exobrain started? 
   )
 
-
-;;;;;; Node Objects
 ;;;###autoload
 (defun org-exobrain-get-node ()
   (interactive)
+  ;; is exobrain started? 
   ;; call --find-node
   ;; if not in exo buffer, open new exo buffer, name: day+node?
   ;; if no today node, add one
@@ -159,22 +175,8 @@
   ;; if no node found, prompt to add new one, OR helm option to add new
   )
 
-(defun org-exobrain--find-node ()
-  ;;
-  ;; fuzzy search node titles
-  )
-
 ;;;###autoload
-(defun org-exobrain-clone-node ()
-  (interactive)
-  ;; copy whole node
-  ;; generate new ID
-  ;; add vparent property, and/or exo-link to parent
-  ;; parent backlink has subheading 'clones' 
-  )
-
-;;;###autoload
-(defun org-exobrain-add-link ()
+(defun org-exobrain-link ()
   "Insert node exo-link here."
   (interactive)
   ;; call find-node 
@@ -184,10 +186,14 @@
   )
 
 ;;;###autoload
-(defun org-exobrain-add-node ()
+(defun org-exobrain-clone-node ()
   (interactive)
-  ;; (org-id-get-create)
-  ;; maybe internal fn? like roam just use find-node
+  ;; is exobrain started? 
+  ;; if point not on node, call get-node
+  ;; copy whole node
+  ;; generate new ID
+  ;; add vparent property, and/or exo-link to parent
+  ;; parent backlink has subheading 'clones' 
   )
 
 ;;;###autoload
@@ -206,6 +212,21 @@
   nil
   )
 
+
+;;;;; Support
+;;;;;; Major Structures
+
+;;;;;; Node Objects
+(cl-defstruct node title backlinks)
+
+(defun org-exobrain--find-node ()
+  ;;
+  ;; fuzzy search node titles
+  (let ((pos (org-id-find id)))
+    ;; get node (header+contents) at pos (filename . possible))
+  ))
+
+;;;;;; Node org-capture
 
 
 ;;;;;; Node Versioning
@@ -280,15 +301,32 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
   (interactive)
   )
 
-;;;;; Support
-;;;;;; Global Mode functions
+
+;;;;;; KB management
 (defun org-exobrain--save-state ()
   ;; open /KB/statefile
+  (org-exobrain--save-object (concat org-exobrain--dir "title-id-table")
+                             org-exobrain--title-id)
+  (org-exobrain--save-object (concat org-exobrain--dir "id-node-table")
+                             org-exobrain--id-node)
   ;; save org-exobrain--KB-file
   ;; save org-exobrain--KB-files
   ;; save org-exobrain--active-nodes
   ;; don't save workspace files, they are in workspace already
   )
+
+;; write
+(defun org-exobrain--save-object (file data)
+  (with-temp-file file
+    (prin1 data (current-buffer))))
+
+;; Read from file:
+(defun org-exobrain--load-object (file symbol)
+  (when (boundp symbol)
+    (with-temp-buffer
+      (insert-file-contents file)
+      (goto-char (point-min))
+      (set symbol (read (current-buffer))))))
 
 ;;;;;; Parsing
 ;; (defun org-exobrain-)
