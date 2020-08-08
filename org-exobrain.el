@@ -65,11 +65,13 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Code:
-
 ;;;; Requirements
 
-;; (require 'org-mode)
-;; (require 'bar)
+(require 'org-mode)
+(require 'org-id)
+(require 'org-ql)
+(require 'org-ml)
+(require 'cl-lib)
 
 ;;;; Customization
 
@@ -214,8 +216,6 @@
 
 
 ;;;;; Support
-;;;;;; Major Structures
-
 ;;;;;; Node Objects
 (cl-defstruct node title backlinks)
 
@@ -302,8 +302,14 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
   )
 
 
+;;;;;; Parsing
+;; (defun org-exobrain-)
+;;;;;; Clocking
+;; (defun org-exobrain--auto-clock-in ())
+;; (defun org-exobrain--auto-clock-out ())
 ;;;;;; KB management
 (defun org-exobrain--save-state ()
+  "Save exobrain state."
   ;; open /KB/statefile
   (org-exobrain--save-object (concat org-exobrain--dir "title-id-table")
                              org-exobrain--title-id)
@@ -315,36 +321,22 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
   ;; don't save workspace files, they are in workspace already
   )
 
-;; write
 (defun org-exobrain--save-object (file data)
+  "save emacs object. "
   (with-temp-file file
     (prin1 data (current-buffer))))
 
-;; Read from file:
 (defun org-exobrain--load-object (file symbol)
+  "load saved object."
   (when (boundp symbol)
     (with-temp-buffer
       (insert-file-contents file)
       (goto-char (point-min))
       (set symbol (read (current-buffer))))))
 
-;;;;;; Parsing
-;; (defun org-exobrain-)
-;;;;;; Clocking
-;; (defun org-exobrain--auto-clock-in ())
-;; (defun org-exobrain--auto-clock-out ())
-;;;;;; KB Traversal
-
-;; (defun org-exobrain-)
-;;;;;; KB Management
 (defun org-exobrain-rebuild ()
   "Traverse all nodes and correct any meta errors."
   (interactive)
-  nil
-  )
-
-(defun org-exobrain--select-location ()
-  "Determine location for next node in the brain files."
   nil
   )
 
@@ -355,6 +347,14 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
 
 
 
+;;;;;; KB Traversal
+
+(defun org-exobrain-visit-nodes (func)
+  "Iterate over all KB in all files"
+  (interactive)
+  ;; (maphash '#func org-id-locations)
+  ;; (maphash '#func org-exobrain--title-id)
+  )
 ;;;; Footer
 
 (provide 'org-exobrain)
