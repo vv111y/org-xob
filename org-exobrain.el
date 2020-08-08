@@ -67,7 +67,7 @@
 ;;; Code:
 ;;;; Requirements
 
-(require 'org-mode)
+(require 'org)
 (require 'org-id)
 (require 'org-ql)
 (require 'org-ml)
@@ -84,9 +84,11 @@
   :type 'something)
 
 ;;;; Variables
+;;;;; data structures
 
-(defvar org-exobrain--dir nil
-  "Directory for all exobrain files.")
+(defvar org-exobrain--objects '((org-exobrain--title-id . "title-id-table")
+                                (org-exobrain--id-node . "id-node-table")
+                                (org-exobrain--KB-file . "current-KB-file")))
 
 (defvar org-exobrain--table-size 1000000
   "Size of the hash tables.")
@@ -99,6 +101,10 @@
                               :test 'equal
                               :size org-exobrain--table-size))
 
+;;;;; file variables
+(defvar org-exobrain--dir "exobrain/" 
+  "Directory for all exobrain files.")
+
 (defvar org-exobrain-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
 
@@ -108,8 +114,8 @@
 (defvar org-exobrain--KB-file nil
   "The currently active KB file to store previous versions of nodes.")
 
-(defvar org-exobrain--KB-filename-prefix "KB-file-"
-  "prefix for KB filenames. A simple filecount value is appended for a new name")
+(defvar org-exobrain--KB-filename-prefix "-KB-file.org"
+  "suffix for KB filenames. A simple filecount value is appended for a new name")
 
 (defvar org-exobrain--active-nodes nil
   "a-list of active nodes. Those that were extracted from the KB and into the workspace.")
@@ -307,17 +313,18 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
 ;;;;;; Clocking
 ;; (defun org-exobrain--auto-clock-in ())
 ;; (defun org-exobrain--auto-clock-out ())
-;;;;;; KB management
+;;;;;; exobrain management
 (defun org-exobrain--save-state ()
   "Save exobrain state."
   ;; open /KB/statefile
+  ()
   (org-exobrain--save-object (concat org-exobrain--dir "title-id-table")
                              org-exobrain--title-id)
   (org-exobrain--save-object (concat org-exobrain--dir "id-node-table")
                              org-exobrain--id-node)
   ;; save org-exobrain--KB-file
-  ;; save org-exobrain--KB-files
   ;; save org-exobrain--active-nodes
+  (org-exobrain-sync)
   ;; don't save workspace files, they are in workspace already
   )
 
