@@ -84,6 +84,8 @@
   :type 'something)
 
 ;;;; Variables
+
+(defvar org-exobrain-on-p nil)
 ;;;;; hash tables 
 
 (defvar org-exobrain--table-size 1000000
@@ -159,6 +161,8 @@
   :require 'org-exobrain
   ;; :global t
   (progn 
+    (when (not org-exobrain-on-p)
+      (org-exobrain-start))
     (setq-local org-exobrain-syncedp nil)
     (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-exobrain-syncedp nil 'APPEND 'LOCAL)))
     ;; TODO check it works
@@ -181,11 +185,14 @@
                            (setq k (make-hash-table
                                     :test 'equal
                                     :size org-exobrain--table-size))))))
-  (org-exobrain--save-state))
+  (org-exobrain--save-state)
+  (setq org-exobrain-on-p t))
 
 ;;;###autoload
 (defun org-exobrain-open-day ()
   (interactive)
+  (when (not org-exobrain-on-p)
+      (org-exobrain-start))
   ;; open buffer for a selected day node
   ;; can open yesterdays file as well? 
   ;; is exobrain started? 
@@ -195,6 +202,8 @@
 (defun org-exobrain-get-node ()
   (interactive)
   ;; is exobrain started? 
+  (when (not org-exobrain-on-p)
+    (org-exobrain-start))
   ;; call --find-node
   ;; if not in exo buffer, open new exo buffer, name: day+node?
   ;; if no today node, add one
@@ -207,6 +216,8 @@
 (defun org-exobrain-link ()
   "Insert node exo-link here."
   (interactive)
+  (when (not org-exobrain-on-p)
+    (org-exobrain-start))
   ;; call find-node 
   ;; make link 
   ;; is backlink already there?
@@ -216,6 +227,8 @@
 ;;;###autoload
 (defun org-exobrain-clone-node ()
   (interactive)
+  (when (not org-exobrain-on-p)
+    (org-exobrain-start))
   ;; is exobrain started? 
   ;; if point not on node, call get-node
   ;; copy whole node
@@ -227,6 +240,8 @@
 ;;;###autoload
 (defun org-exobrain-delete-node ()
   (interactive)
+  (when (not org-exobrain-on-p)
+    (org-exobrain-start))
   ;; delete node
   ;; delete context footprint
   ;; for each exo-link in body, visit node and remove backlink
@@ -237,13 +252,16 @@
 ;;;###autoload
 (defun org-exobrain-heading-to-node ()
   (interactive)
-  nil
+  (when (not org-exobrain-on-p)
+    (org-exobrain-start))
   )
 
 ;;;###autoload
 (defun org-exobrain-sync ()
   "Update KB from all active nodes."
   (interactive)
+  (when (not org-exobrain-on-p)
+    (org-exobrain-start))
   (dolist (buf (remove-if-not org-exobrain-syncedp
                               (org-exobrain--active-buffers)))
     (if
