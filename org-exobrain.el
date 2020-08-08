@@ -84,26 +84,25 @@
   :type 'something)
 
 ;;;; Variables
-;;;;; data structures
-
-(defvar org-exobrain--objects '((org-exobrain--title-id . "title-id-table")
-                                (org-exobrain--id-node . "id-node-table")
-                                (org-exobrain--KB-file . "current-KB-file")))
+;;;;; hash tables 
 
 (defvar org-exobrain--table-size 1000000
   "Size of the hash tables.")
 
-(defvar org-exobrain--title-id (make-hash-table
-                              :test 'equal
-                              :size org-exobrain--table-size))
+(defvar org-exobrain--title-id nil)
 
-(defvar org-exobrain--id-node (make-hash-table
-                              :test 'equal
-                              :size org-exobrain--table-size))
+(defvar org-exobrain--id-node nil) 
 
 ;;;;; file variables
-(defvar org-exobrain--dir "exobrain/" 
+(defvar org-exobrain--dir "xob/" 
+  "Core directory for exobrain system.")
+
+(defvar org-exobrain-workspace "~/exobrain/" 
   "Directory for all exobrain files.")
+
+(defvar org-exobrain-path (concat org-exobrain--workspace
+                                  org-exobrain--dir)
+  "Path to the core exobrain files.")
 
 (defvar org-exobrain-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
@@ -122,6 +121,11 @@
 
 (defvar org-exobrain-syncedp nil
   "Buffer local variable that indicates whether the current contents of a buffer have been synced with the Knowledge Base.")
+;;;;; state
+
+(defvar org-exobrain--objects '((org-exobrain--title-id . "title-id-table")
+                                (org-exobrain--id-node . "id-node-table")
+                                (org-exobrain--KB-file . "current-KB-file")))
 
 ;;;;; Keymaps
 
@@ -162,6 +166,22 @@
   )
 
 ;;;;; Commands
+
+;;;###autoload
+(defun org-exobrain-start ()
+  "Start the xob system: check if state files exist and load state or initialize new."
+  (interactive)
+  (cl-loop for (k . v) in org-exobrain--objects
+           collect (if (file-exists-p (concat org-exobrain-path v))
+                       (org-exobrain--load-object v k)
+                     (progn 
+                       (message "XOB: file %s missing, initializing new %s" v k)
+                       (if (equal "org-exobrain--KB-file" (symbol-name k))
+                               (setq k (org-exobrain--new-KB-file))
+                           (setq k (make-hash-table
+                                    :test 'equal
+                                    :size org-exobrain--table-size))))))
+  (org-exobrain--save-state))
 
 ;;;###autoload
 (defun org-exobrain-open-day ()
@@ -220,6 +240,18 @@
   nil
   )
 
+;;;###autoload
+(defun org-exobrain-sync ()
+  "Update KB from all active nodes."
+  (interactive)
+  (dolist (buf (remove-if-not org-exobrain-syncedp
+                              (org-exobrain--active-buffers)))
+    (if
+        (mapc #'org-exobrain--sync-node (org-exobrain--nodes-in-buffer buf))
+        (set (make-local-variable 'org-exobrain-syncedp) t)
+      (progn
+        (set (make-local-variable 'org-exobrain-syncedp) nil)
+        (message (format "sync failed for buffer %s" buf))))))
 
 ;;;;; Support
 ;;;;;; Node Objects
@@ -235,40 +267,14 @@
 ;;;;;; Node org-capture
 
 
+
 ;;;;;; Node Versioning
-;;;###autoload
-(defun org-exobrain-sync ()
-  "Update KB from all active nodes."
-  (interactive)
-  (dolist (buf (remove-if-not org-exobrain-syncedp
-                              (org-exobrain--active-buffers)))
-    (if
-        (mapc #'org-exobrain--sync-node (org-exobrain--nodes-in-buffer buf))
-        (set (make-local-variable 'org-exobrain-syncedp) t)
-      (progn
-        (set (make-local-variable 'org-exobrain-syncedp) nil)
-        (message (format "sync failed for buffer %s" buf))))))
-
-
-(defun org-exobrain--active-buffers ()
-  "Returns list of all active exobrain buffers"
-  (remove-if-not (lambda (buf) (with-current-buffer buf org-exobrain)) (buffer-list)))
-
-
-(defun org-exobrain--nodes-in-buffer (buff)
- ;; traverse headings, check if node, append ID to list
- nil 
-  )
-
-
 (defun org-exobrain--sync-node (node)
   "Update entry based on local edits."
-  (interactive)
   ;; is node in KB? no, add, else
   ;; is node different? no, ignore, else sync/update
   nil
   )
-
 
 (defun org-exobrain--diff-node (now-node last-node)
   "Creates a diff using =org-exobrain--delta-executable=.
@@ -279,7 +285,6 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
 ;; (defun org-exobrain--new-node-diff (nodeID)
 ;;   (let ((old-id (org-id-store-link node)))))
 
-
 (defun org-exobrain--diff-filename (node)
   (concat
    ;; node id
@@ -287,24 +292,30 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
    (format-time-string "%j-%H-%M")))
 
 
+
+;;;;;; Workspace
+
+(defun org-exobrain--active-buffers ()
+  "Returns list of all active exobrain buffers"
+  (remove-if-not (lambda (buf) (with-current-buffer buf org-exobrain)) (buffer-list)))
+
+(defun org-exobrain--nodes-in-buffer (buff)
+  ;; traverse headings, check if node, append ID to list
+  nil 
+  )
+
 ;;;;;; Contexts
 
-;;;###autoload
-(defun org-exobrain-context-inline ()
+(defun org-exobrain-context--inline ()
   "Show the contextual nodes as a subheading."
-  (interactive)
   )
 
-;;;###autoload
-(defun org-exobrain-context-sideline ()
+(defun org-exobrain-context--sideline ()
   "Show the contextual nodes in an adjacent buffer & window."
-  (interactive)
   )
 
-;;;###autoload
-(defun org-exobrain-context-outline ()
+(defun org-exobrain-context--outline ()
   "Show the contextual nodes as adjacent headings."
-  (interactive)
   )
 
 
@@ -313,20 +324,31 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
 ;;;;;; Clocking
 ;; (defun org-exobrain--auto-clock-in ())
 ;; (defun org-exobrain--auto-clock-out ())
+;;;;;; KB Traversal
+
+(defun org-exobrain-visit-nodes (func)
+  "Iterate over all KB in all files"
+  (interactive)
+  ;; (maphash '#func org-id-locations)
+  ;; (maphash '#func org-exobrain--title-id)
+  )
 ;;;;;; exobrain management
+
 (defun org-exobrain--save-state ()
   "Save exobrain state."
-  ;; open /KB/statefile
-  ()
-  (org-exobrain--save-object (concat org-exobrain--dir "title-id-table")
-                             org-exobrain--title-id)
-  (org-exobrain--save-object (concat org-exobrain--dir "id-node-table")
-                             org-exobrain--id-node)
-  ;; save org-exobrain--KB-file
-  ;; save org-exobrain--active-nodes
-  (org-exobrain-sync)
-  ;; don't save workspace files, they are in workspace already
-  )
+  (if (not (file-directory-p org-exobrain--workspace))
+      (make-directory org-exobrain--workspace))
+  (if (not (file-directory-p org-exobrain-path))
+      (make-directory org-exobrain-path))
+  (cl-loop for (k . v) in org-exobrain--objects
+           collect (org-exobrain--save-object (concat org-exobrain-path v) k))
+  (org-exobrain-sync))
+
+(defun org-exobrain--load-state ()
+  "Save exobrain state."
+  (cl-loop for (k . v) in org-exobrain--objects
+           collect (org-exobrain--load-object (concat org-exobrain-path v) k))
+  (org-exobrain-sync))
 
 (defun org-exobrain--save-object (file data)
   "save emacs object. "
@@ -341,27 +363,19 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
       (goto-char (point-min))
       (set symbol (read (current-buffer))))))
 
+(defun org-exobrain--new-KB-file ()
+  "Determine location for next node in the brain files."
+  nil
+  )
+
+;;;;;; diagnostics
+
 (defun org-exobrain-rebuild ()
   "Traverse all nodes and correct any meta errors."
   (interactive)
   nil
   )
 
-(defun org-exobrain--new-KB-file ()
-  "Determine location for next node in the brain files."
-  nil
-  )
-
-
-
-;;;;;; KB Traversal
-
-(defun org-exobrain-visit-nodes (func)
-  "Iterate over all KB in all files"
-  (interactive)
-  ;; (maphash '#func org-id-locations)
-  ;; (maphash '#func org-exobrain--title-id)
-  )
 ;;;; Footer
 
 (provide 'org-exobrain)

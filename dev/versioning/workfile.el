@@ -820,7 +820,28 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 
 ;; USE THIS
 (cl-pushnew org-exobrain-today (node-backlinks vv/ns))
-;;; ??
+;;; looping 
 (type-of (cl-position 2 '(6 5 4 2 1)))
 
 (-repeat 1000 '2)
+
+
+(cl-dolist (el org-exobrain--objects)
+  (format "obj: %s   name: %s" (car el) (cdr el)))
+
+(loop for (k . v) in org-exobrain--objects
+      do (format "%s || %s" k v))
+
+(cl-loop for key in (mapcar 'car org-exobrain--objects)
+         for value in (mapcar 'cdr org-exobrain--objects)
+         ;; collect (cons value key)
+         collect (format "%s || %s" key value)
+         ;; collect key value
+         )
+
+(format "O: %s ||| N: %s" (car (car org-exobrain--objects)) (cdr (car org-exobrain--objects)))
+
+;; this works
+(cl-loop for (k . v) in org-exobrain--objects
+         collect (format "%s || %s" k v)
+         )
