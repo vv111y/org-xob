@@ -705,53 +705,97 @@
 ;; Call to read
 (my-read "test.txt" 'my-emacs-version)
 ;;; org-capture
-;; https://www.reddit.com/r/orgmode/comments/eln9kb/capture_with_automatic_id_creation/fdo32hm?utm_source=share&utm_medium=web2x
-;;;; hooks
+;;;; other capture hooks
 
-(add-hook 'org-capture-mode-hook #'org-exobrain--new-node)
 ;; (remove-hook 'org-capture-mode-hook #'org-exobrain--capture-create-id)
 org-capture-mode-hook ;; after entering or leaving
 org-capture-prepare-finalize-hook ;; capture buffer narrowed
 org-capture-before-finalize-hook  ;; capture buffer widened
 org-capture-after-finalize-hook ;; done. for closing stuff
-;; (org-capture-string "f")
 
-;;;; capture fn for hook
+;;;; old capture fn for hook
 ;; (defun org-exobrain--new-node (title)
-(defun org-exobrain--new-node ()
-  (when (org-capture-get :exobrain-node)
-    (org-id-get-create)
-    (setq temp-ID (org-id-get))
-    ;; (push (nth 4 (org-heading-components)) title)
-    (org-entry-put (point) "VID" (org-capture-get :vid))
-    (org-entry-put (point) "CREATED" (concat "["
-                                             (format-time-string "%F %a %R")
-                                             "]"))
-    (org-entry-put (point) "TYPE" (org-capture-get :ntype)))
-  )
+;; (defun org-exobrain--new-node ()
+;;   (when (org-capture-get :exobrain-node)
+;;     (org-id-get-create)
+;;     (setq temp-ID (org-id-get))
+;;     ;; (push (nth 4 (org-heading-components)) title)
+;;     (org-entry-put (point) "VID" (org-capture-get :vid))
+;;     (org-entry-put (point) "CREATED" (concat "["
+;;                                              (format-time-string "%F %a %R")
+;;                                              "]"))
+;;     (org-entry-put (point) "TYPE" (org-capture-get :ntype)))
+;;   )
+
+;;;; main capture fn
+
+(defun org-exobrain--capture (title)
+  (let* ((org-capture-templates org-exobrain--templates)
+         ID)
+    ;; TODO test
+    (if (member 'title 'org-exobrain--auto-types)
+        (org-capture nil title)
+      (org-capture))
+    ID))
 
 (defun org-exobrain--new-node ()
   (when (org-capture-get :exobrain-node)
-    (let ((ID (org-id-get-create)))
+    (let ((ID (org-id-get-create))
+          (type (org-capture-get :ntype))
+          node)
       ;; (push (nth 4 (org-heading-components)) title)
       (org-entry-put (point) "VID" (org-capture-get :vid))
       (org-entry-put (point) "CREATED" (concat "["
                                                (format-time-string "%F %a %R")
                                                "]"))
-      (org-entry-put (point) "TYPE" (org-capture-get :ntype))
+      (org-entry-put (point) "TYPE" type)
+      (setq node (make-node :title title
+                            :type type 
+                            :backlinks (list)))
+      (puthash title ID org-exobrain--title-id)
+      (puthash ID node org-exobrain--id-node)
       ID)))
 
+(add-hook 'org-capture-mode-hook #'org-exobrain--new-node)
 
-;;;; main capture fn
-(defun org-exobrain--capture (key)
-  (interactive)
-  (let* ((org-capture-templates org-exobrain--templates)
-         (title key)
-         (temp-ID))
-    (if (equal title "today")
-        (org-capture "today")
-      (org-capture))
-    temp-ID))
+(defvar org-exobrain--auto-types '(("day" . a.day)
+                                   ("session" . a.session)
+                                   ("project" . a.project)
+                                   ("log" . a.log)
+                                   ("log personal" . a.log.life)
+                                   ("log it tools" . a.log.it-tools)
+                                   ("log tools" . a.log.tools)
+                                   ("log project" . a.log.project)
+                                   ("article" . n.bib.article)
+                                   ("webpage" . n.bib.web)
+                                   ("fast" . n.n)
+                                   ("topic" . n.topic)
+                                   ))
+
+(defvar org-exobrain--templates
+      '(("f" "fast" entry (file org-exobrain--KB-file)
+         "* %(eval title)  :node:\n%?\n** backlinks :bl:"
+         :exobrain-node t
+         :ntype "node"
+         :vid "0"
+         ;; :immediate-finish t
+         :empty-lines-after 1)
+        ("ct" "today" entry (file org-exobrain--KB-file)
+         "* %() :node:\n\n** backlinks :bl:"
+         :exobrain-node t
+         :immediate-finish t
+         :ntype "context.day")))
+
+;;;;; capture scraps
+
+;; (org-capture-string "f")
+(org-capture nil "lw")
+;; (plist-get 'org-capture-plist :key)
+;; (defun org-exobrain--link-nodes (ida idb)
+;;   (org-id-open ida))
+
+;; (defun org-exobrain--get-entry (key)
+;;   (format "getting entry %s" key))
 
 ;;;; create buffer
 (copy-to-buffer "testbuff" (point-min) (point-max))
@@ -762,64 +806,115 @@ org-capture-after-finalize-hook ;; done. for closing stuff
     ;; insert node contents
     )
   )
-;;;; variables
-(setq org-exobrain--KB-file "first.org")
 
-(setq org-exobrain--templates
-  '(("f" "fast" entry (file org-exobrain--KB-file)
-     "* %(eval title)  :node:\n%?\n** backlinks :bl:"
-     :exobrain-node t
-     :ntype "node"
-     :vid "0"
-     ;; :immediate-finish t
-     :empty-lines-after 1)
-    ("ct" "today" entry (file org-exobrain--KB-file)
-     "* %() :node:\n\n** backlinks :bl:"
-     :exobrain-node t
-     :immediate-finish t
-     :ntype "context.day")))
-
-;;; main fn
+;;; main get node  
 ;; (setq org-exobrain-today nil)
 
 (defun org-exobrain-get-node ()
   (interactive)
-  ;; is exobrain started? 
-  ;; Create today node if necessary 
+  (when (not org-exobrain-on-p)
+    (org-exobrain-start))
   (unless org-exobrain-today
     (setq org-exobrain-today (org-exobrain--capture "today")))
   ;; Get node by title, or create new one 
-  (helm :buffer "*exo get node*"
+  (helm :buffer "*xob get node*"
         :sources (helm-build-sync-source "vv-sss"
                    :candidates (lambda ()
-                                 (let* ((cans (hash-table-keys org-id-locations))
+                                 (let* ((candidates (hash-table-keys org-id-locations))
                                         ;; (let* ((cans (hash-table-keys org-exobrain--title-id))
                                         )
-                                   (cons helm-input cans)))
+                                   (cons helm-input candidates)))
                    :volatile t
                    ;; :action (lambda (title) (let ((ID (gethash title org-exobrain--title-id)))
                    :action (lambda (title) (let ((ID (gethash title org-id-locations)))
                                            (unless ID
                                              (setq ID (org-exobrain--capture title)))
-                                           ;; (format "ID is %s" ID)
-                                           ;; (org-exobrain--link-to-today ID org-exobrain--today)
-                                           ;; if not in exo buffer, open new exo buffer, name: day+node?
-                                           ;; insert node contents
-                                           )))))
+                                           (if (org-exobrain--active-p ID)  ;; buffer exists 
+                                               (select-window (get-buffer-window
+                                                               (org-exobrain--get-buffer ID) 'visible))
+                                             (org-exobrain--activate-node ID)))))))
 
-;; (defun org-exobrain--link-nodes (ida idb)
-;;   (org-id-open ida))
+(defvar org-exobrain--active-list nil
+  "Alist of active nodes and their buffer locations.")
+;; OR check for ID in buffers
 
-;; (defun org-exobrain--get-entry (key)
-;;   (format "getting entry %s" key))
+(defun org-exobrain--active-p (ID)
+  "Returns t if the node is already in the workspace."
+  nil)
+
+(defun org-exobrain--get-buffer (ID)
+  nil
+  )
+
+(defun org-exobrain-push-link (ID target)
+ nil 
+  )
+;;; activate node
+(defun org-exobrain--activate-node (ID)
+  (let* ((m (org-id-find ID 'marker))
+         (contents (save-mark-and-excursion (progn 
+                                              (marker-buffer m)
+                                              (goto-char m)
+                                              (move-marker m nil)
+                                              (org-copy-subtree)))))
+    (switch-to-buffer (concat (node-title (org-exobrain--id-node ID))
+                              (".org")))
+    (unless org-mode 
+      (org-mode))
+    (unless org-exobrain-minor-mode 
+      (org-exobrain-minor-mode))
+    (org-exobrain-push-link ID org-exobrain-today)
+    (org-paste-subtree)))
+
+
+;; (cl-pushnew org-exobrain-today (node-backlinks
+;;                                 (org-exobrain--id-node ID)))
+
 ;;; node structs and hashtable
-(setq vv/ns (make-node :title "meee" :backlinks (list)))
-
+;; (cl-defstruct node title type backlinks)
+;; (setq vv/ns (make-node :title "meee" :backlinks (list)))
 ;; nice to know, not using it 
-(setf (node-backlinks vv/ns) (append '(a)))
+;; (setf (node-backlinks vv/ns) (append '(a)))
+;;; trial #2 state : alternate use struct for state
+(cl-defstruct xob-state kb-count kb-current kb-files t-id-table-fn id-n-table-fn)
+(setq xob (make-xob-state :kb-count 0 :t-id-table-fn "title-id-table" :id-n-table-fn "id-node-table"))
 
-;; USE THIS
-(cl-pushnew org-exobrain-today (node-backlinks vv/ns))
+(defun xob-new-file ()
+  (interactive)
+  (let ((filename (concat 
+                          org-exobrain--KB-filename-prefix
+                          (format "%03d" (xob-state-kb-count xob))
+                          ".org")))
+    (with-temp-buffer
+      (write-file filename))
+    (cl-pushnew filename (xob-state-kb-files xob))
+    (setf (xob-state-kb-current xob) filename)
+    (setf (xob-state-kb-count xob) (+ 1))))
+
+(xob-state-id-n-table-fn xob)
+
+(setf (xob-state-kb-current xob) "KB-file-000.org")
+
+(org-exobrain--save-object "xob_state" xob)
+(prin1 xob)
+(symbol-value xob)
+(prin1 org-exobrain--title-id)
+
+;; save struct, no symbol-value
+(with-temp-file "xob_state"
+  (prin1 xob (current-buffer)))
+
+;; load struct use setq
+(setq xobii nil)
+(with-temp-buffer
+(insert-file-contents "xob_state")
+(goto-char (point-min))
+(setq xobii (read (current-buffer))))
+
+(xob-state-kb-files xobii)
+(xob-state-kb-count xobii)
+(xob-state-id-n-table-fn xobii)
+
 ;;; looping 
 (type-of (cl-position 2 '(6 5 4 2 1)))
 
@@ -845,3 +940,22 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (cl-loop for (k . v) in org-exobrain--objects
          collect (format "%s || %s" k v)
          )
+;;; var prob
+(org-exobrain--activate-node '"5fc3aafe-fa83-4ec4-9db3-12e703d31bb2")
+(org-exobrain--save-state)
+(symbol-value (car (car org-exobrain--objects)))
+(setq org-exobrain--title-id 4)
+
+(setq org-exobrain--objects '((org-exobrain--title-id . "title-id-table")
+                              (org-exobrain--id-node . "id-node-table")
+                              (org-exobrain--KB-file . "current-KB-file")))
+
+
+(cl-loop for (k . v) in org-exobrain--objects
+         do (progn
+              ;; (print k)
+              (print (symbol-value k))
+              (set k 4)
+              (print v)
+              ;; (setq (symbol-value k) 4)
+              ))

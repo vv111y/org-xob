@@ -102,7 +102,7 @@
 (defvar org-exobrain-workspace "~/exobrain/" 
   "Directory for all exobrain files.")
 
-(defvar org-exobrain-path (concat org-exobrain--workspace
+(defvar org-exobrain-path (concat org-exobrain-workspace
                                   org-exobrain--dir)
   "Path to the core exobrain files.")
 
@@ -111,11 +111,12 @@
 
 (defvar org-exobrain--KB-files nil
   "List of all knowledge base files.")
+;; (setq org-exobrain--KB-files nil)
 
 (defvar org-exobrain--KB-file nil
   "The currently active KB file to store previous versions of nodes.")
 
-(defvar org-exobrain--KB-filename-prefix "-KB-file.org"
+(defvar org-exobrain--KB-filename-prefix "KB-file-"
   "suffix for KB filenames. A simple filecount value is appended for a new name")
 
 (defvar org-exobrain--active-nodes nil
@@ -127,6 +128,7 @@
 
 (defvar org-exobrain--objects '((org-exobrain--title-id . "title-id-table")
                                 (org-exobrain--id-node . "id-node-table")
+                                (org-exobrain--KB-files . "KB-files")
                                 (org-exobrain--KB-file . "current-KB-file")))
 
 ;;;;; Keymaps
@@ -151,7 +153,7 @@
 ;;;; Functions
 ;;;;; org-exobrain minor mode 
 ;;;###autoload
-(define-minor-mode org-exobrain
+(define-minor-mode org-exobrain-minor-mode
   "Minor Mode "
   :lighter " Xo"
   ;; :keymap  (let ((map (make-sparse-keymap)))
@@ -175,18 +177,27 @@
 (defun org-exobrain-start ()
   "Start the xob system: check if state files exist and load state or initialize new."
   (interactive)
+  (setq org-exobrain-on-p t)
   (cl-loop for (k . v) in org-exobrain--objects
-           collect (if (file-exists-p (concat org-exobrain-path v))
+           do (if (file-exists-p (concat org-exobrain-path v))
                        (org-exobrain--load-object v k)
                      (progn 
                        (message "XOB: file %s missing, initializing new %s" v k)
+                       (if (equal "org-exobrain--KB-files" (symbol-name k))
+                           (set k ()))
                        (if (equal "org-exobrain--KB-file" (symbol-name k))
-                               (setq k (org-exobrain--new-KB-file))
-                           (setq k (make-hash-table
-                                    :test 'equal
-                                    :size org-exobrain--table-size))))))
+                           (set k (org-exobrain--new-KB-file))
+                         (set k (make-hash-table
+                                 :test 'equal
+                                 :size org-exobrain--table-size)))))))
+
+(defun org-exobrain-stop ()
+  "Stop xob system: save all state and close active buffers."
+  (interactive)
   (org-exobrain--save-state)
-  (setq org-exobrain-on-p t))
+  ;; save/clode active buffers
+  ;; maybe delete other objects
+  (setq org-exobrain-on-p nil))
 
 ;;;###autoload
 (defun org-exobrain-open-day ()
@@ -273,7 +284,7 @@
 
 ;;;;; Support
 ;;;;;; Node Objects
-(cl-defstruct node title backlinks)
+(cl-defstruct node title type backlinks)
 
 (defun org-exobrain--find-node ()
   ;;
@@ -359,33 +370,37 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
   (if (not (file-directory-p org-exobrain-path))
       (make-directory org-exobrain-path))
   (cl-loop for (k . v) in org-exobrain--objects
-           collect (org-exobrain--save-object (concat org-exobrain-path v) k))
+           do (org-exobrain--save-object (concat org-exobrain-path v) k))
   (org-exobrain-sync))
 
 (defun org-exobrain--load-state ()
-  "Save exobrain state."
+  "Load exobrain state."
   (cl-loop for (k . v) in org-exobrain--objects
-           collect (org-exobrain--load-object (concat org-exobrain-path v) k))
-  (org-exobrain-sync))
+           do (org-exobrain--load-object (concat org-exobrain-path v) k)))
 
 (defun org-exobrain--save-object (file data)
   "save emacs object. "
   (with-temp-file file
-    (prin1 data (current-buffer))))
+    (prin1 (symbol-value data) (current-buffer))))
 
 (defun org-exobrain--load-object (file symbol)
   "load saved object."
   (when (boundp symbol)
     (with-temp-buffer
-      (insert-file-contents file)
+      (insert-file-contents (concat org-exobrain-path file))
       (goto-char (point-min))
       (set symbol (read (current-buffer))))))
 
 (defun org-exobrain--new-KB-file ()
-  "Determine location for next node in the brain files."
-  nil
-  )
-
+  "Create new KB file for next node in the brain."
+  (let ((filename (concat org-exobrain-path
+                   org-exobrain--KB-filename-prefix
+                   (format "%03d" (length (directory-files org-exobrain-path nil org-exobrain--KB-filename-prefix)))
+                   ".org")))
+    (with-temp-buffer
+      (write-file filename))
+    (push filename org-exobrain--KB-files)))
+;; (setq org-exobrain--KB-files nil)
 ;;;;;; diagnostics
 
 (defun org-exobrain-rebuild ()
