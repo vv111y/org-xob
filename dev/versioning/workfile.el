@@ -808,67 +808,60 @@ org-capture-after-finalize-hook ;; done. for closing stuff
   )
 
 ;;; main get node  
+;;;; testing version for reference
 ;; (setq org-exobrain-today nil)
 
-(defun org-exobrain-get-node ()
-  (interactive)
-  (when (not org-exobrain-on-p)
-    (org-exobrain-start))
-  (unless org-exobrain-today
-    (setq org-exobrain-today (org-exobrain--capture "today")))
-  ;; Get node by title, or create new one 
-  (helm :buffer "*xob get node*"
-        :sources (helm-build-sync-source "vv-sss"
-                   :candidates (lambda ()
-                                 (let* ((candidates (hash-table-keys org-id-locations))
-                                        ;; (let* ((cans (hash-table-keys org-exobrain--title-id))
-                                        )
-                                   (cons helm-input candidates)))
-                   :volatile t
-                   ;; :action (lambda (title) (let ((ID (gethash title org-exobrain--title-id)))
-                   :action (lambda (title) (let ((ID (gethash title org-id-locations)))
-                                           (unless ID
-                                             (setq ID (org-exobrain--capture title)))
-                                           (if (org-exobrain--active-p ID)  ;; buffer exists 
-                                               (select-window (get-buffer-window
-                                                               (org-exobrain--get-buffer ID) 'visible))
-                                             (org-exobrain--activate-node ID)))))))
+;; (defun org-exobrain-get-node ()
+;;   (interactive)
+;;   (when (not org-exobrain-on-p)
+;;     (org-exobrain-start))
+;;   (unless org-exobrain-today
+;;     (setq org-exobrain-today (org-exobrain--capture "today")))
+;;   ;; Get node by title, or create new one 
+;;   (helm :buffer "*xob get node*"
+;;         :sources (helm-build-sync-source "vv-sss"
+;;                    :candidates (lambda ()
+;;                                  (let* ((candidates (hash-table-keys org-id-locations))
+;;                                         ;; (let* ((cans (hash-table-keys org-exobrain--title-id))
+;;                                         )
+;;                                    (cons helm-input candidates)))
+;;                    :volatile t
+;;                    ;; :action (lambda (title) (let ((ID (gethash title org-exobrain--title-id)))
+;;                    :action (lambda (title) (let ((ID (gethash title org-id-locations)))
+;;                                            (unless ID
+;;                                              (setq ID (org-exobrain--capture title)))
+;;                                            (org-exobrain--activate-node ID))))))
 
-(defvar org-exobrain--active-list nil
-  "Alist of active nodes and their buffer locations.")
-;; OR check for ID in buffers
+;;;; alternative to get contents, used in activate-node fn
+;; (contents (save-mark-and-excursion (progn 
+;;                                      (marker-buffer m)
+;;                                      (goto-char m)
+;;                                      (move-marker m nil)
+;;                                      (org-copy-subtree)))))
 
-(defun org-exobrain--active-p (ID)
-  "Returns t if the node is already in the workspace."
-  nil)
-
-(defun org-exobrain--get-buffer (ID)
-  nil
-  )
-
-(defun org-exobrain-push-link (ID target)
- nil 
-  )
-;;; activate node
-(defun org-exobrain--activate-node (ID)
-  (let* ((m (org-id-find ID 'marker))
-         (contents (save-mark-and-excursion (progn 
-                                              (marker-buffer m)
-                                              (goto-char m)
-                                              (move-marker m nil)
-                                              (org-copy-subtree)))))
-    (switch-to-buffer (concat (node-title (org-exobrain--id-node ID))
-                              (".org")))
-    (unless org-mode 
-      (org-mode))
-    (unless org-exobrain-minor-mode 
-      (org-exobrain-minor-mode))
-    (org-exobrain-push-link ID org-exobrain-today)
-    (org-paste-subtree)))
-
-
+;;;; misc
 ;; (cl-pushnew org-exobrain-today (node-backlinks
 ;;                                 (org-exobrain--id-node ID)))
+
+;; old idea
+;; (defun org-exobrain--find-node ()
+;;   ;;
+;;   ;; fuzzy search node titles
+;;   (let ((pos (org-id-find id)))
+;;     ;; get node (header+contents) at pos (filename . possible))
+;;     ))
+;;; possible state vars for active workspace. so far don't need this way:
+;; (defvar org-exobrain--active-list nil
+;;   "Alist of active nodes and their buffer locations.")
+;; OR check for ID in buffers
+;; (defun org-exobrain--active-p (ID)
+;;   "Returns t if the node is already in the workspace."
+;;   nil)
+;; (defun org-exobrain--get-buffer (ID)
+;;   nil
+;;   )
+;; (setq ID )
+
 
 ;;; node structs and hashtable
 ;; (cl-defstruct node title type backlinks)
@@ -900,6 +893,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (symbol-value xob)
 (prin1 org-exobrain--title-id)
 
+;; need separate load/save for struct
 ;; save struct, no symbol-value
 (with-temp-file "xob_state"
   (prin1 xob (current-buffer)))
@@ -915,6 +909,16 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (xob-state-kb-count xobii)
 (xob-state-id-n-table-fn xobii)
 
+;;;; old
+(defun org-exobrain--new-KB-file ()
+  "Create new KB file for next node in the brain.")
+(let ((filename (concat org-exobrain-path
+                        org-exobrain--KB-filename-prefix
+                        (format "%03d" (length (directory-files org-exobrain-path nil org-exobrain--KB-filename-prefix)))
+                        ".org")))
+  (with-temp-buffer
+    (write-file filename))
+  (push filename org-exobrain--KB-files)))
 ;;; looping 
 (type-of (cl-position 2 '(6 5 4 2 1)))
 
