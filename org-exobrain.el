@@ -126,6 +126,10 @@
   "Buffer local variable that indicates whether the current contents of a buffer have been synced with the Knowledge Base.")
 ;;;;; state
 
+;; TODO clean
+(cl-defstruct xob-state kb-count kb-current kb-files t-id-table-fn id-n-table-fn)
+(setq xob (make-xob-state :kb-count 0 :t-id-table-fn "title-id-table" :id-n-table-fn "id-node-table"))
+
 (defvar org-exobrain--objects '((org-exobrain--title-id . "title-id-table")
                                 (org-exobrain--id-node . "id-node-table")
                                 (org-exobrain--KB-files . "KB-files")
@@ -212,16 +216,21 @@
 ;;;###autoload
 (defun org-exobrain-get-node ()
   (interactive)
-  ;; is exobrain started? 
   (when (not org-exobrain-on-p)
     (org-exobrain-start))
-  ;; call --find-node
-  ;; if not in exo buffer, open new exo buffer, name: day+node?
-  ;; if no today node, add one
-  ;; exo-link this buffer to today node 
-  ;; insert node contents
-  ;; if no node found, prompt to add new one, OR helm option to add new
-  )
+  (unless org-exobrain-today
+    (setq org-exobrain-today (org-exobrain--capture "today")))
+  ;; Get node by title, or create new one 
+  (helm :buffer "*xob get node*"
+        :sources (helm-build-sync-source "vv-sss"
+                   :candidates (lambda ()
+                                 (let* ((cans (hash-table-keys org-exobrain--title-id)))
+                                   (cons helm-input candidates)))
+                   :volatile t
+                   :action (lambda (title) (let ((ID (gethash title org-exobrain--title-id)))
+                                             (unless ID
+                                               (setq ID (org-exobrain--capture title)))
+                                             (org-exobrain--activate-node ID))))))
 
 ;;;###autoload
 (defun org-exobrain-link ()
@@ -286,12 +295,40 @@
 ;;;;;; Node Objects
 (cl-defstruct node title type backlinks)
 
-(defun org-exobrain--find-node ()
-  ;;
-  ;; fuzzy search node titles
-  (let ((pos (org-id-find id)))
-    ;; get node (header+contents) at pos (filename . possible))
-  ))
+(defun org-exobrain-push--heading-link (ID target)
+ (save-window-excursion
+   (org-exobrain--activate-node target)
+   (org-insert-subheading (org-insert-link nil ID (node-title (org-exobrain--id-node ID))))))
+
+(defun org-exobrain--link-hijack ()
+  "After following org-id link, jump to the activated node, creating it if necessary."
+  (let ((ID (org-id-get (point) nil nil)))
+    (if (org-exobrain--id-node ID)
+        (org-exobrain--activate-node ID))))
+
+(add-hook 'org-follow-link-hook #'org-exobrain--link-hijack)
+
+(defun org-exobrain--activate-node (ID)
+  "Activate the node. If it is already live, display it or go to it's window."
+  (let* ((m (org-id-find ID 'marker))
+         (anode (org-exobrain--id-node ID))
+         (buf-name (concat (node-title anode) "-" (format-time-string "%F" ) ".org"))
+         (buf-win (get-buffer-window buf-name)))
+    (if buf-win 
+        (select-window buf-win)
+      (if (get-buffer buf-name)
+          (switch-to-buffer buf-name)
+        (progn 
+          (org-exobrain-push--heading-link ID org-exobrain-today)
+          (save-window-excursion
+            (org-id-goto ID)
+            (org-copy-subtree))
+          (switch-to-buffer buf-name) 
+          (unless org-mode 
+            (org-mode))
+          (unless org-exobrain-minor-mode 
+            (org-exobrain-minor-mode))
+          (org-paste-subtree nil nil nil 'remove))))))
 
 ;;;;;; Node org-capture
 
@@ -393,14 +430,17 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
 
 (defun org-exobrain--new-KB-file ()
   "Create new KB file for next node in the brain."
-  (let ((filename (concat org-exobrain-path
+  (interactive)
+  (let ((filename (concat 
                    org-exobrain--KB-filename-prefix
-                   (format "%03d" (length (directory-files org-exobrain-path nil org-exobrain--KB-filename-prefix)))
+                   (format "%03d" (xob-state-kb-count xob))
                    ".org")))
     (with-temp-buffer
       (write-file filename))
-    (push filename org-exobrain--KB-files)))
-;; (setq org-exobrain--KB-files nil)
+    (cl-pushnew filename (xob-state-kb-files xob))
+    (setf (xob-state-kb-current xob) filename)
+    (setf (xob-state-kb-count xob) (+ 1))))
+
 ;;;;;; diagnostics
 
 (defun org-exobrain-rebuild ()
