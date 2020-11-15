@@ -154,27 +154,7 @@
                   (define-key map key fn)))
     map))
 
-;;;; Functions
-;;;;; org-exobrain minor mode 
-;;;###autoload
-(define-minor-mode org-exobrain-minor-mode
-  "Minor Mode "
-  :lighter " Xo"
-  ;; :keymap  (let ((map (make-sparse-keymap)))
-  ;;            (define-key map [remap org-store-link] 'org-roam-store-link)
-  ;;            map)
-  :group 'org-exobrain
-  :require 'org-exobrain
-  ;; :global t
-  (progn 
-    (when (not org-exobrain-on-p)
-      (org-exobrain-start))
-    (setq-local org-exobrain-syncedp nil)
-    (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-exobrain-syncedp nil 'APPEND 'LOCAL)))
-    ;; TODO check it works
-    (setq-local org-id-extra-files 'org-exobrain--KB-files))
-  )
-
+;;;;; Frontend
 ;;;;; Commands
 
 ;;;###autoload
@@ -291,7 +271,59 @@
         (set (make-local-variable 'org-exobrain-syncedp) nil)
         (message (format "sync failed for buffer %s" buf))))))
 
-;;;;; Support
+;;;;;; Workspace
+;;;###autoload
+(define-minor-mode org-exobrain-minor-mode
+  "Minor Mode "
+  :lighter " Xo"
+  ;; :keymap  (let ((map (make-sparse-keymap)))
+  ;;            (define-key map [remap org-store-link] 'org-roam-store-link)
+  ;;            map)
+  :group 'org-exobrain
+  :require 'org-exobrain
+  ;; :global t
+  (progn 
+    (when (not org-exobrain-on-p)
+      (org-exobrain-start))
+    (setq-local org-exobrain-syncedp nil)
+    (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-exobrain-syncedp nil 'APPEND 'LOCAL)))
+    ;; TODO check it works
+    (setq-local org-id-extra-files 'org-exobrain--KB-files))
+  )
+
+
+(defun org-exobrain--active-buffers ()
+  "Returns list of all active exobrain buffers"
+  (remove-if-not (lambda (buf) (with-current-buffer buf org-exobrain)) (buffer-list)))
+
+(defun org-exobrain--nodes-in-buffer (buff)
+  ;; traverse headings, check if node, append ID to list
+  nil 
+  )
+
+;;;;;; Contexts
+
+(defun org-exobrain-context--inline ()
+  "Show the contextual nodes as a subheading."
+  )
+
+(defun org-exobrain-context--sideline ()
+  "Show the contextual nodes in an adjacent buffer & window."
+  )
+
+(defun org-exobrain-context--outline ()
+  "Show the contextual nodes as adjacent headings."
+  )
+
+(defun org-exobrain-refresh-sources ()
+  "Show the contextual nodes as adjacent headings."
+  )
+
+;;;;;; Parsing
+;;;;;; Clocking
+(defun org-exobrain--auto-clock-in ())
+(defun org-exobrain--auto-clock-out ())
+;;;;; Backend
 ;;;;;; Node Objects
 (cl-defstruct node title type backlinks)
 
@@ -333,72 +365,41 @@
 ;;;;;; Node org-capture
 
 
-
+;;;;;; Node links
 ;;;;;; Node Versioning
-(defun org-exobrain--sync-node (node)
-  "Update entry based on local edits."
-  ;; is node in KB? no, add, else
-  ;; is node different? no, ignore, else sync/update
-  nil
-  )
+;; (defun org-exobrain--sync-node (node)
+;;   "Update entry based on local edits."
+;;   ;; is node in KB? no, add, else
+;;   ;; is node different? no, ignore, else sync/update
+;;   nil
+;;   )
 
-(defun org-exobrain--diff-node (now-node last-node)
-  "Creates a diff using =org-exobrain--delta-executable=.
-The order of versions is reversed; the diff allows the reconstruction of
-the last-node from the now-node.
-The diff is stored in the currently active =org-exobrain--KB-file=."
-  (shell-command))
-;; (defun org-exobrain--new-node-diff (nodeID)
-;;   (let ((old-id (org-id-store-link node)))))
+;; (defun org-exobrain--diff-node (now-node last-node)
+;;   "Creates a diff using =org-exobrain--delta-executable=.
+;; The order of versions is reversed; the diff allows the reconstruction of
+;; the last-node from the now-node.
+;; The diff is stored in the currently active =org-exobrain--KB-file=."
+;;   (shell-command))
+;; ;; (defun org-exobrain--new-node-diff (nodeID)
+;; ;;   (let ((old-id (org-id-store-link node)))))
 
-(defun org-exobrain--diff-filename (node)
-  (concat
-   ;; node id
-   "-"
-   (format-time-string "%j-%H-%M")))
-
-
-
-;;;;;; Workspace
-
-(defun org-exobrain--active-buffers ()
-  "Returns list of all active exobrain buffers"
-  (remove-if-not (lambda (buf) (with-current-buffer buf org-exobrain)) (buffer-list)))
-
-(defun org-exobrain--nodes-in-buffer (buff)
-  ;; traverse headings, check if node, append ID to list
-  nil 
-  )
-
-;;;;;; Contexts
-
-(defun org-exobrain-context--inline ()
-  "Show the contextual nodes as a subheading."
-  )
-
-(defun org-exobrain-context--sideline ()
-  "Show the contextual nodes in an adjacent buffer & window."
-  )
-
-(defun org-exobrain-context--outline ()
-  "Show the contextual nodes as adjacent headings."
-  )
+;; (defun org-exobrain--diff-filename (node)
+;;   (concat
+;;    ;; node id
+;;    "-"
+;;    (format-time-string "%j-%H-%M")))
 
 
-;;;;;; Parsing
-;; (defun org-exobrain-)
-;;;;;; Clocking
-;; (defun org-exobrain--auto-clock-in ())
-;; (defun org-exobrain--auto-clock-out ())
+
 ;;;;;; KB Traversal
 
+;;;;;; exobrain management
 (defun org-exobrain-visit-nodes (func)
   "Iterate over all KB in all files"
   (interactive)
   ;; (maphash '#func org-id-locations)
   ;; (maphash '#func org-exobrain--title-id)
   )
-;;;;;; exobrain management
 
 (defun org-exobrain--save-state ()
   "Save exobrain state."
@@ -449,7 +450,7 @@ The diff is stored in the currently active =org-exobrain--KB-file=."
   nil
   )
 
-;;;; Footer
+;;; End
 
 (provide 'org-exobrain)
 
