@@ -901,9 +901,9 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;; load struct use setq
 (setq xobii nil)
 (with-temp-buffer
-(insert-file-contents "xob_state")
-(goto-char (point-min))
-(setq xobii (read (current-buffer))))
+  (insert-file-contents "xob_state")
+  (goto-char (point-min))
+  (setq xobii (read (current-buffer))))
 
 (xob-state-kb-files xobii)
 (xob-state-kb-count xobii)
@@ -911,14 +911,14 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 
 ;;;; old
 (defun org-exobrain--new-KB-file ()
-  "Create new KB file for next node in the brain.")
-(let ((filename (concat org-exobrain-path
-                        org-exobrain--KB-filename-prefix
-                        (format "%03d" (length (directory-files org-exobrain-path nil org-exobrain--KB-filename-prefix)))
-                        ".org")))
-  (with-temp-buffer
-    (write-file filename))
-  (push filename org-exobrain--KB-files)))
+  "Create new KB file for next node in the brain."
+  (let ((filename (concat org-exobrain-path
+                          org-exobrain--KB-filename-prefix
+                          (format "%03d" (length (directory-files org-exobrain-path nil org-exobrain--KB-filename-prefix)))
+                          ".org")))
+    (with-temp-buffer
+      (write-file filename))
+    (push filename org-exobrain--KB-files)))
 ;;; looping 
 (type-of (cl-position 2 '(6 5 4 2 1)))
 
@@ -963,3 +963,110 @@ org-capture-after-finalize-hook ;; done. for closing stuff
               (print v)
               ;; (setq (symbol-value k) 4)
               ))
+
+;;; org heading stuff
+
+(setq vv-p nil)
+(length vv-p)
+(org-map-entries (lambda () (push (nth 4 (org-heading-components)) vv-p)))
+(org-map-entries (lambda () (push (cons (point) (nth 4 (org-heading-components))) vv-p)))
+(org-map-entries (lambda () (push (point) vv-p)))
+
+;;;; ap's searches
+(-flatten
+(-non-nil
+ (mapcar (lambda (file)
+           (let ((case-fold-search nil))
+             (with-current-buffer (find-buffer-visiting file)
+               (org-with-wide-buffer
+                (goto-char (point-min))
+                (cl-loop with regexp = (format org-heading-keyword-regexp-format "MAYBE")
+                ;; (cl-loop with regexp = org-heading-regexp 
+                         while (re-search-forward regexp nil t)
+                         collect (nth 4 (org-heading-components)))))))
+         (org-agenda-files))))
+
+
+(-flatten
+(-non-nil
+ (mapcar (lambda (file)
+           (let ((case-fold-search nil))
+             (with-current-buffer (find-buffer-visiting file)
+               (org-with-wide-buffer
+                (goto-char (point-min))
+                ;; (cl-loop with regexp = (format org-heading-keyword-regexp-format "MAYBE")
+                (cl-loop with regexp = org-heading-regexp 
+                         while (re-search-forward regexp nil t)
+                         collect (nth 4 (org-heading-components)))))))
+         (org-agenda-files))))
+
+
+
+(lambda ()
+  (let ((case-fold-search nil))
+    (with-current-buffer (current-buffer) 
+      (org-with-wide-buffer
+       (goto-char (point-min))
+       (cl-loop with regexp = (format org-heading-keyword-regexp-format "node")
+       ;; (cl-loop with regexp = (formate org-heading-regexp)
+       ;; (cl-loop with regexp = org-heading-regexp 
+                while (re-search-forward regexp nil t)
+                collect (nth 5 (org-heading-components)))))))
+
+(-non-nil
+(org-with-wide-buffer
+ (goto-char (point-min))
+ ;; (cl-loop with regexp = (format org-heading-keyword-regexp-format "node") 
+ (cl-loop with regexp = org-heading-regexp
+          while (re-search-forward regexp nil t)
+          collect (nth 5 (org-heading-components)))))
+
+ ;; ** meebee :node:source:
+
+;;; dual buffers/windows
+;;;; atomic window ex.
+ (let ((window (split-window-right)))
+   (window-make-atom (window-parent window))
+   (display-buffer-in-atom-window
+    (get-buffer-create "*Messages*")
+    `((window . ,(window-parent window)) (window-height . 5))))
+
+;;;; sideline
+(defun org-exobrain-open-sideline ()
+  "Open context content in a side window."
+  (interactive)
+  ;; (org-exobrain-new-buffer)
+  (let ((window (split-window-right)))
+    ;; (window-make-atom (window-parent window))
+    (display-buffer-in-atom-window
+     (get-buffer-create "*node context*")
+     `((window . ,(window-parent window)) (window-height . 5)))))
+
+(defun org-exobrain-open-sideline ()
+  "Open context content in a side window."
+  (interactive)
+  ;; (org-exobrain-new-buffer)
+  (let ((window 
+         (display-buffer-in-atom-window
+          (get-buffer-create "*node context*")
+          `((window . ,(selected-window)) (side . right)))))))
+
+(window-atom-root)
+(window-tree)
+
+;;;
+(org-log-beginning)
+(org-add-note)
+(org-add-log-note)
+(org-element-at-point)
+
+(org-element-map (org-element-parse-buffer) 'LOGBOOK (lambda (el) ((let (nm (org-element-property :drawer-name "LOGBOOK"))
+                                                                     (print el)))))
+(org-map-entries)
+(org-log-into-drawer)
+(org-log-beginning t)
+(org-clock-get-clock-string)
+(org-clock-goto)
+(org-clock-drawer-name)
+
+;;; views stage 1
