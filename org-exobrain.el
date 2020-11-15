@@ -271,6 +271,7 @@
         (set (make-local-variable 'org-exobrain-syncedp) nil)
         (message (format "sync failed for buffer %s" buf))))))
 
+
 ;;;;;; Workspace
 ;;;###autoload
 (define-minor-mode org-exobrain-minor-mode
@@ -289,6 +290,56 @@
     (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-exobrain-syncedp nil 'APPEND 'LOCAL)))
     ;; TODO check it works
     (setq-local org-id-extra-files 'org-exobrain--KB-files))
+
+;;;;; Support
+;;;;;; Node Objects
+(cl-defstruct node title type backlinks)
+
+(defun org-exobrain-push--heading-link (ID target)
+ (save-window-excursion
+   (org-exobrain--activate-node target)
+   (org-insert-subheading (org-insert-link nil ID (node-title (org-exobrain--id-node ID))))))
+
+(defun org-exobrain--link-hijack ()
+  "After following org-id link, jump to the activated node, creating it if necessary."
+  (let ((ID (org-id-get (point) nil nil)))
+    (if (org-exobrain--id-node ID)
+        (org-exobrain--activate-node ID))))
+
+(add-hook 'org-follow-link-hook #'org-exobrain--link-hijack)
+
+(defun org-exobrain--activate-node (ID)
+  "Activate the node. If it is already live, display it or go to it's window."
+  (let* ((m (org-id-find ID 'marker))
+         (anode (org-exobrain--id-node ID))
+         (buf-name (concat (node-title anode) "-" (format-time-string "%F" ) ".org"))
+         (buf-win (get-buffer-window buf-name)))
+    (if buf-win 
+        (select-window buf-win)
+      (if (get-buffer buf-name)
+          (switch-to-buffer buf-name)
+        (progn 
+          (org-exobrain-push--heading-link ID org-exobrain-today)
+          (save-window-excursion
+            (org-id-goto ID)
+            (org-copy-subtree))
+          (switch-to-buffer buf-name) 
+          (unless org-mode 
+            (org-mode))
+          (unless org-exobrain-minor-mode 
+            (org-exobrain-minor-mode))
+          (org-paste-subtree nil nil nil 'remove))))))
+
+;;;;;; Node org-capture
+
+
+
+;;;;;; Node Versioning
+(defun org-exobrain--sync-node (node)
+  "Update entry based on local edits."
+  ;; is node in KB? no, add, else
+  ;; is node different? no, ignore, else sync/update
+  nil
   )
 
 
