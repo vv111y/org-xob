@@ -3,7 +3,7 @@
 
 (if (not sel in all-nodes)
     (if (y-or-n-p-with-timeout "create new node? " 6 nil)
-        (org-exobrain-add-node sel)))
+        (org-xob-add-node sel)))
 ;;;; error trying to start emacs as a separate process
 ;; emacs: Terminal type "dumb" is not powerful enough to run Emacs.
 ;; It lacks the ability to position the cursor.
@@ -20,9 +20,9 @@
 ;;;; hashtable load NO
 
 ;; NO, easier way
-(defun org-exobrain--table-load ()
+(defun org-xob--table-load ()
   "Load the node lookup hash table."
-  (setq org-exobrain--title-id nil)
+  (setq org-xob--title-id nil)
   (with-temp-buffer
     (condition-case nil
         (progn

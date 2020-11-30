@@ -1,3 +1,3 @@
-(ert-deftest org-exobrain-test-versioing ()
+(ert-deftest org-xob-test-versioing ()
   (should (eq test-text)
-          (org-exobrain-)))
+          (org-xob-)))
