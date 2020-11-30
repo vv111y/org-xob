@@ -127,6 +127,9 @@
 ;;;;; state
 
 ;; TODO clean
+(defvar org-exobrain-current-context
+  "The current, active buffer for adding context material.")
+
 (cl-defstruct xob-state kb-count kb-current kb-files t-id-table-fn id-n-table-fn)
 (setq xob (make-xob-state :kb-count 0 :t-id-table-fn "title-id-table" :id-n-table-fn "id-node-table"))
 
@@ -345,23 +348,18 @@
   "Activate the node. If it is already live, display it or go to it's window."
   (let* ((m (org-id-find ID 'marker))
          (anode (org-exobrain--id-node ID))
-         (buf-name (concat (node-title anode) "-" (format-time-string "%F" ) ".org"))
-         (buf-win (get-buffer-window buf-name)))
-    (if buf-win 
-        (select-window buf-win)
-      (if (get-buffer buf-name)
-          (switch-to-buffer buf-name)
-        (progn 
-          (org-exobrain-push--heading-link ID org-exobrain-today)
-          (save-window-excursion
-            (org-id-goto ID)
-            (org-copy-subtree))
-          (switch-to-buffer buf-name) 
-          (unless org-mode 
-            (org-mode))
-          (unless org-exobrain-minor-mode 
-            (org-exobrain-minor-mode))
-          (org-paste-subtree nil nil nil 'remove))))))
+         )
+    (switch-to-buffer org-exobrain-current-context) 
+    (progn 
+      (org-exobrain-push--heading-link ID org-exobrain-today)
+      (save-window-excursion
+        (org-id-goto ID)
+        (org-copy-subtree))
+      (unless org-mode 
+        (org-mode))
+      (unless org-exobrain-minor-mode 
+        (org-exobrain-minor-mode))
+      (org-paste-subtree nil nil nil 'remove))))
 
 ;;;;;; Node org-capture
 
