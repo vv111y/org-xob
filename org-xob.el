@@ -359,7 +359,8 @@
         (org-mode))
       (unless org-xob-minor-mode 
         (org-xob-minor-mode))
-      (org-paste-subtree nil nil nil 'remove))))
+      (org-paste-subtree nil nil nil 'remove)
+      (org-entry-get (point) "ID" nil nil))))
 
 ;;;;;; Node org-capture
 

@@ -924,7 +924,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
               ;; (setq (symbol-value k) 4)
               ))
 
-;;; org heading stuff
+;;; org-heading-components stuff
 
 (setq vv-p nil)
 (length vv-p)
@@ -932,7 +932,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (org-map-entries (lambda () (push (cons (point) (nth 4 (org-heading-components))) vv-p)))
 (org-map-entries (lambda () (push (point) vv-p)))
 
-;;;; ap's searches
+;;; ap's searches
 (-flatten
 (-non-nil
  (mapcar (lambda (file)
