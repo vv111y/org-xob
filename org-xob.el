@@ -172,10 +172,14 @@
   (progn 
     (when (not org-xob-on-p)
       (org-xob-start))
-    (setq-local org-xob-syncedp nil)
-    (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-xob-syncedp nil 'APPEND 'LOCAL)))
-    ;; TODO check it works
-    (setq-local org-id-extra-files 'org-xob--KB-files)))
+    (if org-xob-minor-mode
+        (progn 
+          (setq-local org-xob-syncedp nil)
+          (add-hook 'after-change-functions #'org-xob--sync-edits)
+          ;; (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-xob-syncedp nil 'APPEND 'LOCAL)))
+          ;; TODO check it works
+          (setq-local org-id-extra-files 'org-xob--KB-files))
+      (remove-hook 'after-change-functions #'org-xob--sync-edits))))
 
 ;;;;; Commands
 
@@ -224,7 +228,7 @@
     (setq org-xob-today (org-xob--capture "today")))
   ;; Get node by title, or create new one 
   (helm :buffer "*xob get node*"
-        :sources (helm-build-sync-source "vv-sss"
+        :sources (helm-build-sync-source "xob-kb"
                    :candidates (lambda ()
                                  (let* ((cans (hash-table-keys org-xob--title-id)))
                                    (cons helm-input candidates)))
@@ -277,21 +281,6 @@
   (when (not org-xob-on-p)
     (org-xob-start))
   )
-
-;;;###autoload
-(defun org-xob-sync ()
-  "Update KB from all active nodes."
-  (interactive)
-  (when (not org-xob-on-p)
-    (org-xob-start))
-  (dolist (buf (remove-if-not org-xob-syncedp
-                              (org-xob--active-buffers)))
-    (if
-        (mapc #'org-xob--sync-node (org-xob--nodes-in-buffer buf))
-        (set (make-local-variable 'org-xob-syncedp) t)
-      (progn
-        (set (make-local-variable 'org-xob-syncedp) nil)
-        (message (format "sync failed for buffer %s" buf))))))
 
 
 ;;;;; Buffer functions 
@@ -354,13 +343,23 @@ appropriate properties as a derivative node."
   (org-paste-subtree nil nil nil 'REMOVE)
   (org-entry-put (point) "PARENT" 
                  (org-entry-get (point) "ID" nil nil))
-  (org-xob--node-add-timed-property "ACTIVATED")
+  (org-xob--node-add-timed-property "MODIFIED")
   (org-toggle-tag "A" 'ON)
   (org-id-get-create 'FORCE))
 
 (defun org-xob--node-add-timed-property (property)
   (org-entry-put (point) property
-                 (car (time-convert (current-time) '10000))))
+                 (number-to-string
+                  (car (time-convert (current-time) '10000)))))
+
+(defun org-xob--sync-edits (beg end len)
+  (goto-char beg)
+  ;; (if org-xob--kb-node-p)
+  (if (member "kb" (org-get-tags))
+      (org-xob--sync-node)))
+
+(defun org-xob--sync-node ()
+  )
 
 ;;;;;; Node org-capture
 
