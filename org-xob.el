@@ -345,22 +345,22 @@
 (add-hook 'org-follow-link-hook #'org-xob--link-hijack)
 
 (defun org-xob--activate-node (ID)
-  "Activate the node. If it is already live, display it or go to it's window."
-  (let* ((m (org-id-find ID 'marker))
-         (anode (org-xob--id-node ID))
-         )
-    (switch-to-buffer org-xob-current-context) 
-    (progn 
-      (org-xob-push--heading-link ID org-xob-today)
-      (save-window-excursion
-        (org-id-goto ID)
-        (org-copy-subtree))
-      (unless org-mode 
-        (org-mode))
-      (unless org-xob-minor-mode 
-        (org-xob-minor-mode))
-      (org-paste-subtree nil nil nil 'remove)
-      (org-entry-get (point) "ID" nil nil))))
+  "Copies KB node with ID to current location and sets
+appropriate properties as a derivative node."
+  (interactive "s//id: ")
+  (save-window-excursion
+    (org-id-goto ID)
+    (org-copy-subtree))
+  (org-paste-subtree nil nil nil 'REMOVE)
+  (org-entry-put (point) "PARENT" 
+                 (org-entry-get (point) "ID" nil nil))
+  (org-xob--node-add-timed-property "ACTIVATED")
+  (org-toggle-tag "A" 'ON)
+  (org-id-get-create 'FORCE))
+
+(defun org-xob--node-add-timed-property (property)
+  (org-entry-put (point) property
+                 (car (time-convert (current-time) '10000))))
 
 ;;;;;; Node org-capture
 

@@ -1030,3 +1030,8 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (org-clock-drawer-name)
 
 ;;; views stage 1
+;;; seconds timestamp
+(time-convert (current-time) 'integer)
+(car (time-convert (current-time) '10000))
+
+;; (concat "[" (format-time-string "%F %a %R") "]")
