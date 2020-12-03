@@ -932,6 +932,9 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (org-map-entries (lambda () (push (cons (point) (nth 4 (org-heading-components))) vv-p)))
 (org-map-entries (lambda () (push (point) vv-p)))
 
+(org-entry-put (point) "NID" 
+               (org-entry-get (point) "ID" nil nil))
+
 ;;; ap's searches
 (-flatten
 (-non-nil
@@ -1029,9 +1032,66 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (org-clock-goto)
 (org-clock-drawer-name)
 
-;;; views stage 1
 ;;; seconds timestamp
 (time-convert (current-time) 'integer)
 (car (time-convert (current-time) '10000))
-
 ;; (concat "[" (format-time-string "%F %a %R") "]")
+
+;;; V2 nodes
+;;; live sync V2
+
+(add-hook 'after-change-functions #'vv-test-edits nil t)
+(remove-hook 'after-change-functions #'vv-test-edits)
+
+(defun vv-test-edits (beg end len)
+  (interactive)
+  (print (buffer-substring-no-properties beg end)))
+
+;; hello
+;; hello
+;;; manipulate subtrees
+
+;; use these
+(org-mark-subtree)
+(delete-region)
+(org-copy-subtree)
+(org-paste-subtree)		
+
+;; also
+;; (substring) ;; meant for string arguments
+(buffer-substring-no-properties)
+
+;; tryout substring. bad on weblog
+(buffer-substring (point-min) (point-max))
+(buffer-substring-no-properties (point-min) (point-max))
+
+;; can also use this
+(org-copy-subtree nil 'CUT)
+(org-cut-subtree)
+
+;; a variable used in addition to kill ring
+(org-subtree-clip) 
+
+;; also useful, marks rel to beg
+(org-save-markers-in-region beg end)
+(org-reinstall-markers-in-region)
+
+;;; load/save ast?
+(defun vv-save-ast ()
+  (interactive)
+  (let ((ast (org-element-parse-buffer)))
+    (with-temp-file "~/Documents/1TEXT/webb"
+      ;; (prin1 ast (current-buffer)))))
+      (prin1 (symbol-value ast) (current-buffer)))))
+
+(defun vv-save-ast ()
+  (interactive)
+  (let ((ast (org-element-parse-buffer)))
+    (with-temp-file "~/Documents/1TEXT/webb"
+      ;; (prin1 ast (current-buffer)))))
+      (prin1 (symbol-value ast) (current-buffer)))))
+
+;; (setq org-ast (with-temp-buffer
+;;                 (insert-file-contents "~/Playground/elisp/orgfile.org")
+;;                 (org-mode)
+;;                 (org-element-parse-buffer))

@@ -331,7 +331,7 @@
     (if (org-xob--id-node ID)
         (org-xob--activate-node ID))))
 
-(add-hook 'org-follow-link-hook #'org-xob--link-hijack)
+;; (add-hook 'org-follow-link-hook #'org-xob--link-hijack)
 
 (defun org-xob--activate-node (ID)
   "Copies KB node with ID to current location and sets
