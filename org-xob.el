@@ -322,7 +322,7 @@
 
 ;;;;; Contexts
 
-(defun org-xob-show-backlinks ()
+(defun org-xob-show-backlinks (ID)
   (interactive)
   (with-current-buffer org-xob-context-buffer
     (goto-char (point-min))
@@ -330,7 +330,25 @@
     (insert org-xob-short-title)
     (setq org-xob-backlinks-tree (org-id-get-create))
     (org-toggle-tag "backlinks" 'ON)
+    (setq org-xob-node-backlinks (cons (org-xob--get-backlinks ID)
+                                       (org-xob-backlinks-tree)))
+    (org-xob-update-context org-xob-node-backlinks)
     ))
+
+;; TODO
+(defun org-xob-update-context (source)
+  (interactive)
+  (mapcar (lambda (ID)
+            ) (car source)))
+
+(defun org-xob--get-backlinks (ID)
+  (org-element-map (org-element-parse-buffer) 'link
+    (lambda (link)
+      (if (equal (org-element-property
+                  :drawer-name (cadr (org-element-lineage link)))
+                 "BACKLINKS")
+          (org-element-property :path link)))))
+
 
 (defun org-xob-hide-backlinks ()
   (interactive))

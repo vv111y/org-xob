@@ -1110,8 +1110,35 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (org-insert-heading-respect-content)
 (org-next-visible-heading)
 
-*** 
+;; this works
+(defun vv-goto-bl ()
+  (interactive) 
+  (org-element-map (org-element-parse-buffer) 'link
+    (lambda (link)
+      (if (equal (org-element-property
+                  :drawer-name (cadr (org-element-lineage link)))
+                 "BACKLINKS")
+          (org-element-property :path link))))
+  )
 
-*** 
+(setq vvb (vv-goto-bl))
 
-*** 
+;; (print (org-element-property :drawer-name (cadr  (org-element-lineage link))))
+;; (equal (org-element-property :drawer-name (car (org-element-lineage link)))) "BACKLINKS")
+;; (equal (org-element-property :drawer-name adrawer) "BACKLINKS")
+
+;; (setq here (org-element-property :contents-begin adrawer)
+
+(org-element-context) 
+(org-element-at-point)
+
+(equal (org-element-property :drawer-name (org-element-at-point)) "BACKLINKS")
+(equal (org-element-property :drawer-name (car (org-element-lineage (org-element-at-point)))) "BACKLINKS")
+
+(org-element-property :drawer-name (car (org-element-lineage (org-element-at-point))))
+
+(org-element-lineage (org-element-at-point))
+
+(org-element-property :parent 
+(org-element-property :parent 
+ (org-element-context))) 
