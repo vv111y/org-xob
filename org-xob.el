@@ -311,14 +311,6 @@
            (display-buffer-in-atom-window org-xob-context-buffer
             `((window . ,(selected-window)) (side . right))))))))
 
-;; (defun org-xob--active-buffers ()
-;;   "Returns list of all active exobrain buffers"
-;;   (remove-if-not (lambda (buf) (with-current-buffer buf org-xob)) (buffer-list)))
-
-;; (defun org-xob--nodes-in-buffer (buff)
-;;   ;; traverse headings, check if node, append ID to list
-;;   nil 
-;;   )
 
 ;;;;; Contexts
 

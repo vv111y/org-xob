@@ -1142,3 +1142,13 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (org-element-property :parent 
 (org-element-property :parent 
  (org-element-context))) 
+
+;;; old design workspace
+;; (defun org-xob--active-buffers ()
+;;   "Returns list of all active exobrain buffers"
+;;   (remove-if-not (lambda (buf) (with-current-buffer buf org-xob)) (buffer-list)))
+
+;; (defun org-xob--nodes-in-buffer (buff)
+;;   ;; traverse headings, check if node, append ID to list
+;;   nil 
+;;   )
