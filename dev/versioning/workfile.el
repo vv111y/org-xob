@@ -995,15 +995,15 @@ org-capture-after-finalize-hook ;; done. for closing stuff
     `((window . ,(window-parent window)) (window-height . 5))))
 
 ;;;; sideline
-(defun org-xob-open-sideline ()
-  "Open context content in a side window."
-  (interactive)
-  ;; (org-xob-new-buffer)
-  (let ((window (split-window-right)))
-    ;; (window-make-atom (window-parent window))
-    (display-buffer-in-atom-window
-     (get-buffer-create "*node context*")
-     `((window . ,(window-parent window)) (window-height . 5)))))
+;; (defun org-xob-open-sideline ()
+;;   "Open context content in a side window."
+;;   (interactive)
+;;   ;; (org-xob-new-buffer)
+;;   (let ((window (split-window-right)))
+;;     ;; (window-make-atom (window-parent window))
+;;     (display-buffer-in-atom-window
+;;      (get-buffer-create "*node context*")
+;;      `((window . ,(window-parent window)) (window-height . 5)))))
 
 (defun org-xob-open-sideline ()
   "Open context content in a side window."
@@ -1017,6 +1017,8 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (window-atom-root)
 (window-tree)
 
+(org-xob--open-display "beee")
+(org-xob--open-display "beeebaaaaabyyyyyyy")
 ;;;
 (org-log-beginning)
 (org-add-note)
@@ -1037,7 +1039,6 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (car (time-convert (current-time) '10000))
 ;; (concat "[" (format-time-string "%F %a %R") "]")
 
-;;; V2 nodes
 ;;; live sync V2
 
 (add-hook 'after-change-functions #'vv-test-edits nil t)
@@ -1050,6 +1051,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;; hello
 ;; hello
 ;;; manipulate subtrees
+
 
 ;; use these
 (org-mark-subtree)
@@ -1095,3 +1097,21 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;;                 (insert-file-contents "~/Playground/elisp/orgfile.org")
 ;;                 (org-mode)
 ;;                 (org-element-parse-buffer))
+
+
+;;; tags
+(defvar orb-xob--bl-tag "backlinks")
+(defvar orb-xob--fl-tag "forlinks")
+(defvar orb-xob--A-tag "A")
+(defvar orb-xob--node-tag "node")
+
+;;; backlinks
+(org-insert-heading-respect-content t)
+(org-insert-heading-respect-content)
+(org-next-visible-heading)
+
+*** 
+
+*** 
+
+*** 

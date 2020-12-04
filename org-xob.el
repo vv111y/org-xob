@@ -175,11 +175,12 @@
     (if org-xob-minor-mode
         (progn 
           (setq-local org-xob-syncedp nil)
-          (add-hook 'after-change-functions #'org-xob--sync-edits)
+          ;; (add-hook 'after-change-functions #'org-xob--sync-edits)
           ;; (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-xob-syncedp nil 'APPEND 'LOCAL)))
           ;; TODO check it works
           (setq-local org-id-extra-files 'org-xob--KB-files))
-      (remove-hook 'after-change-functions #'org-xob--sync-edits))))
+      ;; (remove-hook 'after-change-functions #'org-xob--sync-edits)
+      )))
 
 ;;;;; Commands
 
@@ -236,6 +237,7 @@
                    :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
                                              (unless ID
                                                (setq ID (org-xob--capture title)))
+                                             (org-xob--open-display 'title)
                                              (org-xob--activate-node ID))))))
 
 ;;;###autoload
@@ -282,20 +284,62 @@
     (org-xob-start))
   )
 
+;;;###autoload
+(defun org-xob-show-backlinks ()
+  (interactive)
+  )
 
 ;;;;; Buffer functions 
 ;; Parsing <- heading?
 
-(defun org-xob--active-buffers ()
-  "Returns list of all active exobrain buffers"
-  (remove-if-not (lambda (buf) (with-current-buffer buf org-xob)) (buffer-list)))
+(defun org-xob--open-display (title)
+  (setq org-xob-short-title (title (truncate-string-to-width title 12)))
+  (setq org-xob-node-buf (get-buffer-create org-xob-short-title))
+  (set-buffer org-xob-node-buf)
+  (org-mode)
+  (org-xob-minor-mode 1)
+  (set-window-buffer nil org-xob-node-buf)
+  (org-xob-open-sideline org-xob-short-title))
 
-(defun org-xob--nodes-in-buffer (buff)
-  ;; traverse headings, check if node, append ID to list
-  nil 
-  )
+(defun org-xob-open-sideline (title)
+  "Open context side window."
+  (interactive)
+  (setq org-xob-context-buffer (get-buffer-create (concat  "*context-" title)))
+  (with-current-buffer org-xob-context-buffer
+    (org-mode)
+    (let ((window 
+           (display-buffer-in-atom-window org-xob-context-buffer
+            `((window . ,(selected-window)) (side . right))))))))
+
+;; (defun org-xob--active-buffers ()
+;;   "Returns list of all active exobrain buffers"
+;;   (remove-if-not (lambda (buf) (with-current-buffer buf org-xob)) (buffer-list)))
+
+;; (defun org-xob--nodes-in-buffer (buff)
+;;   ;; traverse headings, check if node, append ID to list
+;;   nil 
+;;   )
 
 ;;;;; Contexts
+
+(defun org-xob-show-backlinks ()
+  (interactive)
+  (with-current-buffer org-xob-context-buffer
+    (goto-char (point-min))
+    (org-insert-heading nil nil 'TOP)
+    (insert org-xob-short-title)
+    (setq org-xob-backlinks-tree (org-id-get-create))
+    (org-toggle-tag "backlinks" 'ON)
+    ))
+
+(defun org-xob-hide-backlinks ()
+  (interactive))
+
+(defun org-xob-show-forlinks ()
+  (interactive))
+
+(defun org-xob-hide-forlinks ()
+  (interactive))
 
 (defun org-xob-context--inline ()
   "Show the contextual nodes as a subheading."
