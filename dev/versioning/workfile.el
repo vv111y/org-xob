@@ -221,6 +221,7 @@
 
 ;; [[https://emacs.stackexchange.com/questions/48430/get-section-text-with-elisp][org mode - Get Section text with elisp - Emacs Stack Exchange]]  [2020-07-19 Sun 07:24]
 
+;;; use this for node with summary 
 (require 'subr-x) ;; for when-let
 
 (defun vv-get-headline-with-text ()
@@ -255,10 +256,12 @@
         (list headline-text (buffer-substring text-begin text-end))
         ))))
 
-(ediff-save-buffer '4)
+;;; word and node size rough
 ;; average english word length = 4.7
 ;; 524,288 / 4.7 = 111,550 words / KB file
 ;; if average node = 250 words -> 111,550/250 = 446 nodes per file
+;;; ediff saving
+(ediff-save-buffer '4)
 ;;; shell calls
 ;;;; no
 (shell-command-to-string
@@ -1152,3 +1155,5 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;;   ;; traverse headings, check if node, append ID to list
 ;;   nil 
 ;;   )
+
+;;; nmnm

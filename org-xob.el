@@ -238,7 +238,10 @@
                                              (unless ID
                                                (setq ID (org-xob--capture title)))
                                              (org-xob--open-display 'title)
-                                             (org-xob--activate-node ID))))))
+                                             (if (eq arg 4) 
+                                                 (org-xob--activate-node ID)
+                                               (org-xob-edit-node ID)
+                                               ))))))
 
 ;;;###autoload
 (defun org-xob-link ()
@@ -334,6 +337,7 @@
             ) (car source)))
 
 (defun org-xob--get-backlinks (ID)
+  "Return backlinks as a list. Assumes org-superlinks convention where the backlinks are in a drawer named BACKLINKS."
   (org-element-map (org-element-parse-buffer) 'link
     (lambda (link)
       (if (equal (org-element-property
@@ -371,8 +375,52 @@
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
 ;;;; Backend
-;;;;;; Node Objects
+;;;;; ?
+;;;;; Node Objects
 (cl-defstruct node title type backlinks)
+
+;; TODO do I change hash table?
+;; TODO do I call this differently? 
+(defun org-xob--node-link (ID)
+  "Inserts a properly formatted org link"
+  (org-insert-link nil (concat "ID:" ID) (org-xob--ID-title ID)))
+
+(defun org-xob--node-header (ID)
+  "Inserts a subheading with title of the node."
+  (org-insert-subheading (4))
+  (org-edit-headline (org-xob--ID-title ID)))
+
+(defun org-xob--node-link-header (ID)
+  "Inserts a subheading with an org link to the node."
+  (org-insert-subheading (4))
+  (org-edit-headline (org-xob--node-link ID)))
+
+(defun org-xob--node-summary (ID))
+
+;; TODO maybe replace activate, now that indirect buffer being used
+(defun org-xob--node-full (ID)
+  "Inserts the full node as a subheading."
+  (save-window-excursion
+    (org-id-goto ID)
+    (org-copy-subtree))
+  (org-paste-subtree nil nil nil 'REMOVE)
+  (org-entry-put (point) "PARENT" 
+                 (org-entry-get (point) "ID" nil nil))
+  (org-xob--node-add-timed-property "MODIFIED")
+  (org-toggle-tag "A" 'ON)
+  (org-id-get-create 'FORCE))
+
+(defun org-xob--node-add-time-property (property)
+  (org-entry-put (point) property
+                 (number-to-string
+                  (car (time-convert (current-time) '10000)))))
+
+(defun org-xob-edit-node (ID)
+  ;; goto node
+  ;; indirect buffer
+  ;; check modes are on
+  ;; display in window
+  ())
 
 (defun org-xob-push--heading-link (ID target)
  (save-window-excursion
@@ -387,24 +435,12 @@
 
 ;; (add-hook 'org-follow-link-hook #'org-xob--link-hijack)
 
+;; TODO replace?
 (defun org-xob--activate-node (ID)
   "Copies KB node with ID to current location and sets
 appropriate properties as a derivative node."
-  (interactive "s//id: ")
-  (save-window-excursion
-    (org-id-goto ID)
-    (org-copy-subtree))
-  (org-paste-subtree nil nil nil 'REMOVE)
-  (org-entry-put (point) "PARENT" 
-                 (org-entry-get (point) "ID" nil nil))
-  (org-xob--node-add-timed-property "MODIFIED")
-  (org-toggle-tag "A" 'ON)
-  (org-id-get-create 'FORCE))
-
-(defun org-xob--node-add-timed-property (property)
-  (org-entry-put (point) property
-                 (number-to-string
-                  (car (time-convert (current-time) '10000)))))
+  ;; TODO make main buffer, and whatever else for sync-editing style
+  (org-xob--node-full))
 
 (defun org-xob--sync-edits (beg end len)
   (goto-char beg)
@@ -419,7 +455,11 @@ appropriate properties as a derivative node."
 
 
 ;;;;;; Node links
+
+
 ;;;;;; Node Versioning
+
+
 ;; (defun org-xob--sync-node (node)
 ;;   "Update entry based on local edits."
 ;;   ;; is node in KB? no, add, else
