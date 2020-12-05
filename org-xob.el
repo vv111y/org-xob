@@ -70,7 +70,7 @@
 (require 'org)
 (require 'org-id)
 (require 'org-ql)
-(require 'org-ml)
+;; (require 'org-ml)
 (require 'cl-lib)
 
 ;;;; Customization
@@ -202,6 +202,7 @@
                                  :test 'equal
                                  :size org-xob--table-size)))))))
 
+;;;###autoload
 (defun org-xob-stop ()
   "Stop xob system: save all state and close active buffers."
   (interactive)
@@ -237,11 +238,10 @@
                    :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
                                              (unless ID
                                                (setq ID (org-xob--capture title)))
-                                             (org-xob--open-display 'title)
+                                             (org-xob--edit-node 'title)
                                              (if (eq arg 4) 
                                                  (org-xob--activate-node ID)
-                                               (org-xob-edit-node ID)
-                                               ))))))
+                                               (org-xob-edit-node ID)))))))
 
 ;;;###autoload
 (defun org-xob-link ()
@@ -302,47 +302,45 @@
   )
 
 ;;;###autoload
-(defun org-xob-show-backlinks ()
+(defun org-xob-show-backlinks (ID)
+  "Load the backlinks tree for node ID into the context buffer, unless it is already there."
   (interactive)
-  )
+  (with-current-buffer org-xob--context-buffer
+    (unless (cdr (org-xob-node-backlinks)) 
+      (goto-char (point-max))
+      (org-insert-heading nil nil 'TOP)
+      (insert org-xob-short-title)
+      (setq org-xob-backlinks-tree (org-id-get-create))
+      (org-toggle-tag "backlinks" 'ON)
+      (setq org-xob-node-backlinks (cons (org-xob--get-backlinks ID)
+                                         (org-xob-backlinks-tree)))
+      (org-xob-update-context org-xob-node-backlinks))))
+
 
 ;;;;; Buffer functions 
 ;; Parsing <- heading?
 
-(defun org-xob--open-display (title)
+(defun org-xob--edit-node (title)
+  "Create an indirect buffer of the node with name title."
   (setq org-xob-short-title (title (truncate-string-to-width title 12)))
-  (setq org-xob-node-buf (get-buffer-create org-xob-short-title))
-  (set-buffer org-xob-node-buf)
-  (org-mode)
+  ;; (setq org-xob-node-buffer (get-buffer-create org-xob-short-title))
+  ;; (set-buffer org-xob-node-buffer)
+  ;; (org-mode)
+  (setq org-xob-node-buffer (org-tree-to-indirect-buffer
+                             (org-id-goto (gethash org-xob--title-id title))))
   (org-xob-minor-mode 1)
-  (set-window-buffer nil org-xob-node-buf)
-  (org-xob-open-sideline org-xob-short-title))
+  (set-window-buffer nil org-xob-node-buffer)
+  (org-xob--make-context-buffer org-xob-short-title))
 
-(defun org-xob-open-sideline (title)
-  "Open context side window."
+(defun org-xob--make-context-buffer (title)
+  "Create context buffer, but leave it empty by default."
   (interactive)
-  (setq org-xob-context-buffer (get-buffer-create (concat  "*context-" title)))
-  (with-current-buffer org-xob-context-buffer
-    (org-mode)
-    (let ((window 
-           (display-buffer-in-atom-window org-xob-context-buffer
-            `((window . ,(selected-window)) (side . right))))))))
+  (setq org-xob--context-buffer (get-buffer-create (concat  "*context-" title)))
+  (with-current-buffer org-xob--context-buffer
+    (org-mode)))
 
 
 ;;;;; Contexts
-
-(defun org-xob-show-backlinks (ID)
-  (interactive)
-  (with-current-buffer org-xob-context-buffer
-    (goto-char (point-min))
-    (org-insert-heading nil nil 'TOP)
-    (insert org-xob-short-title)
-    (setq org-xob-backlinks-tree (org-id-get-create))
-    (org-toggle-tag "backlinks" 'ON)
-    (setq org-xob-node-backlinks (cons (org-xob--get-backlinks ID)
-                                       (org-xob-backlinks-tree)))
-    (org-xob-update-context org-xob-node-backlinks)
-    ))
 
 ;; TODO
 (defun org-xob-update-context (source)
@@ -371,10 +369,6 @@
 
 (defun org-xob-context--inline ()
   "Show the contextual nodes as a subheading."
-  )
-
-(defun org-xob-context--sideline ()
-  "Show the contextual nodes in an adjacent buffer & window."
   )
 
 (defun org-xob-context--outline ()
