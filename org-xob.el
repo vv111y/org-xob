@@ -256,6 +256,20 @@
   )
 
 ;;;###autoload
+(defun org-xob-toggle-sideline ()
+  "Toggles display of the contextual side window."
+  (interactive)
+  (if org-xob--sideline-window 
+      (progn 
+        (delete-window org-xob--sideline-window)
+        (setq org-xob--sideline-window nil))
+    (progn 
+      (setq org-xob--sideline-window 
+            (split-window-right))
+      (select-window org-xob--sideline-window)
+      (display-buffer-same-window org-xob--context-buffer nil))))
+
+;;;###autoload
 (defun org-xob-clone-node ()
   (interactive)
   (when (not org-xob-on-p)

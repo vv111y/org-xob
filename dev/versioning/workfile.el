@@ -991,13 +991,17 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 
 ;;; dual buffers/windows
 ;;;; atomic window ex.
- (let ((window (split-window-right)))
-   (window-make-atom (window-parent window))
-   (display-buffer-in-atom-window
-    (get-buffer-create "*Messages*")
-    `((window . ,(window-parent window)) (window-height . 5))))
+(let ((window (split-window-right)))
+  (window-make-atom (window-parent window))
+  (display-buffer-in-atom-window
+   (get-buffer-create "*Messages*")
+   `((window . ,(window-parent window)) (window-height . 5))))
 
-;;;; sideline
+(let ((window 
+       (display-buffer-in-atom-window
+        (get-buffer-create "*node context*")
+        `((window . ,(selected-window)) (side . right))))))
+
 ;; (defun org-xob-open-sideline ()
 ;;   "Open context content in a side window."
 ;;   (interactive)
@@ -1008,21 +1012,75 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;;      (get-buffer-create "*node context*")
 ;;      `((window . ,(window-parent window)) (window-height . 5)))))
 
-(defun org-xob-open-sideline ()
+(defun vv-ssw ()
   "Open context content in a side window."
   (interactive)
   ;; (org-xob-new-buffer)
-  (let ((window 
+  (setq vv-sw 
          (display-buffer-in-atom-window
-          (get-buffer-create "*node context*")
-          `((window . ,(selected-window)) (side . right)))))))
+          (get-buffer vv-sb)
+          `((window . ,(selected-window)) (side . right)))))
+
+(defun vv-tgg ()
+  (interactive)
+  ;; (split-window (selected-window) nil 'right nil)
+  ;; (split-window-right)
+  (split-window-right-and-focus)
+  ;; (delete-window)
+  ;; (delete-window vv-sw)
+  ;; (delete-window (window-parent vv-sw))
+  (delete-other-windows)
+  )
+
+(delete-window)
+(delete-other-windows)
 
 (window-atom-root)
 (window-tree)
 
+(display-buffer 
+ (window-buffer))
+
+(setq vv-sb (get-buffer-create "*node context*"))
+
+(defun vv-sw ()
+  (interactive)
+  (setq vv-sw 
+        (display-buffer-in-side-window vv-sb
+                                       `((side . right) (slot . 0)))))
+
+(defun vv-tgg ()
+  (interactive)
+  (window-toggle-side-windows))
+
+;; (defun vv-sw ()
+;;   (interactive)
+;;   (setq vv-sw 
+;;         (split-window (selected-window) nil 'right nil))
+;;   (with-selected-window vv-sw (display-buffer vv-sb)))
+
+(defun org-xob-toggle-sideline ()
+  "Toggles display of the contextual side window."
+  (interactive)
+  (if org-xob--sideline-window 
+      (progn 
+        (delete-window org-xob--sideline-window)
+        (setq org-xob--sideline-window nil))
+    (progn 
+      (setq org-xob--sideline-window 
+            (split-window-right))
+      (select-window org-xob--sideline-window)
+      (display-buffer-same-window org-xob--context-buffer nil)))))
+
+
+(defun vv-tgg ()
+  (interactive)
+  )
+
 (org-xob--open-display "beee")
 (org-xob--open-display "beeebaaaaabyyyyyyy")
-;;;
+
+;;; logging & org stuff 
 (org-log-beginning)
 (org-add-note)
 (org-add-log-note)
