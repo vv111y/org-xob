@@ -212,49 +212,17 @@
    (org-element-interpret-data
     (org-element-map (org-element-parse-buffer 'greater-elements) 'headline
       (lambda (el)
-        (when (org-element-property :raw-value "Accessors" el)
-          (org-element-contents el)
-          (message el))))
+        ;; (when (org-element-property :raw-value "Accessors" el)
+        ;;   (org-element-contents el)
+        ;;   (message el))))
+        (org-element-contents el)
+        ))
     )
    ))
 
+(org-element-contents (org-element-at-point))
 
 ;; [[https://emacs.stackexchange.com/questions/48430/get-section-text-with-elisp][org mode - Get Section text with elisp - Emacs Stack Exchange]]  [2020-07-19 Sun 07:24]
-
-;;; use this for node with summary 
-(require 'subr-x) ;; for when-let
-
-(defun vv-get-headline-with-text ()
-  ;; "Return a list with the headline text of the top-level headline for point as first element and the section text as second element."
-    (interactive)
-    (kill-new
-     (org-element-interpret-data
-      (when-let ((data (org-element-parse-buffer 'greater-elements)) ;; sparse parsing...
-                 (headline (org-element-map
-                               data
-                               'headline
-                             (lambda (el)
-                               (let ((beg (org-element-property :begin el))
-                                     (end (org-element-property :end el)))
-                                 (and (>= (point) beg)
-                                      (<= (point) end)
-                                      el)))
-                             nil
-                             'first-match
-                             'no-recursion))
-                 (headline-text (org-element-property :raw-value headline))
-                 (section (org-element-map
-                              headline
-                              'section
-                            #'identity
-                            nil
-                            'first-match
-                            'no-recursion))
-                 (text-begin (org-element-property :contents-begin section))
-                 (text-end (org-element-property :contents-end section)))
-        ;; (list headline-text (buffer-substring text-begin text-end))
-        (list headline-text (buffer-substring text-begin text-end))
-        ))))
 
 ;;; word and node size rough
 ;; average english word length = 4.7
@@ -1070,7 +1038,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
       (setq org-xob--sideline-window 
             (split-window-right))
       (select-window org-xob--sideline-window)
-      (display-buffer-same-window org-xob--context-buffer nil)))))
+      (display-buffer-same-window org-xob--context-buffer nil))))
 
 
 (defun vv-tgg ()
@@ -1102,12 +1070,30 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 
 ;;; live sync V2
 
+;; hello there
+
 (add-hook 'after-change-functions #'vv-test-edits nil t)
 (remove-hook 'after-change-functions #'vv-test-edits)
+before-change-functions
 
 (defun vv-test-edits (beg end len)
   (interactive)
   (print (buffer-substring-no-properties beg end)))
+
+(setq clip nil)
+(defun vv-test-edits (beg end len)
+  (interactive)
+  (if (eq len 0)
+      (progn
+        (unless clip
+          (setq clip beg)))
+    (progn
+      (print (buffer-substring-no-properties clip end))
+      (setq clip nil))
+    ))
+  ;; (prin1-to-string (list beg end len (buffer-substring-no-properties beg end))))
+
+
 
 ;; hello
 ;; hello
@@ -1166,10 +1152,70 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (defvar orb-xob--A-tag "A")
 (defvar orb-xob--node-tag "node")
 
+;;; use this for node with summary 
+(require 'subr-x) ;; for when-let
+
+;; OR this. 
+(org-copy-subtree nil nil nil 'nosubtrees)
+
+;; looks excessive but works. 
+(defun vv-get-headline-with-text ()
+  "Return a list with the headline text of the top-level headline for point as first element and the section text as second element."
+    (interactive)
+    (kill-new
+     (org-element-interpret-data
+      (when-let ((data (org-element-parse-buffer 'greater-elements)) ;; sparse parsing...
+                 (headline (org-element-map
+                               data
+                               'headline
+                             (lambda (el)
+                               (let ((beg (org-element-property :begin el))
+                                     (end (org-element-property :end el)))
+                                 (and (>= (point) beg)
+                                      (<= (point) end)
+                                      el)))
+                             nil
+                             'first-match
+                             'no-recursion))
+                 (headline-text (org-element-property :raw-value headline))
+                 (section (org-element-map
+                              headline
+                              'section
+                            #'identity
+                            nil
+                            'first-match
+                            'no-recursion))
+                 (text-begin (org-element-property :contents-begin section))
+                 (text-end (org-element-property :contents-end section)))
+        (list headline-text (buffer-substring text-begin text-end))
+        ;; (print headline-text (buffer-substring text-begin text-end))
+        ))))
+
+(defun vv-h-s ()
+  (interactive)
+  (let* ((data (org-element-parse-buffer 'greater-elements))
+        (headline (org-element-map
+                      data
+                      'headline
+                    (lambda (el)
+                      (let ((beg (org-element-property :begin el))
+                            (end (org-element-property :end el)))
+                        (and (>= (point) beg)
+                             (<= (point) end)
+                             el)))
+                    nil
+                    'first-match
+                    'no-recursion))
+        (section (org-element-map
+                     headline
+                     'section
+                   #'identity
+                   nil
+                   'first-match
+                   'no-recursion)))
+    (print section)))
+
 ;;; backlinks
-(org-insert-heading-respect-content t)
-(org-insert-heading-respect-content)
-(org-next-visible-heading)
 
 ;; this works
 (defun vv-goto-bl ()
@@ -1179,10 +1225,19 @@ org-capture-after-finalize-hook ;; done. for closing stuff
       (if (equal (org-element-property
                   :drawer-name (cadr (org-element-lineage link)))
                  "BACKLINKS")
-          (org-element-property :path link))))
-  )
+          (org-element-property :path link)))))
 
 (setq vvb (vv-goto-bl))
+
+;; inverse, links not in backlinks
+(defun vv-goto-bl ()
+  (interactive) 
+  (org-element-map (org-element-parse-buffer) 'link
+    (lambda (link)
+      (if (not (equal (org-element-property
+                       :drawer-name (cadr (org-element-lineage link)))
+                      "BACKLINKS"))
+          (org-element-property :path link)))))
 
 ;; (print (org-element-property :drawer-name (cadr  (org-element-lineage link))))
 ;; (equal (org-element-property :drawer-name (car (org-element-lineage link)))) "BACKLINKS")
@@ -1204,6 +1259,36 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (org-element-property :parent 
  (org-element-context))) 
 
+;;; tree stuff
+;; respect contents pasting in to 
+(org-insert-heading-respect-content t)
+(org-insert-heading-respect-content)
+
+;; get headings
+(outline-next-heading)
+(org-next-visible-heading)
+
+
+(org-map-tree FUN)
+(org-map-tree (lambda ()
+                   (print (nth 4 (org-heading-components)))))
+
+(org-map-tree (lambda ()
+                (print (nth 4 (org-heading-components)))))
+
+(org-map-entries)
+;; get all headings in scope
+(org-map-entries (lambda ()
+                   (print (nth 4 (org-heading-components)))) nil nil nil)
+;; org-get-heading
+
+(org-forward-heading-same-level)
+
+(text-clone-create)
+modification-hooks
+
+
+
 ;;; old design workspace
 ;; (defun org-xob--active-buffers ()
 ;;   "Returns list of all active exobrain buffers"
@@ -1214,4 +1299,10 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;;   nil 
 ;;   )
 
-;;; nmnm
+
+
+
+
+;;; indirect buffer option 
+(org-tree-to-indirect-buffer &optional ARG)
+(org-tree-to-indirect-buffer)

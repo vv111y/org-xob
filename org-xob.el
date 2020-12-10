@@ -157,27 +157,53 @@
                   (define-key map key fn)))
     map))
 
+;;;;; capture variables
+
+(defvar org-xob--auto-types '(("day" . a.day)
+                                   ("session" . a.session)
+                                   ("project" . a.project)
+                                   ("log" . a.log)
+                                   ("log personal" . a.log.life)
+                                   ("log it tools" . a.log.it-tools)
+                                   ("log tools" . a.log.tools)
+                                   ("log project" . a.log.project)
+                                   ("article" . n.bib.article)
+                                   ("webpage" . n.bib.web)
+                                   ("fast" . n.n)
+                                   ("topic" . n.topic)
+                                   ))
+
+(defvar org-xob--templates
+      '(("f" "fast" entry (file org-xob--KB-file)
+         "* %(eval title)  :node:\n%?\n** backlinks :bl:"
+         :exobrain-node t
+         :ntype "node"
+         :vid "0"
+         ;; :immediate-finish t
+         :empty-lines-after 1)
+        ("ct" "today" entry (file org-xob--KB-file)
+         "* %() :node:\n\n** backlinks :bl:"
+         :exobrain-node t
+         :immediate-finish t
+         :ntype "context.day")))
+
 ;;;; Frontend
 ;;;;; Minor Mode
 ;;;###autoload
 (define-minor-mode org-xob-minor-mode
-  "Minor Mode "
-  :lighter " Xo"
-  ;; :keymap  (let ((map (make-sparse-keymap)))
-  ;;            (define-key map [remap org-store-link] 'org-roam-store-link)
-  ;;            map)
+  "Org-Exobrain Minor Mode."
+  :lighter " xob"
+  :keymap  (let ((map (make-sparse-keymap))) map)
   :group 'org-xob
   :require 'org-xob
-  ;; :global t
   (progn 
-    (when (not org-xob-on-p)
+    (unless (org-xob-on-p)
       (org-xob-start))
     (if org-xob-minor-mode
         (progn 
           (setq-local org-xob-syncedp nil)
           ;; (add-hook 'after-change-functions #'org-xob--sync-edits)
           ;; (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-xob-syncedp nil 'APPEND 'LOCAL)))
-          ;; TODO check it works
           (setq-local org-id-extra-files 'org-xob--KB-files))
       ;; (remove-hook 'after-change-functions #'org-xob--sync-edits)
       )))
@@ -200,7 +226,12 @@
                            (set k (org-xob--new-KB-file))
                          (set k (make-hash-table
                                  :test 'equal
-                                 :size org-xob--table-size)))))))
+                                 :size org-xob--table-size))))))
+  (unless (AND (org-xob-today)
+               ;; TODO 
+              (org-time= nil nil))
+    (setq org-xob-today (org-xob--capture (org-insert-time-stamp (current-time) nil 'INACTIVE)))))
+
 
 ;;;###autoload
 (defun org-xob-stop ()
@@ -211,11 +242,14 @@
   ;; maybe delete other objects
   (setq org-xob-on-p nil))
 
+;; TODO
 ;;;###autoload
 (defun org-xob-open-day ()
+  "Open todays node."
   (interactive)
-  (when (not org-xob-on-p)
+  (unless (org-xob-on-p)
       (org-xob-start))
+  ;; (org-xob-)
   ;; open buffer for a selected day node
   ;; can open yesterdays file as well? 
   ;; is exobrain started? 
@@ -226,8 +260,6 @@
   (interactive)
   (when (not org-xob-on-p)
     (org-xob-start))
-  (unless org-xob-today
-    (setq org-xob-today (org-xob--capture "today")))
   ;; Get node by title, or create new one 
   (helm :buffer "*xob get node*"
         :sources (helm-build-sync-source "xob-kb"
@@ -238,10 +270,9 @@
                    :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
                                              (unless ID
                                                (setq ID (org-xob--capture title)))
-                                             (org-xob--edit-node 'title)
                                              (if (eq arg 4) 
                                                  (org-xob--activate-node ID)
-                                               (org-xob-edit-node ID)))))))
+                                               (org-xob--edit-node ID title)))))))
 
 ;;;###autoload
 (defun org-xob-link ()
@@ -320,14 +351,14 @@
 ;;;;; Buffer functions 
 ;; Parsing <- heading?
 
-(defun org-xob--edit-node (title)
+(defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
   (setq org-xob-short-title (title (truncate-string-to-width title 12)))
   ;; (setq org-xob-node-buffer (get-buffer-create org-xob-short-title))
   ;; (set-buffer org-xob-node-buffer)
   ;; (org-mode)
   (setq org-xob-node-buffer (org-tree-to-indirect-buffer
-                             (org-id-goto (gethash org-xob--title-id title))))
+                             (org-id-goto ID)))
   (org-xob-minor-mode 1)
   (set-window-buffer nil org-xob-node-buffer)
   (org-xob--make-context-buffer org-xob-short-title))
@@ -383,7 +414,7 @@
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
 ;;;; Backend
-;;;;; ?
+
 ;;;;; Node Objects
 (cl-defstruct node title type backlinks)
 
@@ -423,13 +454,6 @@
                  (number-to-string
                   (car (time-convert (current-time) '10000)))))
 
-(defun org-xob-edit-node (ID)
-  ;; goto node
-  ;; indirect buffer
-  ;; check modes are on
-  ;; display in window
-  ())
-
 (defun org-xob-push--heading-link (ID target)
  (save-window-excursion
    (org-xob--activate-node target)
@@ -461,6 +485,34 @@ appropriate properties as a derivative node."
 
 ;;;;;; Node org-capture
 
+(defun org-xob--capture (title)
+  (let* ((org-capture-templates org-xob--templates)
+         ID)
+    ;; TODO test
+    (if (member 'title 'org-xob--auto-types)
+        (org-capture nil title)
+      (org-capture))
+    ID))
+
+(defun org-xob--new-node ()
+  (when (org-capture-get :exobrain-node)
+    (let ((ID (org-id-get-create))
+          (type (org-capture-get :ntype))
+          node)
+      ;; (push (nth 4 (org-heading-components)) title)
+      (org-entry-put (point) "VID" (org-capture-get :vid))
+      (org-entry-put (point) "CREATED" (concat "["
+                                               (format-time-string "%F %a %R")
+                                               "]"))
+      (org-entry-put (point) "TYPE" type)
+      (setq node (make-node :title title
+                            :type type 
+                            :backlinks (list)))
+      (puthash title ID org-xob--title-id)
+      (puthash ID node org-xob--id-node)
+      ID)))
+
+(add-hook 'org-capture-mode-hook #'org-xob--new-node)
 
 ;;;;;; Node links
 
