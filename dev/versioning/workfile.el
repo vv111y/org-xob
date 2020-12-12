@@ -1306,3 +1306,32 @@ modification-hooks
 ;;; indirect buffer option 
 (org-tree-to-indirect-buffer &optional ARG)
 (org-tree-to-indirect-buffer)
+;;; id
+
+(org-xob--goto-heading "3A3BD225-A186-4CC4-B900-DF10DAA31B42")
+(setq vv-id "3A3BD225-A186-4CC4-B900-DF10DAA31B42")
+(progn 
+  (re-search-forward vv-id)
+  (org-back-to-heading 'invisible-ok))
+ 
+;; MAYBE or set marker?
+;; not map, loop till found
+(defun org-xob--goto-heading (ID)
+  "Search buffers for org heading with ID and place point there."
+  (let ((mm))
+    (save-excursion
+      (save-restriction
+        (setq mm 
+              (catch 'found 
+                (dolist (buf (buffer-list))
+                  (with-current-buffer buf
+                    (if (eq major-mode 'org-mode)
+                        (progn
+                          (org-with-wide-buffer 
+                           (goto-char (point-min))
+                           (when (re-search-forward ID nil t)
+                             (progn 
+                               (org-back-to-heading 'invisible-ok)
+                               (throw 'found (point-marker)))))))))))))
+    (switch-to-buffer (marker-buffer mm))
+    (goto-char mm)))
