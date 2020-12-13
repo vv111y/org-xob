@@ -1,5 +1,6 @@
 ;;; workfile.el --- a summary
-;;; binding trials
+;;; elisp 
+;;;; binding trials
 (defun vv/afn ()
   (message "I see `c', its value is: %s" c))
 
@@ -8,6 +9,33 @@
 (let ((a "I'm lexically bound")
       (c "I'm special and therefore dynamically bound"))
   (message "I see `a', its values is: %s" a))
+
+;;;; makeprocess, server-eval-at
+(make-process
+ :name "ttt"
+ :buffer (get-buffer-create "ttt")
+ ;; :command '("bash" "-c" "emacs")
+ :command '("bash" "-c" "emacs --daemon=orgem")
+ :connection-type 'pty
+ )
+
+(async-start
+ (lambda ()
+   (require 'server)
+   (server-eval-at "~/.emacs.d/server/hi"
+                   '(progn
+                      (sleep-for 5)
+                      (* 99999 99999999))))
+ (lambda (result) (print result)))
+
+(server-eval-at "hi" '(emacs-pid))
+;;; timer
+
+(defmacro measure-time (&rest body)
+  "Measure the time it takes to evaluate BODY."
+  `(let ((time (current-time)))
+     ,@body
+     (message "parse time: %.06f" (float-time (time-since time)))))
 
 ;;; parse ast fns
 
@@ -19,12 +47,6 @@
 (defun vv-get-ast ()
   (interactive)
   (setq vv-ast (org-element-parse-buffer)))
-
-(defmacro measure-time (&rest body)
-  "Measure the time it takes to evaluate BODY."
-  `(let ((time (current-time)))
-     ,@body
-     (message "parse time: %.06f" (float-time (time-since time)))))
 
 
 (defun vv-parse-agenda-file (filename)
@@ -58,29 +80,12 @@
   (async-start
    (vv-parse-all-agenda)
    'ignore))
-;;; make server
-(make-process
- :name "ttt"
- :buffer (get-buffer-create "ttt")
- ;; :command '("bash" "-c" "emacs")
- :command '("bash" "-c" "emacs --daemon=orgem")
- :connection-type 'pty
- )
 
-(async-start
- (lambda ()
-   (require 'server)
-   (server-eval-at "~/.emacs.d/server/hi"
-                   '(progn
-                      (sleep-for 5)
-                      (* 99999 99999999))))
- (lambda (result) (print result)))
-
-(server-eval-at "hi" '(emacs-pid))
 ;;; accessors
     :PROPERTIES:
     :ID: 46025ffd-090d-4a2b-8216-720a60e8f3d5
     :END:
+
 (setq vv-contents (org-element-contents vv-ast))
 
 (length vv-contents)
@@ -90,19 +95,12 @@
   (lambda (x)
     (print (eq (org-element-property :parent x) "Setters"))))
 
-(org-element-interpret-data '(("ID" . "idee") ("ITEM" . "heading")))
-
-
-
-[Omitted long matching line]
-
+;; (org-element-interpret-data '(("ID" . "idee") ("ITEM" . "heading")))
 
 
 #("**** [.] search: internet global
 " 5 8 (org-category "org-xob" face (:height 70) wrap-prefix #("******* " 0 3 (face org-indent) 3 8 (face org-indent)) line-prefix #("***" 0 3 (face org-indent)) fontified t))
 
-
-(org)
 
 "* head
 :PROPERTIES:
@@ -174,10 +172,8 @@
 
 (org-element-property :level (org-element-at-point))
 
-;;; pulse highlight indicator
-(pulse-momentary-highlight-one-line (point))
-(pulse-lighten-highlight)
 ;;; linking
+;;;; 1st linking
 (setq org-id-link-to-org-use-id t)
 
 (progn (setq vv-b (org-id-store-link)) (message vv-b))
@@ -185,11 +181,188 @@
 (org-element-property :ID (org-element-at-point))
 (org-element-property :CPARENTS (org-element-at-point))
 
-;;; misc 
-(require 'org-ql)
-(org-ql-search 'all
-  '(property "CPARENTS"))
+;;;; backlinks
 
+;; this works
+(defun vv-goto-bl ()
+  (interactive) 
+  (org-element-map (org-element-parse-buffer) 'link
+    (lambda (link)
+      (if (equal (org-element-property
+                  :drawer-name (cadr (org-element-lineage link)))
+                 "BACKLINKS")
+          (org-element-property :path link)))))
+
+(setq vvb (vv-goto-bl))
+
+;; inverse, links not in backlinks
+(defun vv-goto-bl ()
+  (interactive) 
+  (org-element-map (org-element-parse-buffer) 'link
+    (lambda (link)
+      (if (not (equal (org-element-property
+                       :drawer-name (cadr (org-element-lineage link)))
+                      "BACKLINKS"))
+          (org-element-property :path link)))))
+
+;; (print (org-element-property :drawer-name (cadr  (org-element-lineage link))))
+;; (equal (org-element-property :drawer-name (car (org-element-lineage link)))) "BACKLINKS")
+;; (equal (org-element-property :drawer-name adrawer) "BACKLINKS")
+
+;; (setq here (org-element-property :contents-begin adrawer)
+
+(org-element-context) 
+(org-element-at-point)
+
+(equal (org-element-property :drawer-name (org-element-at-point)) "BACKLINKS")
+(equal (org-element-property :drawer-name (car (org-element-lineage (org-element-at-point)))) "BACKLINKS")
+
+(org-element-property :drawer-name (car (org-element-lineage (org-element-at-point))))
+
+(org-element-lineage (org-element-at-point))
+
+(org-element-property :parent 
+(org-element-property :parent 
+ (org-element-context))) 
+
+;;; tree stuff
+;;;; 1st 
+
+;; respect contents pasting in to 
+(org-insert-heading-respect-content t)
+(org-insert-heading-respect-content)
+
+;; get headings
+(outline-next-heading)
+(org-next-visible-heading)
+
+
+;; Call FUN for every heading underneath the current one.
+(org-map-tree FUN)
+(org-map-tree (lambda ()
+                (print (nth 4 (org-heading-components)))))
+
+(org-map-tree (lambda ()
+                (print (nth 4 (org-heading-components)))))
+
+;; Call FUNC at each headline selected by MATCH in SCOPE.
+(org-map-entries)
+;; get all headings in scope
+(org-map-entries (lambda ()
+                   (print (nth 4 (org-heading-components)))) nil nil nil)
+;; org-get-heading
+
+(org-forward-heading-same-level)
+
+(text-clone-create)
+modification-hooks
+
+
+;;;; manipulate subtrees
+
+;; USE THESE
+
+;; Mark the current subtree. This puts point at the start of the current subtree, and mark at the end.  
+(org-mark-subtree)
+
+;; Delete the text between START and END.
+(delete-region START END)
+
+(org-copy-subtree)
+(org-paste-subtree)		
+;; --- 
+
+;; also
+;; (substring) ;; meant for string arguments
+(buffer-substring-no-properties)
+
+;; tryout substring. bad on weblog
+(buffer-substring (point-min) (point-max))
+(buffer-substring-no-properties (point-min) (point-max))
+
+;; can also use this
+(org-copy-subtree nil 'CUT)
+(org-cut-subtree)
+
+;; a variable used in addition to kill ring
+(org-subtree-clip) 
+
+;; also useful, marks rel to beg
+  ;; Check markers in region.
+  ;; If these markers are between BEG and END, record their position relative
+  ;; to BEG, so that after moving the block of text, we can put the markers back
+  ;; into place.
+(org-save-markers-in-region beg end)
+(org-reinstall-markers-in-region)
+
+;; "Save the visible outline headers between BEG and END to the kill ring.
+;; Text shown between the headers isn't copied.  Two newlines are
+;; inserted between saved headers.  Yanking the result may be a
+;; convenient way to make a table of contents of the buffer."
+(outline-headers-as-kill beg end)
+
+;;;; use this for node with summary 
+(require 'subr-x) ;; for when-let
+
+;; OR this. 
+(org-copy-subtree nil nil nil 'nosubtrees)
+
+;; looks excessive but works. 
+(defun vv-get-headline-with-text ()
+  "Return a list with the headline text of the top-level headline for point as first element and the section text as second element."
+    (interactive)
+    (kill-new
+     (org-element-interpret-data
+      (when-let ((data (org-element-parse-buffer 'greater-elements)) ;; sparse parsing...
+                 (headline (org-element-map
+                               data
+                               'headline
+                             (lambda (el)
+                               (let ((beg (org-element-property :begin el))
+                                     (end (org-element-property :end el)))
+                                 (and (>= (point) beg)
+                                      (<= (point) end)
+                                      el)))
+                             nil
+                             'first-match
+                             'no-recursion))
+                 (headline-text (org-element-property :raw-value headline))
+                 (section (org-element-map
+                              headline
+                              'section
+                            #'identity
+                            nil
+                            'first-match
+                            'no-recursion))
+                 (text-begin (org-element-property :contents-begin section))
+                 (text-end (org-element-property :contents-end section)))
+        (list headline-text (buffer-substring text-begin text-end))
+        ;; (print headline-text (buffer-substring text-begin text-end))
+        ))))
+
+(defun vv-h-s ()
+  (interactive)
+  (let* ((data (org-element-parse-buffer 'greater-elements))
+        (headline (org-element-map
+                      data
+                      'headline
+                    (lambda (el)
+                      (let ((beg (org-element-property :begin el))
+                            (end (org-element-property :end el)))
+                        (and (>= (point) beg)
+                             (<= (point) end)
+                             el)))
+                    nil
+                    'first-match
+                    'no-recursion))
+        (section (org-element-map
+                     headline
+                     'section
+                   #'identity
+                   nil
+                   'first-match
+                   'no-recursion)))
+    (print section)))
 ;;; go round: get node text?
 
 ;; parsing
@@ -799,7 +972,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;; (setq vv/ns (make-node :title "meee" :backlinks (list)))
 ;; nice to know, not using it 
 ;; (setf (node-backlinks vv/ns) (append '(a)))
-;;; trial #2 state : alternate use struct for state
+;;; trial #2 xob state : alternate use struct for state
 (cl-defstruct xob-state kb-count kb-current kb-files t-id-table-fn id-n-table-fn)
 (setq xob (make-xob-state :kb-count 0 :t-id-table-fn "title-id-table" :id-n-table-fn "id-node-table"))
 
@@ -1097,34 +1270,6 @@ before-change-functions
 
 ;; hello
 ;; hello
-;;; manipulate subtrees
-
-
-;; use these
-(org-mark-subtree)
-(delete-region)
-(org-copy-subtree)
-(org-paste-subtree)		
-
-;; also
-;; (substring) ;; meant for string arguments
-(buffer-substring-no-properties)
-
-;; tryout substring. bad on weblog
-(buffer-substring (point-min) (point-max))
-(buffer-substring-no-properties (point-min) (point-max))
-
-;; can also use this
-(org-copy-subtree nil 'CUT)
-(org-cut-subtree)
-
-;; a variable used in addition to kill ring
-(org-subtree-clip) 
-
-;; also useful, marks rel to beg
-(org-save-markers-in-region beg end)
-(org-reinstall-markers-in-region)
-
 ;;; load/save ast?
 (defun vv-save-ast ()
   (interactive)
@@ -1152,143 +1297,6 @@ before-change-functions
 (defvar orb-xob--A-tag "A")
 (defvar orb-xob--node-tag "node")
 
-;;; use this for node with summary 
-(require 'subr-x) ;; for when-let
-
-;; OR this. 
-(org-copy-subtree nil nil nil 'nosubtrees)
-
-;; looks excessive but works. 
-(defun vv-get-headline-with-text ()
-  "Return a list with the headline text of the top-level headline for point as first element and the section text as second element."
-    (interactive)
-    (kill-new
-     (org-element-interpret-data
-      (when-let ((data (org-element-parse-buffer 'greater-elements)) ;; sparse parsing...
-                 (headline (org-element-map
-                               data
-                               'headline
-                             (lambda (el)
-                               (let ((beg (org-element-property :begin el))
-                                     (end (org-element-property :end el)))
-                                 (and (>= (point) beg)
-                                      (<= (point) end)
-                                      el)))
-                             nil
-                             'first-match
-                             'no-recursion))
-                 (headline-text (org-element-property :raw-value headline))
-                 (section (org-element-map
-                              headline
-                              'section
-                            #'identity
-                            nil
-                            'first-match
-                            'no-recursion))
-                 (text-begin (org-element-property :contents-begin section))
-                 (text-end (org-element-property :contents-end section)))
-        (list headline-text (buffer-substring text-begin text-end))
-        ;; (print headline-text (buffer-substring text-begin text-end))
-        ))))
-
-(defun vv-h-s ()
-  (interactive)
-  (let* ((data (org-element-parse-buffer 'greater-elements))
-        (headline (org-element-map
-                      data
-                      'headline
-                    (lambda (el)
-                      (let ((beg (org-element-property :begin el))
-                            (end (org-element-property :end el)))
-                        (and (>= (point) beg)
-                             (<= (point) end)
-                             el)))
-                    nil
-                    'first-match
-                    'no-recursion))
-        (section (org-element-map
-                     headline
-                     'section
-                   #'identity
-                   nil
-                   'first-match
-                   'no-recursion)))
-    (print section)))
-
-;;; backlinks
-
-;; this works
-(defun vv-goto-bl ()
-  (interactive) 
-  (org-element-map (org-element-parse-buffer) 'link
-    (lambda (link)
-      (if (equal (org-element-property
-                  :drawer-name (cadr (org-element-lineage link)))
-                 "BACKLINKS")
-          (org-element-property :path link)))))
-
-(setq vvb (vv-goto-bl))
-
-;; inverse, links not in backlinks
-(defun vv-goto-bl ()
-  (interactive) 
-  (org-element-map (org-element-parse-buffer) 'link
-    (lambda (link)
-      (if (not (equal (org-element-property
-                       :drawer-name (cadr (org-element-lineage link)))
-                      "BACKLINKS"))
-          (org-element-property :path link)))))
-
-;; (print (org-element-property :drawer-name (cadr  (org-element-lineage link))))
-;; (equal (org-element-property :drawer-name (car (org-element-lineage link)))) "BACKLINKS")
-;; (equal (org-element-property :drawer-name adrawer) "BACKLINKS")
-
-;; (setq here (org-element-property :contents-begin adrawer)
-
-(org-element-context) 
-(org-element-at-point)
-
-(equal (org-element-property :drawer-name (org-element-at-point)) "BACKLINKS")
-(equal (org-element-property :drawer-name (car (org-element-lineage (org-element-at-point)))) "BACKLINKS")
-
-(org-element-property :drawer-name (car (org-element-lineage (org-element-at-point))))
-
-(org-element-lineage (org-element-at-point))
-
-(org-element-property :parent 
-(org-element-property :parent 
- (org-element-context))) 
-
-;;; tree stuff
-;; respect contents pasting in to 
-(org-insert-heading-respect-content t)
-(org-insert-heading-respect-content)
-
-;; get headings
-(outline-next-heading)
-(org-next-visible-heading)
-
-
-(org-map-tree FUN)
-(org-map-tree (lambda ()
-                   (print (nth 4 (org-heading-components)))))
-
-(org-map-tree (lambda ()
-                (print (nth 4 (org-heading-components)))))
-
-(org-map-entries)
-;; get all headings in scope
-(org-map-entries (lambda ()
-                   (print (nth 4 (org-heading-components)))) nil nil nil)
-;; org-get-heading
-
-(org-forward-heading-same-level)
-
-(text-clone-create)
-modification-hooks
-
-
-
 ;;; old design workspace
 ;; (defun org-xob--active-buffers ()
 ;;   "Returns list of all active exobrain buffers"
@@ -1303,6 +1311,36 @@ modification-hooks
 
 
 
-;;; indirect buffer option 
+;;; xob edit node
+;;;; org-tree-to-indirect-buffer 
 (org-tree-to-indirect-buffer &optional ARG)
 (org-tree-to-indirect-buffer)
+;;; "Search buffers for org heading with ID and place point there."
+
+(org-xob--goto-heading "3A3BD225-A186-4CC4-B900-DF10DAA31B42")
+(setq vv-id "3A3BD225-A186-4CC4-B900-DF10DAA31B42")
+(progn 
+  (re-search-forward vv-id)
+  (org-back-to-heading 'invisible-ok))
+ 
+;; MAYBE or set marker?
+;; not map, loop till found
+(defun org-xob--goto-heading (ID)
+  "Search buffers for org heading with ID and place point there."
+  (let ((mm))
+    (save-excursion
+      (save-restriction
+        (setq mm 
+              (catch 'found 
+                (dolist (buf (buffer-list))
+                  (with-current-buffer buf
+                    (if (eq major-mode 'org-mode)
+                        (progn
+                          (org-with-wide-buffer 
+                           (goto-char (point-min))
+                           (when (re-search-forward ID nil t)
+                             (progn 
+                               (org-back-to-heading 'invisible-ok)
+                               (throw 'found (point-marker)))))))))))))
+    (switch-to-buffer (marker-buffer mm))
+    (goto-char mm)))

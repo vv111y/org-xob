@@ -334,18 +334,22 @@
 
 ;;;###autoload
 (defun org-xob-show-backlinks (ID)
-  "Load the backlinks tree for node ID into the context buffer, unless it is already there."
+  "Load the backlinks tree for node ID into the context buffer.
+If it is already there, then refresh it."
   (interactive)
-  (with-current-buffer org-xob--context-buffer
-    (unless (cdr (org-xob-node-backlinks)) 
-      (goto-char (point-max))
-      (org-insert-heading nil nil 'TOP)
-      (insert org-xob-short-title)
-      (setq org-xob-backlinks-tree (org-id-get-create))
-      (org-toggle-tag "backlinks" 'ON)
-      (setq org-xob-node-backlinks (cons (org-xob--get-backlinks ID)
-                                         (org-xob-backlinks-tree)))
-      (org-xob-update-context org-xob-node-backlinks))))
+  (save-window-excursion 
+    (with-current-buffer org-xob--context-buffer
+      ;; TODO this won't work if I just delete heading
+      (unless (cdr (org-xob-node-backlinks)) 
+        ;; TODO better choice
+        (goto-char (point-min))
+        (org-insert-heading (4) 'invisible-ok 'TOP)
+        (insert org-xob-short-title)
+        (setq org-xob-backlinks-tree (org-id-get-create))
+        (org-toggle-tag "backlinks" 'ON)
+        (setq org-xob-node-backlinks (cons (org-xob--get-backlinks ID)
+                                           (org-xob-backlinks-tree)))
+        (org-xob-update-context org-xob-node-backlinks)))))
 
 
 ;;;;; Buffer functions 
@@ -380,7 +384,7 @@
             ) (car source)))
 
 (defun org-xob--get-backlinks (ID)
-  "Return backlinks as a list. Assumes org-superlinks convention where the backlinks are in a drawer named BACKLINKS."
+  "Return backlinks as a list of IDs. Assumes org-superlinks convention where the backlinks are in a drawer named BACKLINKS."
   (org-element-map (org-element-parse-buffer) 'link
     (lambda (link)
       (if (equal (org-element-property
@@ -388,14 +392,7 @@
                  "BACKLINKS")
           (org-element-property :path link)))))
 
-
-(defun org-xob-hide-backlinks ()
-  (interactive))
-
 (defun org-xob-show-forlinks ()
-  (interactive))
-
-(defun org-xob-hide-forlinks ()
   (interactive))
 
 (defun org-xob-context--inline ()
