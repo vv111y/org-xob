@@ -313,18 +313,7 @@
   ;; parent backlink has subheading 'clones' 
   )
 
-;;;###autoload
-(defun org-xob-delete-node ()
-  (interactive)
-  (when (not org-xob-on-p)
-    (org-xob-start))
-  ;; delete node
-  ;; delete context footprint
-  ;; for each exo-link in body, visit node and remove backlink
-  ;; for each exo-link in backlinks, visite node and kill link, leave link text
-  nil
-  )
-
+;;;;;; Context Commands
 ;;;###autoload
 (defun org-xob-heading-to-node ()
   (interactive)
@@ -339,6 +328,7 @@ If it is already there, then refresh it."
   (interactive)
   (save-window-excursion 
     (with-current-buffer org-xob--context-buffer
+      ;; if no heading make it 
       ;; TODO this won't work if I just delete heading
       (unless (cdr (org-xob-node-backlinks)) 
         ;; TODO better choice
@@ -346,10 +336,46 @@ If it is already there, then refresh it."
         (org-insert-heading (4) 'invisible-ok 'TOP)
         (insert org-xob-short-title)
         (setq org-xob-backlinks-tree (org-id-get-create))
+        (org-toggle-tag "KB" 'ON)
         (org-toggle-tag "backlinks" 'ON)
         (setq org-xob-node-backlinks (cons (org-xob--get-backlinks ID)
                                            (org-xob-backlinks-tree)))
         (org-xob-update-context org-xob-node-backlinks)))))
+
+;;;###autoload
+(defun org-xob-backlinks-headings ()
+  "Show backlinks just as headings."
+  (interactive))
+
+;;;###autoload
+(defun org-xob-backlinks-summaries ()
+  "Show backlinks with summaries. This is defined as the first paragraph if it exists."
+  (interactive))
+
+;;;###autoload
+(defun org-xob-backlinks-body ()
+  "Show backlinks contents, but without subheading content."
+  (interactive))
+
+;;;###autoload
+(defun org-xob-backlinks-full ()
+  "Show backlinks contents, including subheading content."
+  (interactive))
+
+
+;;;###autoload
+(defun org-xob-to-full-node ()
+  "Converts node item at point to full node."
+  (interactive)
+  (let ((ID (org-id-get nil nil nil)))
+    () ;; delete item 
+    (org-xob--node-full (org-id-get nil nil nil))))
+
+;;;###autoload
+(defun org-xob-to-heading-node ()
+  "Converts node item at point to a heading."
+  (interactive)
+  (org-xob--convert-node-item 'heading))
 
 
 ;;;;; Buffer functions 
@@ -392,6 +418,19 @@ If it is already there, then refresh it."
                  "BACKLINKS")
           (org-element-property :path link)))))
 
+;; TODO maybe replace activate, now that indirect buffer being used
+(defun org-xob--node-full (ID)
+  "Inserts the full node as a subheading at point."
+  (save-window-excursion
+    (save-restriction 
+      (org-id-goto ID)
+      (org-copy-subtree)))
+  (org-paste-subtree nil nil nil 'REMOVE)
+  (org-entry-put (point) "PARENT" 
+                 (org-entry-get (point) "ID" nil nil))
+  (org-xob--node-add-timed-property "MODIFIED")
+  (org-id-get-create 'FORCE))
+
 (defun org-xob-show-forlinks ()
   (interactive))
 
@@ -432,19 +471,6 @@ If it is already there, then refresh it."
   (org-edit-headline (org-xob--node-link ID)))
 
 (defun org-xob--node-summary (ID))
-
-;; TODO maybe replace activate, now that indirect buffer being used
-(defun org-xob--node-full (ID)
-  "Inserts the full node as a subheading."
-  (save-window-excursion
-    (org-id-goto ID)
-    (org-copy-subtree))
-  (org-paste-subtree nil nil nil 'REMOVE)
-  (org-entry-put (point) "PARENT" 
-                 (org-entry-get (point) "ID" nil nil))
-  (org-xob--node-add-timed-property "MODIFIED")
-  (org-toggle-tag "A" 'ON)
-  (org-id-get-create 'FORCE))
 
 (defun org-xob--node-add-time-property (property)
   (org-entry-put (point) property
