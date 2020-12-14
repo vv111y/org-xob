@@ -232,7 +232,6 @@
               (org-time= nil nil))
     (setq org-xob-today (org-xob--capture (org-insert-time-stamp (current-time) nil 'INACTIVE)))))
 
-
 ;;;###autoload
 (defun org-xob-stop ()
   "Stop xob system: save all state and close active buffers."
@@ -257,6 +256,7 @@
 
 ;;;###autoload
 (defun org-xob-get-node ()
+  "Focus on a node for editing. If it does not exist, create it."
   (interactive)
   (when (not org-xob-on-p)
     (org-xob-start))
@@ -276,7 +276,7 @@
 
 ;;;###autoload
 (defun org-xob-link ()
-  "Insert node exo-link here."
+  "Insert node exo-link at point."
   (interactive)
   (when (not org-xob-on-p)
     (org-xob-start))
@@ -302,6 +302,8 @@
 
 ;;;###autoload
 (defun org-xob-clone-node ()
+  "Alternative execution for xob. Create a clone for editing.
+This does not use the clone transclusion package."
   (interactive)
   (when (not org-xob-on-p)
     (org-xob-start))
@@ -446,7 +448,8 @@ If it is already there, then refresh it."
   "Show the contextual nodes as adjacent headings."
   )
 
-;;;;; Clocking
+;;;;; Activity
+;;;;;; Clocking
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
 ;;;; Backend
@@ -496,7 +499,7 @@ If it is already there, then refresh it."
 appropriate properties as a derivative node."
   ;; TODO make main buffer, and whatever else for sync-editing style
   (org-xob--node-full))
-
+;;;;; Edit syncing
 (defun org-xob--sync-edits (beg end len)
   (goto-char beg)
   ;; (if org-xob--kb-node-p)
@@ -506,7 +509,7 @@ appropriate properties as a derivative node."
 (defun org-xob--sync-node ()
   )
 
-;;;;;; Node org-capture
+;;;;; New node org-capture
 
 (defun org-xob--capture (title)
   (let* ((org-capture-templates org-xob--templates)
@@ -537,7 +540,7 @@ appropriate properties as a derivative node."
 
 (add-hook 'org-capture-mode-hook #'org-xob--new-node)
 
-;;;;;; Node links
+;;;;; Node links
 
 
 ;;;;;; Node Versioning
@@ -618,7 +621,7 @@ appropriate properties as a derivative node."
     (setf (xob-state-kb-current xob) filename)
     (setf (xob-state-kb-count xob) (+ 1))))
 
-;;;;;; diagnostics
+;;;;; diagnostics
 
 (defun org-xob-rebuild ()
   "Traverse all nodes and correct any meta errors."
