@@ -1337,6 +1337,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
  
 ;; MAYBE or set marker?
 ;; not map, loop till found
+;; TODO excessive for this version. I'm at the conext buffer already when called. 
 (defun org-xob--goto-heading (ID)
   "Search buffers for org heading with ID and place point there."
   (let ((mm))
@@ -1355,10 +1356,18 @@ org-capture-after-finalize-hook ;; done. for closing stuff
                              (progn 
                                (org-back-to-heading 'invisible-ok)
                                (throw 'found (point-marker)))))))))))))
-    (switch-to-buffer (marker-buffer mm))
-    (goto-char mm)))
+    (if (and (marker-buffer)
+             (car mm))
+        
+        (progn 
+          (switch-to-buffer (marker-buffer mm))
+          (goto-char mm)
+          t)
+      nil)))
 ;;;; convert?
 ;; just headings
 ;; summaries if there
 ;; body & subs
 ;; everything
+
+rg-

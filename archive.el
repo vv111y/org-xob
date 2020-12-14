@@ -116,3 +116,18 @@
   ;; for each exo-link in backlinks, visite node and kill link, leave link text
   nil
   )
+
+;;;###autoload
+(defun org-xob-clone-node ()
+  "Alternative execution for xob. Create a clone for editing.
+This does not use the clone transclusion package."
+  (interactive)
+  (when (not org-xob-on-p)
+    (org-xob-start))
+  ;; is exobrain started? 
+  ;; if point not on node, call get-node
+  ;; copy whole node
+  ;; generate new ID
+  ;; add vparent property, and/or exo-link to parent
+  ;; parent backlink has subheading 'clones' 
+  )

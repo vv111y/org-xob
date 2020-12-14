@@ -274,9 +274,10 @@
                                                  (org-xob--activate-node ID)
                                                (org-xob--edit-node ID title)))))))
 
+;; TODO superlink?
 ;;;###autoload
 (defun org-xob-link ()
-  "Insert node exo-link at point."
+  "Insert node xob link at point."
   (interactive)
   (when (not org-xob-on-p)
     (org-xob-start))
@@ -300,54 +301,29 @@
       (select-window org-xob--sideline-window)
       (display-buffer-same-window org-xob--context-buffer nil))))
 
-;;;###autoload
-(defun org-xob-clone-node ()
-  "Alternative execution for xob. Create a clone for editing.
-This does not use the clone transclusion package."
-  (interactive)
-  (when (not org-xob-on-p)
-    (org-xob-start))
-  ;; is exobrain started? 
-  ;; if point not on node, call get-node
-  ;; copy whole node
-  ;; generate new ID
-  ;; add vparent property, and/or exo-link to parent
-  ;; parent backlink has subheading 'clones' 
-  )
-
 ;;;;;; Context Commands
 ;;;###autoload
-(defun org-xob-heading-to-node ()
-  (interactive)
-  (when (not org-xob-on-p)
-    (org-xob-start))
-  )
-
+;;;;;;; Backlinks 
 ;;;###autoload
-(defun org-xob-show-backlinks (ID)
+(defun org-xob-backlinks-headings (ID)
   "Load the backlinks tree for node ID into the context buffer.
-If it is already there, then refresh it."
+If it is already there, then refresh it. Show backlinks just as headings."
   (interactive)
   (save-window-excursion 
     (with-current-buffer org-xob--context-buffer
-      ;; if no heading make it 
-      ;; TODO this won't work if I just delete heading
-      (unless (cdr (org-xob-node-backlinks)) 
-        ;; TODO better choice
-        (goto-char (point-min))
-        (org-insert-heading (4) 'invisible-ok 'TOP)
-        (insert org-xob-short-title)
-        (setq org-xob-backlinks-tree (org-id-get-create))
-        (org-toggle-tag "KB" 'ON)
-        (org-toggle-tag "backlinks" 'ON)
-        (setq org-xob-node-backlinks (cons (org-xob--get-backlinks ID)
-                                           (org-xob-backlinks-tree)))
-        (org-xob-update-context org-xob-node-backlinks)))))
-
-;;;###autoload
-(defun org-xob-backlinks-headings ()
-  "Show backlinks just as headings."
-  (interactive))
+      (if (org-xob--goto-heading org-xob-backlinks-tree)
+          (progn
+            (org-xob--clear-source-at-point))
+        (progn
+          (goto-char (point-max))
+          (org-insert-heading (4) 'invisible-ok 'TOP)
+          (insert org-xob-short-title)
+          (setq org-xob-backlinks-tree (org-id-get-create))
+          (org-toggle-tag "KB" 'ON)
+          (org-toggle-tag "backlinks" 'ON)
+          (setq org-xob-node-backlinks (cons (org-xob--get-backlinks ID)
+                                             (org-xob-backlinks-tree)))))
+      (org-xob-update-kb-context-at-point org-xob-node-backlinks 'headings))))
 
 ;;;###autoload
 (defun org-xob-backlinks-summaries ()
@@ -364,8 +340,9 @@ If it is already there, then refresh it."
   "Show backlinks contents, including subheading content."
   (interactive))
 
-
+;;;;;;; Change Node Presentation
 ;;;###autoload
+;; ??
 (defun org-xob-to-full-node ()
   "Converts node item at point to full node."
   (interactive)
@@ -373,6 +350,15 @@ If it is already there, then refresh it."
     () ;; delete item 
     (org-xob--node-full (org-id-get nil nil nil))))
 
+;; ??
+;;;###autoload
+(defun org-xob-heading-to-node ()
+  (interactive)
+  (when (not org-xob-on-p)
+    (org-xob-start))
+  )
+
+;; ??
 ;;;###autoload
 (defun org-xob-to-heading-node ()
   "Converts node item at point to a heading."
@@ -380,6 +366,10 @@ If it is already there, then refresh it."
   (org-xob--convert-node-item 'heading))
 
 
+;;;;;;; Forelinks 
+(defun org-xob-show-forlinks ()
+  (interactive))
+;;;;;;; ql search 
 ;;;;; Buffer functions 
 ;; Parsing <- heading?
 
@@ -406,7 +396,7 @@ If it is already there, then refresh it."
 ;;;;; Contexts
 
 ;; TODO
-(defun org-xob-update-context (source)
+(defun org-xob-update-kb-context-at-point (source)
   (interactive)
   (mapcar (lambda (ID)
             ) (car source)))
@@ -432,9 +422,6 @@ If it is already there, then refresh it."
                  (org-entry-get (point) "ID" nil nil))
   (org-xob--node-add-timed-property "MODIFIED")
   (org-id-get-create 'FORCE))
-
-(defun org-xob-show-forlinks ()
-  (interactive))
 
 (defun org-xob-context--inline ()
   "Show the contextual nodes as a subheading."
