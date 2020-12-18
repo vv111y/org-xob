@@ -260,8 +260,22 @@ modification-hooks
 ;; Mark the current subtree. This puts point at the start of the current subtree, and mark at the end.  
 (org-mark-subtree)
 
+(org-mark-element)
+
+;; mark contents
+(progn 
+  (org-mark-subtree)
+  (org-end-of-meta-data t))
+
+(set-marker (mark-marker) (- (mark) 1))
+(set-marker (mark-marker) 20)
+
 ;; Delete the text between START and END.
 (delete-region START END)
+
+
+;; interesting
+(org-mode-restart)
 
 (org-copy-subtree)
 (org-paste-subtree)		
@@ -335,29 +349,198 @@ modification-hooks
         ;; (print headline-text (buffer-substring text-begin text-end))
         ))))
 
-(defun vv-h-s ()
+;; mess of testing
+;; (save-excursion 
+;;   (save-restriction
+    ;; (org-narrow-to-subtree) 
+    ;; (buffer-substring ())
+    ;; (org-end-of-meta-data 'full)
+    ;; (print (org-element-at-point))
+    ;; (org-element-at-point)
+    ;; (let ((p (org-element-at-point)))
+      ;; (org-element-interpret-data)
+      ;; (buffer-substring-no-properties (org-element-property :contents-begin p)
+      ;;                                 (org-element-property :contents-end p)))
+    ;; (org-element-property :cont (org-element-at-point))
+    ;; (org-element-interpret-data 
+    ;;  (org-element-at-point))
+    ;; (org-element-map
+    ;;     (org-element-at-point)
+    ;;     'paragraph
+    ;;   ;; #'identity
+    ;;   (lambda (el) (print (org-element-interpret-data el)))
+    ;;   nil
+    ;;   'first-match
+    ;;   'no-recursion
+    ;;   )
+    ;; ))
+
+(org-goto-first-child)
+
+(defun get-headline-with-text ()
+  "Return a list consisting of the heading title and the
+first section of text (before the next heading) at point."
   (interactive)
-  (let* ((data (org-element-parse-buffer 'greater-elements))
-        (headline (org-element-map
-                      data
-                      'headline
-                    (lambda (el)
-                      (let ((beg (org-element-property :begin el))
-                            (end (org-element-property :end el)))
-                        (and (>= (point) beg)
-                             (<= (point) end)
-                             el)))
-                    nil
-                    'first-match
-                    'no-recursion))
-        (section (org-element-map
-                     headline
-                     'section
-                   #'identity
-                   nil
-                   'first-match
-                   'no-recursion)))
-    (print section)))
+  (print 
+   (save-excursion
+     (save-restriction
+       (widen)
+       ;; (ignore-errors (outline-up-heading 1))
+       (let* ((elt (org-element-at-point))
+              (title (org-element-property :title elt))
+              (beg (progn (org-end-of-meta-data t) (point)))
+              (end (progn (outline-next-visible-heading 1) (point))))
+         (list title (buffer-substring-no-properties beg end)))))))
+
+(defun vakker00/org-heading-children ()
+  "Return list of child headings of heading at point."
+  (org-with-wide-buffer
+   (when (org-goto-first-child)
+     (cl-loop collect (org-get-heading t t)
+              while (outline-get-next-sibling)))))
+
+(defun vv-h-s ()
+  "Copy to kill ring the heading and the first paragraph of text."
+  (interactive)
+  (kill-new
+   (org-element-interpret-data 
+    (let* ((data (org-element-context 'greater-elements))
+           (headline (org-element-map
+                         data
+                         'headline
+                       (lambda (el)
+                         (let ((beg (org-element-property :begin el))
+                               (end (org-element-property :end el)))
+                           (and (>= (point) beg)
+                                (<= (point) end)
+                                el)))
+                       nil
+                       'first-match
+                       'no-recursion))
+           (section (org-element-map
+                        headline
+                        'section
+                      #'identity
+                      nil
+                      'first-match
+                      'no-recursion)))
+      ;; TODO
+      (list )))))
+
+;;;; edit stuff?
+
+(let* ((data (org-element-parse-buffer)))
+  (org-element-map data 'headline
+    (lambda (el)
+      (when (equal
+             (car-safe (org-element-property :title el))
+             "Accessors")
+        (setf (nthcdr 2 el) "test") ;; Here we remove the contents from this headline.
+        )))
+  (org-element-interpret-data data))
+
+(org-element-map (org-element-at-point) 'headline
+  (lambda (el)
+    (setf (nthcdr 2 el) "test")))
+
+
+
+(org-element-interpret-data (setf (nthcdr 2 (org-element-at-point)) "test"))
+;;;; delete subtree contents
+
+;; clean version
+(defun vv-vv ()
+  "delete contents of every child heading."
+  (interactive) 
+  (save-excursion
+    (save-restriction 
+      (org-narrow-to-subtree)
+      (outline-show-all)
+      (outline-next-heading)
+      (while
+          (progn 
+            (save-excursion 
+              (org-mark-subtree)
+              (org-end-of-meta-data t)
+              (call-interactively #'delete-region)
+              (org-back-to-heading t))
+            (outline-get-next-sibling)))))
+	(org-back-to-heading t))
+
+
+;; split up
+
+;; (vv-vv #'org-xob-to-heading)
+;; (puthash "5fc3aafe-fa83-4ec4-9db3-12e703d31bb2" 19 org-xob--id-node)
+;; (remhash "5fc3aafe-fa83-4ec4-9db3-12e703d31bb2" org-xob--id-node)
+
+(defun org-xob--tree-delete-contents ()
+  "delete contents of every child heading."
+  (interactive) 
+  (save-excursion
+    (save-restriction 
+      (org-narrow-to-subtree)
+      (outline-show-all)
+      (outline-next-heading)
+      (while
+          (progn 
+            (save-excursion 
+              (org-mark-subtree)
+              (org-end-of-meta-data t)
+              (call-interactively #'delete-region)
+              (org-back-to-heading t))
+            (outline-get-next-sibling)))))
+	(org-back-to-heading t))
+
+;; rough func
+;; delete contents
+(defun vv-vv ()
+  "delete contents of every child heading."
+  (interactive) 
+  ;; (save-restriction)
+	;; (org-back-to-heading t)
+	;; (org-narrow-to-subtree)
+  (save-restriction 
+  (save-excursion
+      ;; (org-with-wide-buffer)
+      (org-narrow-to-subtree)
+      (outline-show-all)
+      (outline-next-heading)
+      (while
+          (progn 
+            (save-excursion 
+              (org-mark-subtree)
+              (org-end-of-meta-data t)
+              ;; (set-marker (mark-marker) (- (mark) 1))
+              (call-interactively #'delete-region)
+              ;; (delete-region (region-beginning) (region-end))
+              ;; (open-line 1)
+              ;; (newline)
+              (org-back-to-heading t))
+            (outline-get-next-sibling)
+            )
+        )))
+  ;; (outline-up-heading)
+	(org-back-to-heading t)
+  ;; (org-hide-entry)
+  ;; (outline-hide-body)
+  ;; (outline-show-children 1)
+  )
+
+;; tryouts
+(progn 
+  (delete-region 
+   (progn 
+     (org-end-of-meta-data t)
+     (point))
+   (org-entry-end-position)))
+
+(lambda () 
+  (save-excursion 
+    (org-mark-subtree)
+    (org-end-of-meta-data t)
+    (call-interactively #'delete-region)))
+
 ;;; accessors
     :PROPERTIES:
     :ID: 46025ffd-090d-4a2b-8216-720a60e8f3d5
@@ -694,6 +877,9 @@ before-change-functions
                               :test 'equal
                               :size org-xob--table-size))
 
+(setq org-xob--id-node (make-hash-table
+                         :test 'equal
+                         :size org-xob--table-size))
 ;; store node title and id NewNode
 (puthash title id org-xob--title-id)
 

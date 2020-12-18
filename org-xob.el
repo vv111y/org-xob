@@ -305,6 +305,7 @@
 ;;;###autoload
 ;;;;;;; Backlinks 
 ;;;###autoload
+;; TODO maybe instead use my hashtable to get heading titles
 (defun org-xob-backlinks-headings (ID)
   "Load the backlinks tree for node ID into the context buffer.
 If it is already there, then refresh it. Show backlinks just as headings."
@@ -329,6 +330,14 @@ If it is already there, then refresh it. Show backlinks just as headings."
 (defun org-xob-backlinks-summaries ()
   "Show backlinks with summaries. This is defined as the first paragraph if it exists."
   (interactive))
+
+(defun org-xob--first-paragraph ()
+  "Return the first paragraph of heading at point."
+  (save-excursion 
+    (org-end-of-meta-data 'full)
+    (let ((p (org-element-at-point)))
+      (buffer-substring-no-properties (org-element-property :contents-begin p)
+                                      (org-element-property :contents-end p)))))
 
 ;;;###autoload
 (defun org-xob-backlinks-body ()
@@ -433,6 +442,55 @@ If it is already there, then refresh it. Show backlinks just as headings."
 
 (defun org-xob-refresh-sources ()
   "Show the contextual nodes as adjacent headings."
+  )
+
+(defun org-xob-to-heading ()
+  "Converts subtree to the headline and properties drawer only.
+This is idempotent and application to such a heading makes no change.
+This can be applied to heading at point or used in a mapping."
+  (interactive)
+  (save-excursion
+    (save-restriction 
+      (org-back-to-heading t)
+      (org-mark-subtree)
+      (org-end-of-meta-data t)
+      (call-interactively #'delete-region)))
+  (org-back-to-heading t))
+
+(defun org-xob--map-source (func &optional ID)
+  "Apply the function func to every child-item of a xob source.
+If the optional ID of a xob source is given, then apply func to that source.
+Otherwise apply to source at point."
+  (save-excursion
+    (save-restriction 
+      (if ID
+          (org-id-goto ID))
+      (if org-xob--is-source-p 
+          (progn
+            (org-narrow-to-subtree)
+            (outline-show-all)
+            (outline-next-heading)
+            (while
+                (progn 
+                  (funcall func)
+                  (outline-get-next-sibling))))
+        (message "not a xob source.")))))
+
+(defun org-xob--is-node-p (&optional ID)
+  "Check if a heading is a xob node. Called interactively it defaults to heading at point.
+If an ID argument is supplied, then check the heading associated with it."
+  (interactive)
+  (let ((temp (if ID ID
+                (org-id-get nil))))
+    (if temp
+        (if (gethash temp org-xob--id-node) t nil)
+      nil)))
+
+(defun org-xob--is-source-p (ID)
+  "Check if a heading is a valid xob source.
+Called interactively it defaults to heading at point.
+If an ID argument is supplied, then check the heading associated with it."
+  (interactive)
   )
 
 ;;;;; Activity
