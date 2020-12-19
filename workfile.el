@@ -474,6 +474,10 @@ first section of text (before the next heading) at point."
 ;; (puthash "5fc3aafe-fa83-4ec4-9db3-12e703d31bb2" 19 org-xob--id-node)
 ;; (remhash "5fc3aafe-fa83-4ec4-9db3-12e703d31bb2" org-xob--id-node)
 
+(org-xob--map-source #'org-xob-to-heading)
+
+(defun org-xob--is-source-p (&optional ID)
+  t)
 (defun org-xob--tree-delete-contents ()
   "delete contents of every child heading."
   (interactive) 
@@ -540,6 +544,9 @@ first section of text (before the next heading) at point."
     (org-mark-subtree)
     (org-end-of-meta-data t)
     (call-interactively #'delete-region)))
+;;;; build kb source tree
+(defun org-xob-kb-context ()
+  "New way to make source tree.")
 
 ;;; accessors
     :PROPERTIES:

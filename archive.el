@@ -131,3 +131,22 @@ This does not use the clone transclusion package."
   ;; add vparent property, and/or exo-link to parent
   ;; parent backlink has subheading 'clones' 
   )
+
+(defun org-xob-context--inline ()
+  "Show the contextual nodes as a subheading."
+  )
+
+(defun org-xob-context--outline ()
+  "Show the contextual nodes as adjacent headings."
+  )
+
+(defun org-xob-refresh-sources ()
+  "Show the contextual nodes as adjacent headings."
+  )
+
+(defun org-xob-to-full-node ()
+  "Converts node item at point to full node."
+  (interactive)
+  (let ((ID (org-id-get nil nil nil)))
+    () ;; delete item 
+    (org-xob--node-full (org-id-get nil nil nil))))

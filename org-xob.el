@@ -326,6 +326,18 @@ If it is already there, then refresh it. Show backlinks just as headings."
                                              (org-xob-backlinks-tree)))))
       (org-xob-update-kb-context-at-point org-xob-node-backlinks 'headings))))
 
+(defun org-xob-to-heading ()
+  "Converts subtree to the headline and properties drawer only.
+This is idempotent and application to such a heading makes no change.
+This can be applied to heading at point or used in a mapping."
+  (interactive)
+  (save-excursion
+    (save-restriction 
+      (org-back-to-heading t)
+      (org-mark-subtree)
+      (org-end-of-meta-data t)
+      (call-interactively #'delete-region))))
+
 ;;;###autoload
 (defun org-xob-backlinks-summaries ()
   "Show backlinks with summaries. This is defined as the first paragraph if it exists."
@@ -352,27 +364,27 @@ If it is already there, then refresh it. Show backlinks just as headings."
 ;;;;;;; Change Node Presentation
 ;;;###autoload
 ;; ??
+;; TODO 
 (defun org-xob-to-full-node ()
   "Converts node item at point to full node."
-  (interactive)
-  (let ((ID (org-id-get nil nil nil)))
-    () ;; delete item 
-    (org-xob--node-full (org-id-get nil nil nil))))
+  (interactive))
 
-;; ??
 ;;;###autoload
+;; TODO
 (defun org-xob-heading-to-node ()
   (interactive)
-  (when (not org-xob-on-p)
-    (org-xob-start))
-  )
+  (unless (org-xob--is-node-p)
+    ;; TODO get heading title and call modified make node (capture)
+    ;; want to leave it in place
+    ))
 
-;; ??
 ;;;###autoload
-(defun org-xob-to-heading-node ()
-  "Converts node item at point to a heading."
+(defun org-xob-remove-node ()
+  "Converts node item at point to a heading.
+Simply removes heading ID from the hash tables."
   (interactive)
-  (org-xob--convert-node-item 'heading))
+  ;; TODO remove from other tables
+  (remhash (org-id-get (point)) org-xob--id-node))
 
 
 ;;;;;;; Forelinks 
@@ -432,31 +444,13 @@ If it is already there, then refresh it. Show backlinks just as headings."
   (org-xob--node-add-timed-property "MODIFIED")
   (org-id-get-create 'FORCE))
 
-(defun org-xob-context--inline ()
-  "Show the contextual nodes as a subheading."
+(defun org-xob-refresh-source ()
+  "Remake source tree. Check if items need to be added or removed.
+todo - possibly refresh item contents if changes were made.
+(this requires knowing what is displayed)"
   )
 
-(defun org-xob-context--outline ()
-  "Show the contextual nodes as adjacent headings."
-  )
-
-(defun org-xob-refresh-sources ()
-  "Show the contextual nodes as adjacent headings."
-  )
-
-(defun org-xob-to-heading ()
-  "Converts subtree to the headline and properties drawer only.
-This is idempotent and application to such a heading makes no change.
-This can be applied to heading at point or used in a mapping."
-  (interactive)
-  (save-excursion
-    (save-restriction 
-      (org-back-to-heading t)
-      (org-mark-subtree)
-      (org-end-of-meta-data t)
-      (call-interactively #'delete-region)))
-  (org-back-to-heading t))
-
+;; CORRECT 
 (defun org-xob--map-source (func &optional ID)
   "Apply the function func to every child-item of a xob source.
 If the optional ID of a xob source is given, then apply func to that source.
@@ -465,7 +459,7 @@ Otherwise apply to source at point."
     (save-restriction 
       (if ID
           (org-id-goto ID))
-      (if org-xob--is-source-p 
+      (if (org-xob--is-source-p) 
           (progn
             (org-narrow-to-subtree)
             (outline-show-all)
@@ -486,12 +480,20 @@ If an ID argument is supplied, then check the heading associated with it."
         (if (gethash temp org-xob--id-node) t nil)
       nil)))
 
-(defun org-xob--is-source-p (ID)
+;; TODO parent(s)? not at-point?
+(defun org-xob--is-source-p (&optional ID)
   "Check if a heading is a valid xob source.
 Called interactively it defaults to heading at point.
 If an ID argument is supplied, then check the heading associated with it."
   (interactive)
-  )
+  (let ((temp (if ID ID
+                (org-id-get nil))))
+    (if temp
+        ;; TODO fix this, what makes a source? 
+        (if (gethash temp org-xob--id-node) t nil)
+      nil)))
+
+;; -------
 
 ;;;;; Activity
 ;;;;;; Clocking
