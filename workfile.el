@@ -545,8 +545,38 @@ first section of text (before the next heading) at point."
     (org-end-of-meta-data t)
     (call-interactively #'delete-region)))
 ;;;; build kb source tree
-(defun org-xob-kb-context ()
-  "New way to make source tree.")
+(defun org-xob--build-source (source items)
+  "New way to make source tree. Source is the heading to populate.
+Items is a list of org-ids."
+  ;; TODO assuming on parent header
+  (if (org-xob--is-source-p)
+      (progn 
+        (dolist (el items nil)
+          ()))))
+
+;; (progn
+;;   (goto-char (point-max))
+;;   (org-insert-heading (4) 'invisible-ok 'TOP)
+;;   (insert org-xob-short-title)
+
+(defun org-xob--source-add-item (ID)
+  "Appends a single entry to the end of the source subtree.
+Assumes point is on the source heading."
+  (let ((title (gethash ID org-xob--id-node)))
+    (if title 
+        (save-excursion 
+          (org-insert-subheading '(4))
+          ;; alt (org-edit-headline (org-xob--ID-title ID))
+          (insert title)
+          (org-entry-put (point) "PID" ID)
+          ;; needed?
+          (org-id-get-create 'FORCE))
+      (message "not a valid knowledge base ID: %s" ID))))
+
+;; (outline-up-heading)
+
+(defun org-xob-kb)
+(defun org-xob-kb--add-item ())
 
 ;;; accessors
     :PROPERTIES:
@@ -1564,3 +1594,80 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;; everything
 
 rg-
+;;; [2020-12-19 Sat 09:43] 
+
+(defun org-xob--display-source (source mainID)
+  "Open a source tree for node mainID into the context buffer.
+If it is already there, then refresh it. source items are shown as org headings.
+source is a plist that describes the content source."
+  (interactive)
+  (save-window-excursion 
+    (with-current-buffer org-xob--context-buffer
+      (if (org-xob--goto-heading source)
+          (progn
+            (org-xob-refresh-source source mainID))
+        (progn
+          (goto-char (point-max)) ;; respecting content below is this needed?
+          (org-insert-heading (4) 'invisible-ok 'TOP)
+
+          ;; source semi specific
+          (insert org-xob-short-title) ;; TODO fix: make or as arg or buf local
+          (setq org-xob-backlinks-tree (org-id-get-create))
+          (org-toggle-tag "KB" 'ON)
+          (org-toggle-tag "backlinks" 'ON)
+          ;;
+
+          ;; specific
+          ;; get-source-candidates
+          (setq org-xob-node-backlinks (cons (org-xob--get-backlinks mainID)
+                                             ;;
+
+                                             (org-xob-backlinks-tree)))))
+      ;; TODO modify for new way
+      (org-xob-update-kb-context-at-point org-xob-node-backlinks 'headings))))
+
+(setq vv-plist '(:name "hi"
+                       :dict-entry "five"
+                       :body "them"))
+
+(plist-get vv-plist :name)
+(plist-get vv-plist :body)
+(plist-get vv-plist :dict-entry)
+
+(setq-local org-xob--source-backlinks
+            '(:name "backlinks"
+                    :tags ("KB")
+                    :title nil 
+                    :ID nil
+                    :PID nil
+                    :func org-xob--get-backlinks
+                    :items nil))
+
+(setq-local org-xob--source-forlinks
+            '(:name "forlinks"
+                    :tags ("KB")
+                    :title nil 
+                    :ID nil
+                    :PID nil
+                    :func org-xob--get-forlinks
+                    :items nil))
+
+;; sharing buffer-local variables
+;; (setq-local vvv 5)
+;; (buffer-local-value 'vvv (get-buffer "workfile.el"))
+
+;; seems messy
+;; for name, test equal of not-equal
+;; (let* ((linktype (plist-get source :name))
+;;        (test (if (equal linktype "backlinks")
+;;                  (lambda (x y) (equal x y))
+;;                (if (equal linktype "forelinks")
+;;                    (lambda (x y) (not (equal x y)))))))
+;;   (org-id-goto (plist-get source :PID))
+;;   (plist-put source :items
+;;              (org-element-map (org-element-parse-buffer) 'link
+;;                (lambda (link)
+;;                  (if (funcall test (org-element-property
+;;                                     :drawer-name (cadr (org-element-lineage link)))
+;;                               "BACKLINKS")
+;;                      (org-element-property :path link))))))

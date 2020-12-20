@@ -211,6 +211,7 @@
 ;;;;; Commands
 
 ;;;###autoload
+;;;;;; Main Commands
 (defun org-xob-start ()
   "Start the xob system: check if state files exist and load state or initialize new."
   (interactive)
@@ -301,77 +302,10 @@
       (select-window org-xob--sideline-window)
       (display-buffer-same-window org-xob--context-buffer nil))))
 
-;;;;;; Context Commands
-;;;###autoload
-;;;;;;; Backlinks 
-;;;###autoload
-;; TODO maybe instead use my hashtable to get heading titles
-(defun org-xob-backlinks-headings (ID)
-  "Load the backlinks tree for node ID into the context buffer.
-If it is already there, then refresh it. Show backlinks just as headings."
-  (interactive)
-  (save-window-excursion 
-    (with-current-buffer org-xob--context-buffer
-      (if (org-xob--goto-heading org-xob-backlinks-tree)
-          (progn
-            (org-xob--clear-source-at-point))
-        (progn
-          (goto-char (point-max))
-          (org-insert-heading (4) 'invisible-ok 'TOP)
-          (insert org-xob-short-title)
-          (setq org-xob-backlinks-tree (org-id-get-create))
-          (org-toggle-tag "KB" 'ON)
-          (org-toggle-tag "backlinks" 'ON)
-          (setq org-xob-node-backlinks (cons (org-xob--get-backlinks ID)
-                                             (org-xob-backlinks-tree)))))
-      (org-xob-update-kb-context-at-point org-xob-node-backlinks 'headings))))
-
-(defun org-xob-to-heading ()
-  "Converts subtree to the headline and properties drawer only.
-This is idempotent and application to such a heading makes no change.
-This can be applied to heading at point or used in a mapping."
-  (interactive)
-  (save-excursion
-    (save-restriction 
-      (org-back-to-heading t)
-      (org-mark-subtree)
-      (org-end-of-meta-data t)
-      (call-interactively #'delete-region))))
-
-;;;###autoload
-(defun org-xob-backlinks-summaries ()
-  "Show backlinks with summaries. This is defined as the first paragraph if it exists."
-  (interactive))
-
-(defun org-xob--first-paragraph ()
-  "Return the first paragraph of heading at point."
-  (save-excursion 
-    (org-end-of-meta-data 'full)
-    (let ((p (org-element-at-point)))
-      (buffer-substring-no-properties (org-element-property :contents-begin p)
-                                      (org-element-property :contents-end p)))))
-
-;;;###autoload
-(defun org-xob-backlinks-body ()
-  "Show backlinks contents, but without subheading content."
-  (interactive))
-
-;;;###autoload
-(defun org-xob-backlinks-full ()
-  "Show backlinks contents, including subheading content."
-  (interactive))
-
-;;;;;;; Change Node Presentation
-;;;###autoload
-;; ??
-;; TODO 
-(defun org-xob-to-full-node ()
-  "Converts node item at point to full node."
-  (interactive))
-
 ;;;###autoload
 ;; TODO
 (defun org-xob-heading-to-node ()
+  "Convenience function to convert current content into xob KB nodes."
   (interactive)
   (unless (org-xob--is-node-p)
     ;; TODO get heading title and call modified make node (capture)
@@ -386,13 +320,65 @@ Simply removes heading ID from the hash tables."
   ;; TODO remove from other tables
   (remhash (org-id-get (point)) org-xob--id-node))
 
+;;;;;; Context Commands
+
+;;;;;;; Backlinks 
+(defun org-xob-show-backlinks ()
+  "Show backlinks contents, including subheading content."
+  (interactive))
 
 ;;;;;;; Forelinks 
 (defun org-xob-show-forlinks ()
   (interactive))
+;;;;;;; Change Node Presentation
+
+(defun org-xob-to-heading ()
+  "Converts subtree to the headline and properties drawer only.
+This is idempotent and application to such a heading makes no change.
+This can be applied to heading at point or used in a mapping."
+  (interactive)
+  (save-excursion
+    (save-restriction 
+      (org-back-to-heading t)
+      (org-mark-subtree)
+      (org-end-of-meta-data t)
+      (call-interactively #'delete-region))))
+
+;; TODO test 
+;;;###autoload
+(defun org-xob-to-summaries ()
+  "Show backlinks with summaries. This is defined as the first paragraph if it exists."
+  (interactive)
+  (org-end-of-meta-data t)
+  (insert
+   (save-excursion
+     (org-xob-to-heading)
+     (org-id-goto (org-entry-get (point) "PID"))
+     (org-end-of-meta-data 'full)
+     (let ((p (org-element-at-point)))
+       (buffer-substring-no-properties (org-element-property :contents-begin p)
+                                       (org-element-property :contents-end p)))))
+  (org-back-to-heading t))
+
+;;;###autoload
+(defun org-xob-to-body ()
+  "Show node top level contents, only show subheading headlines."
+  (interactive))
+
+;;;###autoload
+;; ??
+;; TODO 
+(defun org-xob-to-full-node ()
+  "Converts node item at point to full node."
+  (interactive))
+
 ;;;;;;; ql search 
 ;;;;; Buffer functions 
 ;; Parsing <- heading?
+
+;; TODO local var on indirect buffer?
+
+;; TODO recheck: probably do more for both
 
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
@@ -413,25 +399,9 @@ Simply removes heading ID from the hash tables."
   (with-current-buffer org-xob--context-buffer
     (org-mode)))
 
-
 ;;;;; Contexts
 
-;; TODO
-(defun org-xob-update-kb-context-at-point (source)
-  (interactive)
-  (mapcar (lambda (ID)
-            ) (car source)))
-
-(defun org-xob--get-backlinks (ID)
-  "Return backlinks as a list of IDs. Assumes org-superlinks convention where the backlinks are in a drawer named BACKLINKS."
-  (org-element-map (org-element-parse-buffer) 'link
-    (lambda (link)
-      (if (equal (org-element-property
-                  :drawer-name (cadr (org-element-lineage link)))
-                 "BACKLINKS")
-          (org-element-property :path link)))))
-
-;; TODO maybe replace activate, now that indirect buffer being used
+;; TODO replace , old way
 (defun org-xob--node-full (ID)
   "Inserts the full node as a subheading at point."
   (save-window-excursion
@@ -444,13 +414,112 @@ Simply removes heading ID from the hash tables."
   (org-xob--node-add-timed-property "MODIFIED")
   (org-id-get-create 'FORCE))
 
-(defun org-xob-refresh-source ()
+;; TODO unfinished - local or not? fill in blanks, test
+(setq-local org-xob--source-backlinks
+            '(:name "backlinks"
+                    :tags ("KB")
+                    :title nil 
+                    :ID nil
+                    :PID nil
+                    :func org-xob--get-backlinks
+                    :items nil))
+
+(setq-local org-xob--source-forlinks
+            '(:name "forlinks"
+                    :tags ("KB")
+                    :title nil 
+                    :ID nil
+                    :PID nil
+                    :func org-xob--get-forlinks
+                    :items nil))
+
+;; CORRECT -------
+
+
+
+;; TODO maybe instead use my hashtable to get heading titles
+;; TODO refactor
+;;;###autoload
+(defun org-xob--node-get-links (source)
+  "Populates sources item list from the node. The items are represented by their
+respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
+which are all other links that are KB nodes. Assumes org-superlinks convention
+where the backlinks are in a BACKLINKS drawer."
+  ;; TODO window?
+  (save-window-excursion
+    ;; for name, test equal of not-equal
+    (let* ((linktype (plist-get source :name))
+           (test (if (equal linktype "backlinks")
+                     (lambda (x) (x))
+                   (if (equal linktype "forelinks")
+                       (lambda (x) (not x))))))
+      (org-id-goto (plist-get source :PID))
+      (plist-put source :items
+                 (org-element-map (org-element-parse-buffer) 'link
+                   (lambda (link)
+                     (if (funcall test (equal (org-element-property
+                                               :drawer-name (cadr (org-element-lineage link)))
+                                              "BACKLINKS"))
+                         (org-element-property :path link))))))))
+
+(defun org-xob--source-build (source)
+  "Open a source tree for node mainID into the context buffer.
+If it is already there, then refresh it. source items are shown as org headings.
+source is a plist that describes the content source."
+  (interactive)
+  (save-window-excursion 
+    (with-current-buffer org-xob--context-buffer
+      ;; TODO ok?
+      (if (not (member source org-xob--node-soures)))
+      ;; TODO ok?
+      (if (not (org-xob--goto-heading (plist-get source :PID)))
+          (progn
+            (goto-char (point-max)) ;; respecting content below is this needed?
+            (org-insert-heading (4) 'invisible-ok 'TOP)
+            (insert (plist-get source :title))
+            (plist-put source :ID (org-id-get-create))
+            (dolist (el (plist-get source :tags))
+              (org-toggle-tag el 'ON))
+            (org-toggle-tag (plist-get source :name)'ON)
+            ;; FIX? for kb needs the parent id , but not all sources
+            ;; (plist-put source :items (funcall (plist-get source :func)))
+            (funcall (plist-get source :func) source)
+            (cons source 'org-xob--node-sources)))
+      (org-xob-refresh-source source))))
+
+(defun org-xob-source-refresh (source)
   "Remake source tree. Check if items need to be added or removed.
 todo - possibly refresh item contents if changes were made.
 (this requires knowing what is displayed)"
-  )
+  (let ((temp (copy-tree (plist-get source :items))))
+    (org-xob--map-source
+     (lambda ()
+       (let ((pid (org-entry-get (point) "PID")))
+         ;; TODO any quoting? is that best way to delete?
+         (if (member pid temp)
+             (setq temp (delete pid temp))
+           (progn
+             (org-mark-subtree)
+             (delete-region)))
+         (if temp
+             (dolist (el temp)
+               (org-xob--source-add-item el)))))
+     (plist-get source :ID))))
 
-;; CORRECT 
+(defun org-xob--source-add-item (ID)
+  "Appends a single entry to the end of the source subtree.
+Assumes point is on the source heading."
+  (let ((title (gethash ID org-xob--id-node)))
+    (if title 
+        (save-excursion 
+          (org-insert-subheading '(4))
+          ;; alt (org-edit-headline (org-xob--ID-title ID))
+          (insert title)
+          (org-entry-put (point) "PID" ID)
+          ;; needed?
+          (org-id-get-create 'FORCE))
+      (message "not a valid knowledge base ID: %s" ID))))
+
 (defun org-xob--map-source (func &optional ID)
   "Apply the function func to every child-item of a xob source.
 If the optional ID of a xob source is given, then apply func to that source.
@@ -480,7 +549,6 @@ If an ID argument is supplied, then check the heading associated with it."
         (if (gethash temp org-xob--id-node) t nil)
       nil)))
 
-;; TODO parent(s)? not at-point?
 (defun org-xob--is-source-p (&optional ID)
   "Check if a heading is a valid xob source.
 Called interactively it defaults to heading at point.
@@ -489,9 +557,17 @@ If an ID argument is supplied, then check the heading associated with it."
   (let ((temp (if ID ID
                 (org-id-get nil))))
     (if temp
-        ;; TODO fix this, what makes a source? 
-        (if (gethash temp org-xob--id-node) t nil)
+        (if (member temp org-xob--node-sources) t nil)
       nil)))
+
+;; TODO finish or replace 
+(defun org-xob--goto-heading (ID)
+  "Go to heading in current buffer with ID."
+  (org-with-wide-buffer 
+   (goto-char (point-min))
+   (when (re-search-forward ID nil t)
+     (progn 
+       (org-back-to-heading 'invisible-ok)))))
 
 ;; -------
 
