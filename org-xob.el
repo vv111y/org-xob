@@ -187,8 +187,8 @@
          :immediate-finish t
          :ntype "context.day")))
 
-;;;; Frontend
-;;;;; Minor Mode
+;;;; Minor Mode
+
 ;;;###autoload
 (define-minor-mode org-xob-minor-mode
   "Org-Exobrain Minor Mode."
@@ -208,10 +208,9 @@
       ;; (remove-hook 'after-change-functions #'org-xob--sync-edits)
       )))
 
-;;;;; Commands
-
+;;;; Commands
+;;;;; Main Commands
 ;;;###autoload
-;;;;;; Main Commands
 (defun org-xob-start ()
   "Start the xob system: check if state files exist and load state or initialize new."
   (interactive)
@@ -275,17 +274,22 @@
                                                  (org-xob--activate-node ID)
                                                (org-xob--edit-node ID title)))))))
 
-;; TODO superlink?
+;; TODO finish and/or superlink
+;; TODO do I change hash table name?
+;; TODO do I call this differently? 
 ;;;###autoload
 (defun org-xob-link ()
-  "Insert node xob link at point."
+  "Inserts a properly formatted xob node link at point."
   (interactive)
   (when (not org-xob-on-p)
     (org-xob-start))
+  (org-insert-link nil (concat "ID:" ID) (org-xob--ID-title ID))
   ;; call find-node 
+  ;; if not there, make new node
   ;; make link 
   ;; is backlink already there?
   ;; else make backlink 
+  ;; add entry to forelink tree, source plist
   )
 
 ;;;###autoload
@@ -302,8 +306,8 @@
       (select-window org-xob--sideline-window)
       (display-buffer-same-window org-xob--context-buffer nil))))
 
-;;;###autoload
 ;; TODO
+;;;###autoload
 (defun org-xob-heading-to-node ()
   "Convenience function to convert current content into xob KB nodes."
   (interactive)
@@ -312,26 +316,43 @@
     ;; want to leave it in place
     ))
 
+;; TODO
 ;;;###autoload
 (defun org-xob-remove-node ()
   "Converts node item at point to a heading.
 Simply removes heading ID from the hash tables."
   (interactive)
+  (when (not org-xob-on-p)
+    (org-xob-start))
   ;; TODO remove from other tables
+  ;; delete node
+  ;; delete context footprint
+  ;; for each exo-link in body, visit node and remove backlink
+  ;; for each exo-link in backlinks, visite node and kill link, leave link text
   (remhash (org-id-get (point)) org-xob--id-node))
 
-;;;;;; Context Commands
+;;;;; KB Context Commands
 
-;;;;;;; Backlinks 
+;; TODO?
+;;;###autoload
 (defun org-xob-show-backlinks ()
   "Show backlinks contents, including subheading content."
   (interactive))
 
-;;;;;;; Forelinks 
+;; TODO?
+;;;###autoload
 (defun org-xob-show-forlinks ()
   (interactive))
-;;;;;;; Change Node Presentation
 
+;; TODO
+;;;###autoload
+(defun org-xob-ql-search ()
+  "Use org-ql to search the KB. Creates a new source in the context buffer."
+  (interactive))
+
+;;;;; Context Presentation Commands
+
+;;;###autoload
 (defun org-xob-to-heading ()
   "Converts subtree to the headline and properties drawer only.
 This is idempotent and application to such a heading makes no change.
@@ -344,9 +365,9 @@ This can be applied to heading at point or used in a mapping."
       (org-end-of-meta-data t)
       (call-interactively #'delete-region))))
 
-;; TODO test 
+;; TEST 
 ;;;###autoload
-(defun org-xob-to-summaries ()
+(defun org-xob-to-summary ()
   "Show backlinks with summaries. This is defined as the first paragraph if it exists."
   (interactive)
   (org-end-of-meta-data t)
@@ -360,20 +381,22 @@ This can be applied to heading at point or used in a mapping."
                                        (org-element-property :contents-end p)))))
   (org-back-to-heading t))
 
+;; TODO 
 ;;;###autoload
 (defun org-xob-to-body ()
   "Show node top level contents, only show subheading headlines."
   (interactive))
 
-;;;###autoload
-;; ??
 ;; TODO 
+;;;###autoload
 (defun org-xob-to-full-node ()
-  "Converts node item at point to full node."
+  "Converts node item at point to full node. The ID is still modified as
+it is still a copy."
   (interactive))
 
-;;;;;;; ql search 
-;;;;; Buffer functions 
+;;;; Backend
+;;;;; Buffer Functions 
+
 ;; Parsing <- heading?
 
 ;; TODO local var on indirect buffer?
@@ -399,7 +422,7 @@ This can be applied to heading at point or used in a mapping."
   (with-current-buffer org-xob--context-buffer
     (org-mode)))
 
-;;;;; Contexts
+;;;;; Contexts Functions
 
 ;; TODO replace , old way
 (defun org-xob--node-full (ID)
@@ -413,6 +436,32 @@ This can be applied to heading at point or used in a mapping."
                  (org-entry-get (point) "ID" nil nil))
   (org-xob--node-add-timed-property "MODIFIED")
   (org-id-get-create 'FORCE))
+
+;; -----------------------
+;; TODO integrate
+(defun org-xob--node-header (ID)
+  "Inserts a subheading with title of the node."
+  (org-insert-subheading (4))
+  (org-edit-headline (org-xob--ID-title ID)))
+
+(defun org-xob--node-link-header (ID)
+  "Inserts a subheading with an org link to the node."
+  (org-insert-subheading (4))
+  (org-edit-headline (org-xob--node-link ID)))
+
+(defun org-xob--node-add-time-property (property)
+  (org-entry-put (point) property
+                 (number-to-string
+                  (car (time-convert (current-time) '10000)))))
+
+;; used for day node
+(defun org-xob--push-heading-link (ID target)
+  "Inserts into target a subheading that is a link to node ID."
+  (save-window-excursion
+    (org-xob--activate-node target)
+    (org-insert-subheading (org-insert-link nil ID (node-title (org-xob--id-node ID))))))
+;; -----------------------
+
 
 ;; TODO unfinished - local or not? fill in blanks, test
 (setq-local org-xob--source-backlinks
@@ -432,6 +481,7 @@ This can be applied to heading at point or used in a mapping."
                     :PID nil
                     :func org-xob--get-forlinks
                     :items nil))
+;; -----------------------
 
 ;; CORRECT -------
 
@@ -487,7 +537,7 @@ source is a plist that describes the content source."
             (cons source 'org-xob--node-sources)))
       (org-xob-refresh-source source))))
 
-(defun org-xob-source-refresh (source)
+(defun org-xob--source-refresh (source)
   "Remake source tree. Check if items need to be added or removed.
 todo - possibly refresh item contents if changes were made.
 (this requires knowing what is displayed)"
@@ -575,64 +625,7 @@ If an ID argument is supplied, then check the heading associated with it."
 ;;;;;; Clocking
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
-;;;; Backend
-
-;;;;; Node Objects
-(cl-defstruct node title type backlinks)
-
-;; TODO do I change hash table?
-;; TODO do I call this differently? 
-(defun org-xob--node-link (ID)
-  "Inserts a properly formatted org link"
-  (org-insert-link nil (concat "ID:" ID) (org-xob--ID-title ID)))
-
-(defun org-xob--node-header (ID)
-  "Inserts a subheading with title of the node."
-  (org-insert-subheading (4))
-  (org-edit-headline (org-xob--ID-title ID)))
-
-(defun org-xob--node-link-header (ID)
-  "Inserts a subheading with an org link to the node."
-  (org-insert-subheading (4))
-  (org-edit-headline (org-xob--node-link ID)))
-
-(defun org-xob--node-summary (ID))
-
-(defun org-xob--node-add-time-property (property)
-  (org-entry-put (point) property
-                 (number-to-string
-                  (car (time-convert (current-time) '10000)))))
-
-(defun org-xob-push--heading-link (ID target)
- (save-window-excursion
-   (org-xob--activate-node target)
-   (org-insert-subheading (org-insert-link nil ID (node-title (org-xob--id-node ID))))))
-
-(defun org-xob--link-hijack ()
-  "After following org-id link, jump to the activated node, creating it if necessary."
-  (let ((ID (org-id-get (point) nil nil)))
-    (if (org-xob--id-node ID)
-        (org-xob--activate-node ID))))
-
-;; (add-hook 'org-follow-link-hook #'org-xob--link-hijack)
-
-;; TODO replace?
-(defun org-xob--activate-node (ID)
-  "Copies KB node with ID to current location and sets
-appropriate properties as a derivative node."
-  ;; TODO make main buffer, and whatever else for sync-editing style
-  (org-xob--node-full))
-;;;;; Edit syncing
-(defun org-xob--sync-edits (beg end len)
-  (goto-char beg)
-  ;; (if org-xob--kb-node-p)
-  (if (member "kb" (org-get-tags))
-      (org-xob--sync-node)))
-
-(defun org-xob--sync-node ()
-  )
-
-;;;;; New node org-capture
+;;;;; Node Functions
 
 (defun org-xob--capture (title)
   (let* ((org-capture-templates org-xob--templates)
@@ -663,10 +656,19 @@ appropriate properties as a derivative node."
 
 (add-hook 'org-capture-mode-hook #'org-xob--new-node)
 
-;;;;; Node links
+;; since I have forelinks, clicking link usually means to attend to
+(defun org-xob--link-hook-fn ()
+  "If a link is a xob node, then reopen node in xob edit mode." 
+  ;; TODO if on xob node, then open as edit
+  ;; call get node or --edit-node
+  (let ((ID (org-id-get (point) nil nil)))
+    (if (org-xob--id-node ID)
+        (org-xob--activate-node ID))))
+
+(add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
 
 
-;;;;;; Node Versioning
+;;;;; Node Versioning
 
 
 ;; (defun org-xob--sync-node (node)
@@ -693,9 +695,8 @@ appropriate properties as a derivative node."
 
 
 
-;;;;;; KB Traversal
 
-;;;;;; exobrain management
+;;;;; xob Management
 (defun org-xob-visit-nodes (func)
   "Iterate over all KB in all files"
   (interactive)
@@ -743,8 +744,6 @@ appropriate properties as a derivative node."
     (cl-pushnew filename (xob-state-kb-files xob))
     (setf (xob-state-kb-current xob) filename)
     (setf (xob-state-kb-count xob) (+ 1))))
-
-;;;;; diagnostics
 
 (defun org-xob-rebuild ()
   "Traverse all nodes and correct any meta errors."

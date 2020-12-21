@@ -42,18 +42,16 @@
 (pulse-momentary-highlight-one-line (point))
 (pulse-lighten-highlight)
 
-;;; org-ql 
-(require 'org-ql)
-(org-ql-search 'all
-  '(property "CPARENTS"))
-;;; uneeded in xob
-;; I can just delete stuff
+;;; from xob.el
+
+;; uneeded in xob I can just delete stuff
 (defun org-xob-hide-backlinks ()
   (interactive))
 
 (defun org-xob-hide-forlinks ()
   (interactive))
-;;; from xob.el
+;; --------
+
 ;; conversion stuff, not needed 
 
 ;;;###autoload
@@ -68,8 +66,7 @@
   (interactive)
   (org-xob--convert-node-item 'heading))
 
-;; TODO check what form at point
-;; call right fn 
+;; TODO check what form at point, call right fn 
 (defun org-xob--convert-node-item (to)
   "Converts node item at point to the form specified by 'to'."
   (interactive)
@@ -79,9 +76,10 @@
             (message "Node item is already in that form.")
           ())
       )))
+
 ;; ---
 ;; THIS IS FOR THE IMPLEMENTATION THAT ALLOWS FOR EDITABLE NODES
-;; TODO maybe replace activate, now that indirect buffer being used
+;; replace activate, now that indirect buffer being used
 (defun org-xob--node-full (ID)
   "Inserts the full node as a subheading."
   (save-window-excursion
@@ -106,18 +104,6 @@
       )))
 
 ;;;###autoload
-(defun org-xob-delete-node ()
-  (interactive)
-  (when (not org-xob-on-p)
-    (org-xob-start))
-  ;; delete node
-  ;; delete context footprint
-  ;; for each exo-link in body, visit node and remove backlink
-  ;; for each exo-link in backlinks, visite node and kill link, leave link text
-  nil
-  )
-
-;;;###autoload
 (defun org-xob-clone-node ()
   "Alternative execution for xob. Create a clone for editing.
 This does not use the clone transclusion package."
@@ -132,6 +118,8 @@ This does not use the clone transclusion package."
   ;; parent backlink has subheading 'clones' 
   )
 
+;; -----------------------
+;; not this version
 (defun org-xob-context--inline ()
   "Show the contextual nodes as a subheading."
   )
@@ -139,6 +127,7 @@ This does not use the clone transclusion package."
 (defun org-xob-context--outline ()
   "Show the contextual nodes as adjacent headings."
   )
+;; -----------------------
 
 (defun org-xob-refresh-sources ()
   "Show the contextual nodes as adjacent headings."
@@ -150,3 +139,24 @@ This does not use the clone transclusion package."
   (let ((ID (org-id-get nil nil nil)))
     () ;; delete item 
     (org-xob--node-full (org-id-get nil nil nil))))
+
+;;;;; Edit syncing not for v0.5
+
+
+(defun org-xob--sync-edits (beg end len)
+  (goto-char beg)
+  ;; (if org-xob--kb-node-p)
+  (if (member "kb" (org-get-tags))
+      (org-xob--sync-node)))
+
+(defun org-xob--sync-node ())
+
+;; TODO replace? yes not using now
+(defun org-xob--activate-node (ID)
+  "Copies KB node with ID to current location and sets
+appropriate properties as a derivative node."
+  ;; TODO make main buffer, and whatever else for sync-editing style
+  (org-xob--node-full))
+
+(cl-defstruct node title type backlinks)
+
