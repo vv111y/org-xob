@@ -333,16 +333,22 @@ Simply removes heading ID from the hash tables."
 
 ;;;;; KB Context Commands
 
-;; TODO?
+;; TEST
 ;;;###autoload
 (defun org-xob-show-backlinks ()
   "Show backlinks contents, including subheading content."
-  (interactive))
+  (interactive)
+  (save-window-excursion
+    (org-xob--node-get-links org-xob--source-backlinks)
+    (org-xob--source-build org-xob--source-backlinks)))
 
-;; TODO?
+;; TEST
 ;;;###autoload
 (defun org-xob-show-forlinks ()
-  (interactive))
+  (interactive)
+  (save-window-excursion
+    (org-xob--node-get-links org-xob--source-forlinks)
+    (org-xob--source-build org-xob--source-forlinks)))
 
 ;; TODO
 ;;;###autoload
@@ -373,26 +379,74 @@ This can be applied to heading at point or used in a mapping."
   (org-end-of-meta-data t)
   (insert
    (save-excursion
-     (org-xob-to-heading)
-     (org-id-goto (org-entry-get (point) "PID"))
-     (org-end-of-meta-data 'full)
-     (let ((p (org-element-at-point)))
-       (buffer-substring-no-properties (org-element-property :contents-begin p)
-                                       (org-element-property :contents-end p)))))
+     (org-with-wide-buffer
+      (org-xob-to-heading)
+      (org-id-goto (org-entry-get (point) "PID"))
+      (org-end-of-meta-data 'full)
+      (let ((p (org-element-at-point)))
+        (buffer-substring-no-properties (org-element-property :contents-begin p)
+                                        (org-element-property :contents-end p))))))
   (org-back-to-heading t))
 
-;; TODO 
+;; TEST 
 ;;;###autoload
-(defun org-xob-to-body ()
-  "Show node top level contents, only show subheading headlines."
-  (interactive))
+(defun org-xob-to-node-tree ()
+  "Show only subheadings of node."
+  (interactive)
+  (org-end-of-meta-data 'full)
+  (newline)
+  (insert
+   (let ((str))
+     (save-excursion
+       (save-restriction
+         ;; (org-id-goto (org-entry-get (point) "PID"))
+         (org-narrow-to-subtree)
+         (org-map-tree (lambda ()
+                         (setq str (concat str 
+                                           (buffer-substring-no-properties
+                                            (line-beginning-position)
+                                            (line-end-position)
+                                            "\n")))))))
+     str)))
 
-;; TODO 
+
+;; -----------------------------------------------------------------
+;; TODO TEST 
+;; TODO clear kill-ring 
+
+;;;###autoload
+(defun org-xob-to-section ()
+  "Get the top section only, no subheadings."
+  (interactive)
+  (org-xob-to-heading)
+  (save-excursion
+    (save-restriction
+      (org-id-goto (org-entry-get (point) "PID"))
+      (org-mark-subtree)
+      (org-end-of-meta-data t)
+      ;; TODO
+      ;; (set-mark loc) ;; to determine loc
+      (copy-region-as-kill 'REGION)))
+  (org-back-to-heading)
+  (org-end-of-meta-data t)
+  (insert (car kill-ring-yank-pointer)))
+
 ;;;###autoload
 (defun org-xob-to-full-node ()
   "Converts node item at point to full node. The ID is still modified as
-it is still a copy."
-  (interactive))
+it is still a copy, however all other property drawer contents is unchanged."
+  (interactive)
+  (org-xob-to-heading)
+  (save-excursion
+    (save-restriction 
+      (org-id-goto (org-entry-get (point) "PID"))
+      (org-mark-subtree)
+      (org-end-of-meta-data t)
+      (copy-region-as-kill 'REGION)))
+  (org-back-to-heading)
+  (org-end-of-meta-data t)
+  (insert (car kill-ring-yank-pointer)))
+;; -----------------------------------------------------------------
 
 ;;;; Backend
 ;;;;; Buffer Functions 
@@ -424,45 +478,6 @@ it is still a copy."
 
 ;;;;; Contexts Functions
 
-;; TODO replace , old way
-(defun org-xob--node-full (ID)
-  "Inserts the full node as a subheading at point."
-  (save-window-excursion
-    (save-restriction 
-      (org-id-goto ID)
-      (org-copy-subtree)))
-  (org-paste-subtree nil nil nil 'REMOVE)
-  (org-entry-put (point) "PARENT" 
-                 (org-entry-get (point) "ID" nil nil))
-  (org-xob--node-add-timed-property "MODIFIED")
-  (org-id-get-create 'FORCE))
-
-;; -----------------------
-;; TODO integrate
-(defun org-xob--node-header (ID)
-  "Inserts a subheading with title of the node."
-  (org-insert-subheading (4))
-  (org-edit-headline (org-xob--ID-title ID)))
-
-(defun org-xob--node-link-header (ID)
-  "Inserts a subheading with an org link to the node."
-  (org-insert-subheading (4))
-  (org-edit-headline (org-xob--node-link ID)))
-
-(defun org-xob--node-add-time-property (property)
-  (org-entry-put (point) property
-                 (number-to-string
-                  (car (time-convert (current-time) '10000)))))
-
-;; used for day node
-(defun org-xob--push-heading-link (ID target)
-  "Inserts into target a subheading that is a link to node ID."
-  (save-window-excursion
-    (org-xob--activate-node target)
-    (org-insert-subheading (org-insert-link nil ID (node-title (org-xob--id-node ID))))))
-;; -----------------------
-
-
 ;; TODO unfinished - local or not? fill in blanks, test
 (setq-local org-xob--source-backlinks
             '(:name "backlinks"
@@ -481,19 +496,13 @@ it is still a copy."
                     :PID nil
                     :func org-xob--get-forlinks
                     :items nil))
-;; -----------------------
-
-;; CORRECT -------
-
-
 
 ;; TODO maybe instead use my hashtable to get heading titles
 ;; TODO refactor
-;;;###autoload
 (defun org-xob--node-get-links (source)
   "Populates sources item list from the node. The items are represented by their
 respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
-which are all other links that are KB nodes. Assumes org-superlinks convention
+which are all other links xob KB nodes. Assumes org-superlinks convention
 where the backlinks are in a BACKLINKS drawer."
   ;; TODO window?
   (save-window-excursion
@@ -511,7 +520,10 @@ where the backlinks are in a BACKLINKS drawer."
                                                :drawer-name (cadr (org-element-lineage link)))
                                               "BACKLINKS"))
                          (org-element-property :path link))))))))
+;; -----------------------
 
+
+;; --source tree fns--
 (defun org-xob--source-build (source)
   "Open a source tree for node mainID into the context buffer.
 If it is already there, then refresh it. source items are shown as org headings.
@@ -526,7 +538,7 @@ source is a plist that describes the content source."
           (progn
             (goto-char (point-max)) ;; respecting content below is this needed?
             (org-insert-heading (4) 'invisible-ok 'TOP)
-            (insert (plist-get source :title))
+            (org-edit-headline (plist-get source :title))
             (plist-put source :ID (org-id-get-create))
             (dolist (el (plist-get source :tags))
               (org-toggle-tag el 'ON))
@@ -563,11 +575,9 @@ Assumes point is on the source heading."
     (if title 
         (save-excursion 
           (org-insert-subheading '(4))
-          ;; alt (org-edit-headline (org-xob--ID-title ID))
-          (insert title)
+          (org-edit-headline title)
           (org-entry-put (point) "PID" ID)
-          ;; needed?
-          (org-id-get-create 'FORCE))
+          (org-id-get-create 'FORCE)) ;; needed?
       (message "not a valid knowledge base ID: %s" ID))))
 
 (defun org-xob--map-source (func &optional ID)
@@ -589,6 +599,7 @@ Otherwise apply to source at point."
                   (outline-get-next-sibling))))
         (message "not a xob source.")))))
 
+;; --predicates--
 (defun org-xob--is-node-p (&optional ID)
   "Check if a heading is a xob node. Called interactively it defaults to heading at point.
 If an ID argument is supplied, then check the heading associated with it."
@@ -610,31 +621,44 @@ If an ID argument is supplied, then check the heading associated with it."
         (if (member temp org-xob--node-sources) t nil)
       nil)))
 
-;; TODO finish or replace 
-(defun org-xob--goto-heading (ID)
-  "Go to heading in current buffer with ID."
-  (org-with-wide-buffer 
-   (goto-char (point-min))
-   (when (re-search-forward ID nil t)
-     (progn 
-       (org-back-to-heading 'invisible-ok)))))
+;; --navigation--
+(defun org-xob--goto-buffer-heading (ID)
+  "Go to heading in current buffer with ID. Does not require org-id."
+  (let ((m (point)))
+    (org-with-wide-buffer 
+     (goto-char (point-min))
+     (if (re-search-forward ID nil t)
+         (org-back-to-heading 'invisible-ok)
+       (progn
+         (goto-char m)
+         (message "%s not found." ID))))))
 
-;; -------
+;; --link headers--
+(defun org-xob--insert-link-header (ID)
+  "Inserts a subheading with an org link to the node."
+  (condition-case nil
+      (progn
+        (org-insert-subheading (4))
+        (org-edit-headline (org-xob--node-link ID)))
+    (error (message "Node %s not found" ID))))
+
+(defun org-xob--push-heading-link (ID target)
+  "Inserts a subheading into target with a link to node ID as the title.
+Used for activity material in day node."
+  (save-window-excursion
+    (condition-case nil 
+        (progn 
+          (org-id-goto target)
+          (org-insert-subheading)
+          (org-insert-link nil ID (node-title (org-xob--id-node ID))))
+      (error (message "Node %s not found" target)))))
+
 
 ;;;;; Activity
 ;;;;;; Clocking
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
 ;;;;; Node Functions
-
-(defun org-xob--capture (title)
-  (let* ((org-capture-templates org-xob--templates)
-         ID)
-    ;; TODO test
-    (if (member 'title 'org-xob--auto-types)
-        (org-capture nil title)
-      (org-capture))
-    ID))
 
 (defun org-xob--new-node ()
   (when (org-capture-get :exobrain-node)
@@ -653,6 +677,15 @@ If an ID argument is supplied, then check the heading associated with it."
       (puthash title ID org-xob--title-id)
       (puthash ID node org-xob--id-node)
       ID)))
+
+(defun org-xob--capture (title)
+  (let* ((org-capture-templates org-xob--templates)
+         ID)
+    ;; TODO test
+    (if (member 'title 'org-xob--auto-types)
+        (org-capture nil title)
+      (org-capture))
+    ID))
 
 (add-hook 'org-capture-mode-hook #'org-xob--new-node)
 
@@ -692,6 +725,13 @@ If an ID argument is supplied, then check the heading associated with it."
 ;;    ;; node id
 ;;    "-"
 ;;    (format-time-string "%j-%H-%M")))
+
+(defun org-xob--node-add-time-property (property)
+  "Convenience function to add high resolution time property.
+Maybe useful for syncing."
+  (org-entry-put (point) property
+                 (number-to-string
+                  (car (time-convert (current-time) '10000)))))
 
 
 

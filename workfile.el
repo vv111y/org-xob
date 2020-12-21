@@ -234,11 +234,29 @@
 
 ;; Call FUN for every heading underneath the current one.
 (org-map-tree FUN)
+
+;; great way to get empty subtree
+(kill-new)
+(let ((str))
+  (org-map-tree (lambda ()
+                  (setq str (concat str 
+                                    (buffer-substring-no-properties
+                                     (line-beginning-position)
+                                     (line-end-position))))))
+  str)
+
+;; org-flag fns do hide/show
+
+;; all stuff before first subheading. could be good except the way I'm doing it now.  
+(org-copy-subtree nil nil nil 'nosubtrees)
+
+;; just the text
 (org-map-tree (lambda ()
                 (print (nth 4 (org-heading-components)))))
 
+;; gets object stuff
 (org-map-tree (lambda ()
-                (print (nth 4 (org-heading-components)))))
+                (print (org-get-heading nil nil nil nil))))
 
 ;; Call FUNC at each headline selected by MATCH in SCOPE.
 (org-map-entries)
@@ -248,9 +266,6 @@
 ;; org-get-heading
 
 (org-forward-heading-same-level)
-
-(text-clone-create)
-modification-hooks
 
 
 ;;;; manipulate subtrees
@@ -266,6 +281,13 @@ modification-hooks
 (progn 
   (org-mark-subtree)
   (org-end-of-meta-data t))
+
+(progn 
+  (org-mark-subtree)
+  (org-end-of-meta-data t)
+  (copy-region-as-kill nil nil 'REGION))
+
+(insert (car kill-ring-yank-pointer))
 
 (set-marker (mark-marker) (- (mark) 1))
 (set-marker (mark-marker) 20)
@@ -392,13 +414,6 @@ first section of text (before the next heading) at point."
               (end (progn (outline-next-visible-heading 1) (point))))
          (list title (buffer-substring-no-properties beg end)))))))
 
-(defun vakker00/org-heading-children ()
-  "Return list of child headings of heading at point."
-  (org-with-wide-buffer
-   (when (org-goto-first-child)
-     (cl-loop collect (org-get-heading t t)
-              while (outline-get-next-sibling)))))
-
 (defun vv-h-s ()
   "Copy to kill ring the heading and the first paragraph of text."
   (interactive)
@@ -427,6 +442,36 @@ first section of text (before the next heading) at point."
       ;; TODO
       (list )))))
 
+;;;; get subheadings
+(defun vv/heading-children ()
+  "Return list of child headings of heading at point."
+  (interactive)
+  (print 
+   (org-with-wide-buffer
+    (when (org-goto-first-child)
+      (cl-loop collect (org-get-heading t t)
+               while (outline-get-next-sibling))))))
+
+(defun org-xob-to-node-tree ()
+  "Show node top level contents, only show subheading headlines."
+  (interactive)
+  (org-end-of-meta-data 'full)
+  (let ((str))
+    
+    (save-excursion
+      (save-restriction
+        (org-narrow-to-subtree)
+        (org-map-tree (lambda ()
+                        (setq str (concat str 
+                                          (buffer-substring-no-properties
+                                           (line-beginning-position)
+                                           (line-end-position))
+                                          "\n"))))
+        ))
+    (org-end-of-subtree)
+    (next-line)
+    (insert str)
+    ))
 ;;;; edit stuff?
 
 (let* ((data (org-element-parse-buffer)))
@@ -556,7 +601,7 @@ Items is a list of org-ids."
 
 ;; (progn
 ;;   (goto-char (point-max))
-;;   (org-insert-heading (4) 'invisible-ok 'TOP)
+;;   (org-insert-heading '(4) 'invisible-ok 'TOP)
 ;;   (insert org-xob-short-title)
 
 (defun org-xob--source-add-item (ID)
@@ -799,6 +844,11 @@ before-change-functions
     ))
 ;; (prin1-to-string (list beg end len (buffer-substring-no-properties beg end))))
 
+;; this is also promising. in subr
+(text-clone-create)
+
+;; ??
+inhibit-modification-hooks
 
 
 ;; hello
@@ -1484,6 +1534,43 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;;   nil 
 ;;   )
 
+;;;; "Search buffers for org heading with ID and place point there."
+
+(org-xob--goto-heading "3A3BD225-A186-4CC4-B900-DF10DAA31B42")
+(setq vv-id "3A3BD225-A186-4CC4-B900-DF10DAA31B42")
+(progn 
+  (re-search-forward vv-id)
+  (org-back-to-heading 'invisible-ok))
+ 
+;; MAYBE or set marker?
+;; not map, loop till found
+;; TODO excessive for this version. I'm at the conext buffer already when called. 
+(defun org-xob--goto-heading (ID)
+  "Search buffers for org heading with ID and place point there."
+  (let ((mm))
+    (save-excursion
+      (save-restriction
+        (setq mm 
+              (catch 'found 
+                (dolist (buf (buffer-list))
+                  (with-current-buffer buf
+                    ;; TODO finer than org
+                    (if (eq major-mode 'org-mode)
+                        (progn
+                          (org-with-wide-buffer 
+                           (goto-char (point-min))
+                           (when (re-search-forward ID nil t)
+                             (progn 
+                               (org-back-to-heading 'invisible-ok)
+                               (throw 'found (point-marker)))))))))))))
+    (if (and (marker-buffer)
+             (car mm))
+        
+        (progn 
+          (switch-to-buffer (marker-buffer mm))
+          (goto-char mm)
+          t)
+      nil)))
 
 
 
@@ -1550,50 +1637,6 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (defvar orb-xob--A-tag "A")
 (defvar orb-xob--node-tag "node")
 
-;;;; "Search buffers for org heading with ID and place point there."
-
-(org-xob--goto-heading "3A3BD225-A186-4CC4-B900-DF10DAA31B42")
-(setq vv-id "3A3BD225-A186-4CC4-B900-DF10DAA31B42")
-(progn 
-  (re-search-forward vv-id)
-  (org-back-to-heading 'invisible-ok))
- 
-;; MAYBE or set marker?
-;; not map, loop till found
-;; TODO excessive for this version. I'm at the conext buffer already when called. 
-(defun org-xob--goto-heading (ID)
-  "Search buffers for org heading with ID and place point there."
-  (let ((mm))
-    (save-excursion
-      (save-restriction
-        (setq mm 
-              (catch 'found 
-                (dolist (buf (buffer-list))
-                  (with-current-buffer buf
-                    ;; TODO finer than org
-                    (if (eq major-mode 'org-mode)
-                        (progn
-                          (org-with-wide-buffer 
-                           (goto-char (point-min))
-                           (when (re-search-forward ID nil t)
-                             (progn 
-                               (org-back-to-heading 'invisible-ok)
-                               (throw 'found (point-marker)))))))))))))
-    (if (and (marker-buffer)
-             (car mm))
-        
-        (progn 
-          (switch-to-buffer (marker-buffer mm))
-          (goto-char mm)
-          t)
-      nil)))
-;;;; convert?
-;; just headings
-;; summaries if there
-;; body & subs
-;; everything
-
-rg-
 ;;; [2020-12-19 Sat 09:43] 
 
 (defun org-xob--display-source (source mainID)
@@ -1671,3 +1714,17 @@ source is a plist that describes the content source."
 ;;                                     :drawer-name (cadr (org-element-lineage link)))
 ;;                               "BACKLINKS")
 ;;                      (org-element-property :path link))))))
+(setq target "boo")
+(condition-case nil 
+    (org-id-goto vvv)
+    (error (message "not found")))
+
+(condition-case nil 
+    ;; (progn) 
+  (print "low") 
+  (print "beem")
+  (error (message "eeem!")))
+
+;; this may not needed for full node, I will ignore ID altogether, and just use PID. 
+;; I may need to change where org-id is used. 
+(org-id-get-create 'FORCE)

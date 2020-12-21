@@ -160,3 +160,36 @@ appropriate properties as a derivative node."
 
 (cl-defstruct node title type backlinks)
 
+;;;;; context copies using org-copy-subtree
+;; -----------------------------------------------------------------
+;; FAIL it copies the heading and prop drawer as well. dupe
+;; TODO prob just make custom region and copy
+;; this way could be used to get meta data
+;;;###autoload
+(defun org-xob-to-section ()
+  "Get the whole top section before any headings underneath."
+  (interactive)
+  (save-excursion
+    (save-restriction
+      (org-id-goto (org-entry-get (point) "PID"))
+      (org-copy-subtree nil nil nil 'nosubtrees)))
+  (org-xob-to-heading)
+  (org-paste-subtree nil nil nil 'REMOVE)
+  (org-entry-put (point) "PID"
+                 (org-entry-get (point) "ID" nil nil))
+  (org-entry-delete "ID"))
+
+;;;###autoload
+(defun org-xob-to-full-node (ID)
+  "Converts node item at point to full node. The ID is still modified as
+it is still a copy, however all other property drawer contents is unchanged."
+  (interactive)
+  (save-excursion
+    (save-restriction 
+      (org-id-goto (org-entry-get (point) "PID"))
+      (org-copy-subtree)))
+  (org-paste-subtree nil nil nil 'REMOVE)
+  (org-entry-put (point) "PID" 
+                 (org-entry-get (point) "ID" nil nil))
+  (org-entry-delete "ID"))
+;; -----------------------------------------------------------------
