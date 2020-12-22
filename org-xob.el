@@ -358,35 +358,34 @@ Simply removes heading ID from the hash tables."
 
 ;;;;; Context Presentation Commands
 
+;; TODO for all, should only do at a subheading, at source head do map 
 ;;;###autoload
-(defun org-xob-to-heading ()
+(defun org-xob-clear-heading ()
   "Converts subtree to the headline and properties drawer only.
 This is idempotent and application to such a heading makes no change.
 This can be applied to heading at point or used in a mapping."
   (interactive)
-  (save-excursion
-    (save-restriction 
-      (org-back-to-heading t)
-      (org-mark-subtree)
-      (org-end-of-meta-data t)
-      (call-interactively #'delete-region))))
+  (org-with-wide-buffer
+    (org-back-to-heading t)
+    (org-mark-subtree)
+    (org-end-of-meta-data t)
+    (call-interactively #'delete-region)))
 
 ;; TEST 
 ;;;###autoload
 (defun org-xob-to-summary ()
   "Show backlinks with summaries. This is defined as the first paragraph if it exists."
   (interactive)
-  (org-end-of-meta-data t)
-  (insert
-   (save-excursion
+  (save-excursion
+    (org-xob-clear-heading)
+    (org-end-of-meta-data 1)
+    (insert
+     (org-id-goto (org-entry-get (point) "PID"))
      (org-with-wide-buffer
-      (org-xob-to-heading)
-      (org-id-goto (org-entry-get (point) "PID"))
       (org-end-of-meta-data 'full)
       (let ((p (org-element-at-point)))
         (buffer-substring-no-properties (org-element-property :contents-begin p)
-                                        (org-element-property :contents-end p))))))
-  (org-back-to-heading t))
+                                        (org-element-property :contents-end p)))))))
 
 ;; TEST 
 ;;;###autoload
@@ -394,59 +393,61 @@ This can be applied to heading at point or used in a mapping."
   "Show only subheadings of node."
   (interactive)
   (org-end-of-meta-data 'full)
+  (org-xob-clear-heading)
   (newline)
   (insert
    (let ((str))
-     (save-excursion
-       (save-restriction
-         ;; (org-id-goto (org-entry-get (point) "PID"))
-         (org-narrow-to-subtree)
-         (org-map-tree (lambda ()
-                         (setq str (concat str 
-                                           (buffer-substring-no-properties
-                                            (line-beginning-position)
-                                            (line-end-position)
-                                            "\n")))))))
+     (org-with-wide-buffer
+       ;; (org-id-goto (org-entry-get (point) "PID"))
+       (org-narrow-to-subtree)
+       (org-map-tree (lambda ()
+                       (setq str (concat str 
+                                         (buffer-substring-no-properties
+                                          (line-beginning-position)
+                                          (line-end-position)
+                                          "\n"))))))
      str)))
 
 
-;; -----------------------------------------------------------------
 ;; TODO TEST 
-;; TODO clear kill-ring 
 
 ;;;###autoload
 (defun org-xob-to-section ()
   "Get the top section only, no subheadings."
   (interactive)
-  (org-xob-to-heading)
-  (save-excursion
-    (save-restriction
-      (org-id-goto (org-entry-get (point) "PID"))
-      (org-mark-subtree)
-      (org-end-of-meta-data t)
-      ;; TODO
-      ;; (set-mark loc) ;; to determine loc
-      (copy-region-as-kill 'REGION)))
+  (org-xob-clear-heading)
+  (org-with-wide-buffer
+   (org-id-goto (org-entry-get (point) "PID"))
+   (org-end-of-meta-data t)
+   ;; TODO fail, moves point 
+   (let ((beg (progn (org-end-of-meta-data t)
+                     (point)))
+         (end (if (org-goto-first-child)
+                  (progn
+                    (previous-line)
+                    (move-end-of-line nil)
+                    (point)))))
+     (copy-region-as-kill beg end)))
   (org-back-to-heading)
   (org-end-of-meta-data t)
-  (insert (car kill-ring-yank-pointer)))
+  (yank)
+  (pop kill-ring))
 
 ;;;###autoload
 (defun org-xob-to-full-node ()
   "Converts node item at point to full node. The ID is still modified as
 it is still a copy, however all other property drawer contents is unchanged."
   (interactive)
-  (org-xob-to-heading)
-  (save-excursion
-    (save-restriction 
-      (org-id-goto (org-entry-get (point) "PID"))
-      (org-mark-subtree)
-      (org-end-of-meta-data t)
-      (copy-region-as-kill 'REGION)))
+  (org-xob-clear-heading)
+  (org-with-wide-buffer
+    (org-id-goto (org-entry-get (point) "PID"))
+    (org-mark-subtree)
+    (org-end-of-meta-data t)
+    (copy-region-as-kill 'REGION))
   (org-back-to-heading)
   (org-end-of-meta-data t)
-  (insert (car kill-ring-yank-pointer)))
-;; -----------------------------------------------------------------
+  (yank)
+  (pop kill-ring))
 
 ;;;; Backend
 ;;;;; Buffer Functions 
@@ -791,6 +792,8 @@ Maybe useful for syncing."
   nil
   )
 
+;;; df
+;; (defmacro org-xob--)
 ;;; End
 
 (provide 'org-xob)

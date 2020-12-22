@@ -396,8 +396,10 @@
     ;;   'no-recursion
     ;;   )
     ;; ))
-
-(org-goto-first-child)
+(progn 
+  (org-goto-first-child)
+  (previous-line)
+  (move-end-of-line nil))
 
 (defun get-headline-with-text ()
   "Return a list consisting of the heading title and the
