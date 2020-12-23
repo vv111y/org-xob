@@ -193,3 +193,55 @@ it is still a copy, however all other property drawer contents is unchanged."
                  (org-entry-get (point) "ID" nil nil))
   (org-entry-delete "ID"))
 ;; -----------------------------------------------------------------
+;;;;; main viable context copies 
+;; TODO for all, should only do at a subheading, at source head do map 
+;;;###autoload
+(defun org-xob-clear-heading ()
+  "Converts subtree to the headline and properties drawer only.
+This is idempotent and application to such a heading makes no change.
+This can be applied to heading at point or used in a mapping."
+  (interactive)
+  (org-with-wide-buffer
+   (org-back-to-heading t)
+   (org-mark-subtree)
+   (org-end-of-meta-data 1)
+   (call-interactively #'delete-region))
+  (goto-char (- (point) 1)))
+
+;; TEST 
+;;;###autoload
+(defun org-xob-to-summary ()
+  "Show backlinks with summaries. This is defined as the first paragraph if it exists."
+  (interactive)
+  (save-excursion
+    ;; if on source main head, map, if on sub head do this.
+    (org-xob-clear-heading)
+    (org-end-of-meta-data 1)
+    (insert
+     (org-id-goto (org-entry-get (point) "PID"))
+     (org-with-wide-buffer
+      (org-end-of-meta-data 'full)
+      (let ((p (org-element-at-point)))
+        (buffer-substring-no-properties (org-element-property :contents-begin p)
+                                        (org-element-property :contents-end p)))))))
+
+;; TEST 
+;;;###autoload
+(defun org-xob-to-node-tree ()
+  "Show only subheadings of node."
+  (interactive)
+  (org-xob-clear-heading)
+  (org-end-of-meta-data 1)
+  (newline)
+  (insert
+   (let ((str))
+     (org-id-goto (org-entry-get (point) "PID"))
+     (org-with-wide-buffer
+      (org-narrow-to-subtree)
+      (org-map-tree (lambda ()
+                      (setq str (concat str 
+                                        (buffer-substring-no-properties
+                                         (line-beginning-position)
+                                         (line-end-position)
+                                         "\n"))))))
+     str)))

@@ -1822,3 +1822,9 @@ source is a plist that describes the content source."
            (org-mark-element)
            (set-mark (- 10 (mark)) )
            (buffer-substring (point) (mark))))))
+
+(outline-show-subtree)
+(progn
+  (org-narrow-to-subtree)
+  (outline-show-all)
+  )

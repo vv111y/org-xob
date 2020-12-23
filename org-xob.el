@@ -372,84 +372,82 @@ This can be applied to heading at point or used in a mapping."
    (call-interactively #'delete-region))
   (goto-char (- (point) 1)))
 
+(defun org-xob--kb-copy-paste (payload)
+  "Wrapper function to display new content in a context item from the
+knowledge base. Executes function payload while point is at the heading
+of the origin node in the KB. payload must be a lambda that returns
+the node content as a string.
+When called with point on the given context item, only that item will be
+updated. If called on a context source heading, then the update is applied
+to all source items."
+  (let ((func (lambda () (progn 
+                           (org-xob-clear-heading)
+                           (org-end-of-meta-data)
+                           (insert
+                            (save-excursion
+                              (org-id-goto (org-entry-get (point) "PID"))
+                              (org-with-wide-buffer
+                               (org-save-outline-visibility t
+                                 (org-narrow-to-subtree)
+                                 (outline-show-all)
+                                 (funcall payload)))))))))
+    (if (org-xob--is-source-p)
+        (org-xob--map-source func)
+      (funcall func))))
+
 ;; TEST 
 ;;;###autoload
 (defun org-xob-to-summary ()
-  "Show backlinks with summaries. This is defined as the first paragraph if it exists."
+  "Show KB node summary. This is defined as the first paragraph if it exists."
   (interactive)
-  (save-excursion
-    ;; if on source main head, map, if on sub head do this.
-    (org-xob-clear-heading)
-    (org-end-of-meta-data 1)
-    (insert
-     (org-id-goto (org-entry-get (point) "PID"))
-     (org-with-wide-buffer
-      (org-end-of-meta-data 'full)
-      (let ((p (org-element-at-point)))
-        (buffer-substring-no-properties (org-element-property :contents-begin p)
-                                        (org-element-property :contents-end p)))))))
+  (org-xob--kb-copy-paste
+   #'(lambda () (progn
+                 (org-end-of-meta-data 'full)
+                 (let ((p (org-element-at-point)))
+                   (if (equal (org-element-type p)
+                              'paragraph)
+                       (buffer-substring-no-properties
+                        (org-element-property :contents-begin p)
+                        (org-element-property :contents-end p))))))))
 
 ;; TEST 
 ;;;###autoload
 (defun org-xob-to-node-tree ()
-  "Show only subheadings of node."
+  "Show only subheadings of KB node."
   (interactive)
-  (org-xob-clear-heading)
-  (org-end-of-meta-data 1)
-  (newline)
-  (insert
-   (let ((str))
-     (org-id-goto (org-entry-get (point) "PID"))
-     (org-with-wide-buffer
-      (org-narrow-to-subtree)
-      (org-map-tree (lambda ()
-                      (setq str (concat str 
-                                        (buffer-substring-no-properties
-                                         (line-beginning-position)
-                                         (line-end-position)
-                                         "\n"))))))
-     str)))
+  (org-xob--kb-copy-paste
+   #'(lambda () (let ((str))
+                  (org-map-tree
+                   (lambda ()
+                     (setq str (concat str 
+                                       (buffer-substring
+                                        (line-beginning-position)
+                                        (line-end-position)
+                                        "\n")))))
+                  str))))
 
-
-;; TODO TEST 
-
+;; TEST 
 ;;;###autoload
 (defun org-xob-to-section ()
-  "Get the top section only, no subheadings."
+  "Show the top section of KB node, no subheadings."
   (interactive)
-  (org-xob-clear-heading)
-  (org-with-wide-buffer
-   (org-id-goto (org-entry-get (point) "PID"))
-   (org-end-of-meta-data t)
-   ;; TODO fail, moves point 
-   (let ((beg (progn (org-end-of-meta-data t)
-                     (point)))
-         (end (if (org-goto-first-child)
-                  (progn
-                    (previous-line)
-                    (move-end-of-line nil)
-                    (point)))))
-     (copy-region-as-kill beg end)))
-  (org-back-to-heading)
-  (org-end-of-meta-data t)
-  (yank)
-  (pop kill-ring))
+  (org-xob--kb-copy-paste
+   #'(lambda () (let ((beg) (end))
+                  (org-end-of-meta-data 1)
+                  (setq beg (point))
+                  (outline-next-heading)
+                  (setq end (- (point) 1))
+                  (buffer-substring beg end)))))
 
 ;;;###autoload
 (defun org-xob-to-full-node ()
-  "Converts node item at point to full node. The ID is still modified as
-it is still a copy, however all other property drawer contents is unchanged."
+  "Show the full KB node, excepting properties drawer, planning & clocking information."
   (interactive)
-  (org-xob-clear-heading)
-  (org-with-wide-buffer
-    (org-id-goto (org-entry-get (point) "PID"))
-    (org-mark-subtree)
-    (org-end-of-meta-data t)
-    (copy-region-as-kill 'REGION))
-  (org-back-to-heading)
-  (org-end-of-meta-data t)
-  (yank)
-  (pop kill-ring))
+  (org-xob--kb-copy-paste
+   #'(lambda () (progn
+                  (org-mark-subtree)
+                  (org-end-of-meta-data 1)
+                  (buffer-substring (point) (mark))))))
 
 ;;;; Backend
 ;;;;; Buffer Functions 
@@ -813,7 +811,7 @@ Maybe useful for syncing."
   nil
   )
 
-;;; df
+
 ;;; End
 
 (provide 'org-xob)
