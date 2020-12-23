@@ -366,10 +366,11 @@ This is idempotent and application to such a heading makes no change.
 This can be applied to heading at point or used in a mapping."
   (interactive)
   (org-with-wide-buffer
-    (org-back-to-heading t)
-    (org-mark-subtree)
-    (org-end-of-meta-data t)
-    (call-interactively #'delete-region)))
+   (org-back-to-heading t)
+   (org-mark-subtree)
+   (org-end-of-meta-data 1)
+   (call-interactively #'delete-region))
+  (goto-char (- (point) 1)))
 
 ;; TEST 
 ;;;###autoload
@@ -377,6 +378,7 @@ This can be applied to heading at point or used in a mapping."
   "Show backlinks with summaries. This is defined as the first paragraph if it exists."
   (interactive)
   (save-excursion
+    ;; if on source main head, map, if on sub head do this.
     (org-xob-clear-heading)
     (org-end-of-meta-data 1)
     (insert
@@ -392,20 +394,20 @@ This can be applied to heading at point or used in a mapping."
 (defun org-xob-to-node-tree ()
   "Show only subheadings of node."
   (interactive)
-  (org-end-of-meta-data 'full)
   (org-xob-clear-heading)
+  (org-end-of-meta-data 1)
   (newline)
   (insert
    (let ((str))
+     (org-id-goto (org-entry-get (point) "PID"))
      (org-with-wide-buffer
-       ;; (org-id-goto (org-entry-get (point) "PID"))
-       (org-narrow-to-subtree)
-       (org-map-tree (lambda ()
-                       (setq str (concat str 
-                                         (buffer-substring-no-properties
-                                          (line-beginning-position)
-                                          (line-end-position)
-                                          "\n"))))))
+      (org-narrow-to-subtree)
+      (org-map-tree (lambda ()
+                      (setq str (concat str 
+                                        (buffer-substring-no-properties
+                                         (line-beginning-position)
+                                         (line-end-position)
+                                         "\n"))))))
      str)))
 
 
@@ -526,8 +528,8 @@ where the backlinks are in a BACKLINKS drawer."
 
 ;; --source tree fns--
 (defun org-xob--source-build (source)
-  "Open a source tree for node mainID into the context buffer.
-If it is already there, then refresh it. source items are shown as org headings.
+  "Open a source tree into the context buffer. If it is already there,
+then refresh it. source items are shown as org headings.
 source is a plist that describes the content source."
   (interactive)
   (save-window-excursion 
@@ -585,20 +587,39 @@ Assumes point is on the source heading."
   "Apply the function func to every child-item of a xob source.
 If the optional ID of a xob source is given, then apply func to that source.
 Otherwise apply to source at point."
-  (save-excursion
-    (save-restriction 
-      (if ID
-          (org-id-goto ID))
-      (if (org-xob--is-source-p) 
-          (progn
-            (org-narrow-to-subtree)
-            (outline-show-all)
-            (outline-next-heading)
-            (while
-                (progn 
-                  (funcall func)
-                  (outline-get-next-sibling))))
-        (message "not a xob source.")))))
+  (if ID
+      (org-id-goto ID))
+  (org-with-wide-buffer 
+   (if (org-xob--is-source-p) 
+       (progn
+         (org-narrow-to-subtree)
+         (outline-show-all)
+         (outline-next-heading)
+         (while
+             (progn 
+               (funcall func)
+               (outline-get-next-sibling))))
+     (message "not a xob source."))))
+
+
+(defmacro org-xob--copypaste-from-node (&rest body)
+  "Apply &body at the source node which should return a string
+that will overwrite current source tree item."
+  ;; (declare (debug (body)))
+  `(let ((func (lambda () (progn 
+                            (org-xob-clear-heading)
+                            (org-end-of-meta-data)
+                            (insert
+                             (save-excursion
+                               (org-id-goto (org-entry-get (point) "PID"))
+                               (org-with-wide-buffer
+                                (org-narrow-to-subtree)
+                                (org-end-of-meta-data 1)
+                                ,@body)
+                               ))))))
+     (if (org-xob--is-source-p)
+         (org-xob--map-source func)
+       (funcall func))))
 
 ;; --predicates--
 (defun org-xob--is-node-p (&optional ID)
@@ -793,7 +814,6 @@ Maybe useful for syncing."
   )
 
 ;;; df
-;; (defmacro org-xob--)
 ;;; End
 
 (provide 'org-xob)

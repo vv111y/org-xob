@@ -1730,3 +1730,66 @@ source is a plist that describes the content source."
 ;; this may not needed for full node, I will ignore ID altogether, and just use PID. 
 ;; I may need to change where org-id is used. 
 (org-id-get-create 'FORCE)
+;;; try macro
+
+(defmacro vvm (&rest body)
+  ;; (declare (debug (body)))
+  `(let ((func (lambda () (progn 
+                            (org-xob-clear-heading)
+                            (org-end-of-meta-data)
+                            (insert
+                             (save-excursion
+                               (with-current-buffer "AcademicLog.org"
+                                 (org-with-wide-buffer
+                                  (org-save-outline-visibility t
+                                      (outline-show-all)
+                                      (goto-char (point-min))
+                                      ,@body)))
+                               ))))))
+     (if (org-xob--is-source-p)
+         (org-xob--map-source func)
+       (funcall func))))
+
+(org-end-of-meta-data 1)
+;; (org-narrow-to-subtree)
+
+(defun vvmm ()
+  (interactive)
+  (vvm (progn
+         (outline-next-heading)
+         (org-mark-subtree)
+         (buffer-substring (point) (mark))
+         ;; (org-end-of-meta-data t)
+         ;; (buffer-substring (line-beginning-position) (line-end-position))
+         )))
+
+(defmacro vvem (&rest body)
+  ;; (declare (debug (body)))
+  `(let* ((str)
+          (func (lambda () (progn
+                            (org-xob-clear-heading)
+                            ;; (goto-char (- (point) 1))
+                            ;; (org-end-of-meta-data)
+                            (save-excursion
+                              (setq str ,@body))
+                            (insert str)
+                            ;; (org-back-to-heading)
+                               ))))
+     (if (org-xob--is-source-p)
+         (org-xob--map-source func)
+       (funcall func))))
+
+(defun vve ()
+  (interactive)
+  (vvem (progn
+          (previous-line 4)
+          (concat (word-at-point) " booo"))))
+
+(defun eev ()
+  (interactive)
+  (org-xob-clear-heading)
+  (goto-char (- (point) 1))
+  (insert "hi")
+  ;; (org-back-to-heading)
+  ;; (org-end-of-meta-data)
+  )
