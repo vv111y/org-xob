@@ -245,3 +245,23 @@ This can be applied to heading at point or used in a mapping."
                                          (line-end-position)
                                          "\n"))))))
      str)))
+
+;; trying without, just passing lambdas
+(defmacro org-xob--copypaste-from-node (&rest body)
+  "Apply &body at the source node which should return a string
+that will overwrite current source tree item."
+  ;; (declare (debug (body)))
+  `(let ((func (lambda () (progn 
+                            (org-xob-clear-heading)
+                            (org-end-of-meta-data)
+                            (insert
+                             (save-excursion
+                               (org-id-goto (org-entry-get (point) "PID"))
+                               (org-with-wide-buffer
+                                (org-narrow-to-subtree)
+                                (org-end-of-meta-data 1)
+                                ,@body)
+                               ))))))
+     (if (org-xob--is-source-p)
+         (org-xob--map-source func)
+       (funcall func))))

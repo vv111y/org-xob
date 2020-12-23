@@ -372,29 +372,6 @@ This can be applied to heading at point or used in a mapping."
    (call-interactively #'delete-region))
   (goto-char (- (point) 1)))
 
-(defun org-xob--kb-copy-paste (payload)
-  "Wrapper function to display new content in a context item from the
-knowledge base. Executes function payload while point is at the heading
-of the origin node in the KB. payload must be a lambda that returns
-the node content as a string.
-When called with point on the given context item, only that item will be
-updated. If called on a context source heading, then the update is applied
-to all source items."
-  (let ((func (lambda () (progn 
-                           (org-xob-clear-heading)
-                           (org-end-of-meta-data)
-                           (insert
-                            (save-excursion
-                              (org-id-goto (org-entry-get (point) "PID"))
-                              (org-with-wide-buffer
-                               (org-save-outline-visibility t
-                                 (org-narrow-to-subtree)
-                                 (outline-show-all)
-                                 (funcall payload)))))))))
-    (if (org-xob--is-source-p)
-        (org-xob--map-source func)
-      (funcall func))))
-
 ;; TEST 
 ;;;###autoload
 (defun org-xob-to-summary ()
@@ -479,6 +456,7 @@ to all source items."
 
 ;;;;; Contexts Functions
 
+;; -- source definitions --
 ;; TODO unfinished - local or not? fill in blanks, test
 (setq-local org-xob--source-backlinks
             '(:name "backlinks"
@@ -498,12 +476,10 @@ to all source items."
                     :func org-xob--get-forlinks
                     :items nil))
 
-;; TODO maybe instead use my hashtable to get heading titles
-;; TODO refactor
 (defun org-xob--node-get-links (source)
-  "Populates sources item list from the node. The items are represented by their
+  "Populates source item list from the node. The items are represented by their
 respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
-which are all other links xob KB nodes. Assumes org-superlinks convention
+(which are all other links xob KB nodes). Assumes org-superlinks convention
 where the backlinks are in a BACKLINKS drawer."
   ;; TODO window?
   (save-window-excursion
@@ -513,16 +489,15 @@ where the backlinks are in a BACKLINKS drawer."
                      (lambda (x) (x))
                    (if (equal linktype "forelinks")
                        (lambda (x) (not x))))))
-      (org-id-goto (plist-get source :PID))
-      (plist-put source :items
-                 (org-element-map (org-element-parse-buffer) 'link
-                   (lambda (link)
-                     (if (funcall test (equal (org-element-property
-                                               :drawer-name (cadr (org-element-lineage link)))
-                                              "BACKLINKS"))
-                         (org-element-property :path link))))))))
-;; -----------------------
-
+       (org-id-goto (plist-get source :PID))
+       (org-with-wide-buffer
+        (plist-put source :items
+                   (org-element-map (org-element-parse-buffer) 'link
+                     (lambda (link)
+                       (if (funcall test (equal (org-element-property
+                                                 :drawer-name (cadr (org-element-lineage link)))
+                                                "BACKLINKS"))
+                           (org-element-property :path link)))))))))
 
 ;; --source tree fns--
 (defun org-xob--source-build (source)
@@ -581,6 +556,29 @@ Assumes point is on the source heading."
           (org-id-get-create 'FORCE)) ;; needed?
       (message "not a valid knowledge base ID: %s" ID))))
 
+(defun org-xob--kb-copy-paste (payload)
+  "Wrapper function to display new content in a context item from the
+knowledge base. Executes function payload while point is at the heading
+of the origin node in the KB. payload must be a lambda that returns
+the node content as a string.
+When called with point on the given context item, only that item will be
+updated. If called on a context source heading, then the update is applied
+to all source items."
+  (let ((func (lambda () (progn 
+                           (org-xob-clear-heading)
+                           (org-end-of-meta-data)
+                           (insert
+                            (save-excursion
+                              (org-id-goto (org-entry-get (point) "PID"))
+                              (org-with-wide-buffer
+                               (org-save-outline-visibility t
+                                 (org-narrow-to-subtree)
+                                 (outline-show-all)
+                                 (funcall payload)))))))))
+    (if (org-xob--is-source-p)
+        (org-xob--map-source func)
+      (funcall func))))
+
 (defun org-xob--map-source (func &optional ID)
   "Apply the function func to every child-item of a xob source.
 If the optional ID of a xob source is given, then apply func to that source.
@@ -598,26 +596,6 @@ Otherwise apply to source at point."
                (funcall func)
                (outline-get-next-sibling))))
      (message "not a xob source."))))
-
-
-(defmacro org-xob--copypaste-from-node (&rest body)
-  "Apply &body at the source node which should return a string
-that will overwrite current source tree item."
-  ;; (declare (debug (body)))
-  `(let ((func (lambda () (progn 
-                            (org-xob-clear-heading)
-                            (org-end-of-meta-data)
-                            (insert
-                             (save-excursion
-                               (org-id-goto (org-entry-get (point) "PID"))
-                               (org-with-wide-buffer
-                                (org-narrow-to-subtree)
-                                (org-end-of-meta-data 1)
-                                ,@body)
-                               ))))))
-     (if (org-xob--is-source-p)
-         (org-xob--map-source func)
-       (funcall func))))
 
 ;; --predicates--
 (defun org-xob--is-node-p (&optional ID)
