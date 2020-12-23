@@ -1793,3 +1793,32 @@ source is a plist that describes the content source."
   ;; (org-back-to-heading)
   ;; (org-end-of-meta-data)
   )
+;;; try nested lambdas instead of macro
+
+(defun nln (payload)
+  (let ((func (lambda () (progn 
+                            (org-xob-clear-heading)
+                            (org-end-of-meta-data)
+                            (insert
+                             (save-excursion
+                               (with-current-buffer "AcademicLog.org"
+                                 (org-with-wide-buffer
+                                  (org-save-outline-visibility t
+                                    (outline-show-all)
+                                    (goto-char (point-min))
+                                    (funcall payload))))
+                               ))))))
+     (if (org-xob--is-source-p)
+         (org-xob--map-source func)
+       (funcall func))))
+
+(defun lln ()
+  (interactive)
+  (nln #'(lambda ()
+         (progn
+           (org-next-visible-heading 5)
+           (next-line)
+           (next-line)
+           (org-mark-element)
+           (set-mark (- 10 (mark)) )
+           (buffer-substring (point) (mark))))))
