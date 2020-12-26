@@ -807,6 +807,11 @@ Assumes point is on the source heading."
 ;; (cl-pushnew org-xob-today (node-backlinks
 ;;                                 (org-xob--id-node ID)))
 
+(setq title "bee")
+(setq title "day")
+(setq title "log personal")
+(setq title "log")
+
 ;; old idea
 ;; (defun org-xob--find-node ()
 ;;   ;;
@@ -1245,7 +1250,7 @@ inhibit-modification-hooks
 
 ;;; ---
 ;;; node structs and hashtable
-;; (cl-defstruct node title type backlinks)
+(cl-defstruct node title type backlinks)
 ;; (setq vv/ns (make-node :title "meee" :backlinks (list)))
 ;; nice to know, not using it 
 ;; (setf (node-backlinks vv/ns) (append '(a)))
@@ -1347,6 +1352,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
                                                (format-time-string "%F %a %R")
                                                "]"))
       (org-entry-put (point) "TYPE" type)
+      (if (org-capture-get :todo) (org-todo))
       (setq node (make-node :title title
                             :type type 
                             :backlinks (list)))
@@ -1357,34 +1363,50 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (add-hook 'org-capture-mode-hook #'org-xob--new-node)
 
 (defvar org-xob--auto-types '(("day" . a.day)
-                                   ("session" . a.session)
-                                   ("project" . a.project)
-                                   ("log" . a.log)
-                                   ("log personal" . a.log.life)
-                                   ("log it tools" . a.log.it-tools)
-                                   ("log tools" . a.log.tools)
-                                   ("log project" . a.log.project)
-                                   ("article" . n.bib.article)
-                                   ("webpage" . n.bib.web)
-                                   ("fast" . n.n)
-                                   ("topic" . n.topic)
-                                   ))
+                              ("ct" . a.day)
+                              ("session" . a.session)
+                              ("project" . a.project)
+                              ("log" . a.log)
+                              ("log personal" . a.log.life)
+                              ("log it tools" . a.log.it-tools)
+                              ("log tools" . a.log.tools)
+                              ("log project" . a.log.project)
+                              ("article" . n.bib.article)
+                              ("webpage" . n.bib.web)
+                              ("fast" . n.n)
+                              ("topic" . n.topic)
+                              ))
+(defvar org-xob--te)
 
-(defvar org-xob--templates
+(setq org-xob--templates
       '(("f" "fast" entry (file org-xob--KB-file)
-         "* %(eval title)  :node:\n%?\n** backlinks :bl:"
+         "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
          :exobrain-node t
          :ntype "node"
          :vid "0"
          ;; :immediate-finish t
          :empty-lines-after 1)
         ("ct" "today" entry (file org-xob--KB-file)
-         "* %() :node:\n\n** backlinks :bl:"
+         "* %u \n:BACKLINKS:\n:END:\n\n"
          :exobrain-node t
          :immediate-finish t
-         :ntype "context.day")))
+         :ntype "context.day")
+        ("t" "todoID" entry (file "KB-file-000.org")
+         "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
+         :exobrain-node t
+         :todo t
+         :ntype "a.todo"
+         )
+        ))
 
 ;;;;; capture scraps
+(setq org-xob--KB-file "KB-file-000.org")
+(org-xob--capture "ct")
+(org-xob--capture "f")
+(org-xob--capture "d")
+(org-xob--capture "r")
+(org-todo)
+(cadr org-todo-keywords)
 
 ;; (org-capture-string "f")
 (org-capture nil "lw")
@@ -1828,3 +1850,4 @@ source is a plist that describes the content source."
   (org-narrow-to-subtree)
   (outline-show-all)
   )
+* START

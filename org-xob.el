@@ -130,6 +130,9 @@
 (defvar org-xob-current-context
   "The current, active buffer for adding context material.")
 
+(defvar org-xob-today
+  "The current day node.")
+
 (cl-defstruct xob-state kb-count kb-current kb-files t-id-table-fn id-n-table-fn)
 (setq xob (make-xob-state :kb-count 0 :t-id-table-fn "title-id-table" :id-n-table-fn "id-node-table"))
 
@@ -178,14 +181,27 @@
          "* %(eval title)  :node:\n%?\n** backlinks :bl:"
          :exobrain-node t
          :ntype "node"
-         :vid "0"
          ;; :immediate-finish t
          :empty-lines-after 1)
         ("ct" "today" entry (file org-xob--KB-file)
          "* %() :node:\n\n** backlinks :bl:"
          :exobrain-node t
          :immediate-finish t
-         :ntype "context.day")))
+         :ntype "context.day")
+        ("tf" "todoID" entry (file "KB-file-000.org")
+         "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
+         :exobrain-node t
+         :todo t
+         :ntype "a.todo"
+         )
+        ("tp" "todoID" entry (file "KB-file-000.org")
+         "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
+         :exobrain-node t
+         :todo t
+         :ntype "a.todo"
+         )
+        ("hn" "heading to node" entry)
+        ))
 
 ;;;; Minor Mode
 
@@ -227,10 +243,10 @@
                          (set k (make-hash-table
                                  :test 'equal
                                  :size org-xob--table-size))))))
-  (unless (AND (org-xob-today)
-               ;; TODO 
-              (org-time= nil nil))
-    (setq org-xob-today (org-xob--capture (org-insert-time-stamp (current-time) nil 'INACTIVE)))))
+  (unless (and org-xob-today
+               (org-time= nil nil))  ;; TODO
+    (setq org-xob-today (org-xob--capture "ct"))))
+
 
 ;;;###autoload
 (defun org-xob-stop ()
@@ -256,7 +272,8 @@
 
 ;;;###autoload
 (defun org-xob-get-node ()
-  "Focus on a node for editing. If it does not exist, create it."
+  "Focus on a node for editing. If it does not exist, create it.
+With C-u use alternative, experimental editing method."
   (interactive)
   (when (not org-xob-on-p)
     (org-xob-start))
@@ -658,29 +675,40 @@ Used for activity material in day node."
 (defun org-xob--auto-clock-out ())
 ;;;;; Node Functions
 
-(defun org-xob--new-node ()
-  (when (org-capture-get :exobrain-node)
-    (let ((ID (org-id-get-create))
-          (type (org-capture-get :ntype))
-          node)
-      ;; (push (nth 4 (org-heading-components)) title)
-      (org-entry-put (point) "VID" (org-capture-get :vid))
-      (org-entry-put (point) "CREATED" (concat "["
-                                               (format-time-string "%F %a %R")
-                                               "]"))
+(defun org-xob--new-node (&optional heading)
+  "Both a hook function and for general node creation. If 'heading' is given,
+then convert it into a new node in place. Otherwise function assumes it is called
+as a capture hook function."
+  (let ((ID (org-id-get-create))
+        (title (nth 4 (org-heading-components)))
+        (timestamp (concat
+                    "[" (format-time-string "%F %a %R") "]"))
+        type
+        node)
+    (if heading
+        (progn
+          (setq type ""))
+      (when (org-capture-get :exobrain-node)
+        (setq type (org-capture-get :ntype))
+        (if (org-capture-get :todo) (org-todo)))
+      (org-entry-put (point) "CREATED" timestamp)
+      (org-entry-put (point) "MODIFIED" timestamp)
       (org-entry-put (point) "TYPE" type)
       (setq node (make-node :title title
                             :type type 
                             :backlinks (list)))
-      (puthash title ID org-xob--title-id)
       (puthash ID node org-xob--id-node)
+      (puthash title ID org-xob--title-id)
       ID)))
+
+(cl-defstruct node title type backlinks)
 
 (defun org-xob--capture (title)
   (let* ((org-capture-templates org-xob--templates)
+         (type (assoc-string title org-xob--auto-types))
          ID)
     ;; TODO test
-    (if (member 'title 'org-xob--auto-types)
+    (if type 
         (org-capture nil title)
       (org-capture))
     ID))
@@ -781,6 +809,7 @@ Maybe useful for syncing."
       (write-file filename))
     (cl-pushnew filename (xob-state-kb-files xob))
     (setf (xob-state-kb-current xob) filename)
+    (setq org-xob--KB-file filename)
     (setf (xob-state-kb-count xob) (+ 1))))
 
 (defun org-xob-rebuild ()
