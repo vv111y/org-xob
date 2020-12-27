@@ -1850,4 +1850,15 @@ source is a plist that describes the content source."
   (org-narrow-to-subtree)
   (outline-show-all)
   )
-* START
+
+(print (org-tree-to-indirect-buffer))
+
+(select-window (org-tree-to-indirect-buffer))
+(defun org-subtree-to-indirect-buffer ()
+  (interactive)
+  (let ((ind-buf (concat (buffer-name) "-narrowclone")))
+    (if (get-buffer ind-buf)
+        (kill-buffer ind-buf))
+    (clone-indirect-buffer-other-window ind-buf t)
+    (org-narrow-to-subtree)
+    (switch-to-buffer ind-buf)))

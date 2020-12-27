@@ -86,6 +86,7 @@
 ;;;; Variables
 
 (defvar org-xob-on-p nil)
+(setq org-xob-on-p nil)
 ;;;;; hash tables 
 
 (defvar org-xob--table-size 1000000
@@ -213,7 +214,7 @@
   :group 'org-xob
   :require 'org-xob
   (progn 
-    (unless (org-xob-on-p)
+    (unless org-xob-on-p
       (org-xob-start))
     (if org-xob-minor-mode
         (progn 
@@ -282,14 +283,14 @@ With C-u use alternative, experimental editing method."
         :sources (helm-build-sync-source "xob-kb"
                    :candidates (lambda ()
                                  (let* ((cans (hash-table-keys org-xob--title-id)))
-                                   (cons helm-input candidates)))
+                                   (cons helm-input cans)))
                    :volatile t
                    :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
                                              (unless ID
                                                (setq ID (org-xob--capture title)))
-                                             (if (eq arg 4) 
-                                                 (org-xob--activate-node ID)
-                                               (org-xob--edit-node ID title)))))))
+                                             ;; (if (eq arg 4) 
+                                             ;;     (org-xob--activate-node ID))
+                                             (org-xob--edit-node ID title))))))
 
 ;; TODO finish and/or superlink
 ;; TODO do I change hash table name?
@@ -329,9 +330,7 @@ With C-u use alternative, experimental editing method."
   "Convenience function to convert current content into xob KB nodes."
   (interactive)
   (unless (org-xob--is-node-p)
-    ;; TODO get heading title and call modified make node (capture)
-    ;; want to leave it in place
-    ))
+    (org-xob--new-node (point))))
 
 ;; TODO
 ;;;###autoload
@@ -454,14 +453,14 @@ This can be applied to heading at point or used in a mapping."
 
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
-  (setq org-xob-short-title (title (truncate-string-to-width title 12)))
+  (setq org-xob-short-title (truncate-string-to-width title 12))
   ;; (setq org-xob-node-buffer (get-buffer-create org-xob-short-title))
   ;; (set-buffer org-xob-node-buffer)
   ;; (org-mode)
-  (setq org-xob-node-buffer (org-tree-to-indirect-buffer
-                             (org-id-goto ID)))
+  (org-id-goto ID)
+  (setq org-xob-node-buffer (org-tree-to-indirect-buffer))
+  (switch-to-buffer org-xob-node-buffer)
   (org-xob-minor-mode 1)
-  (set-window-buffer nil org-xob-node-buffer)
   (org-xob--make-context-buffer org-xob-short-title))
 
 (defun org-xob--make-context-buffer (title)
@@ -676,8 +675,8 @@ Used for activity material in day node."
 ;;;;; Node Functions
 
 (defun org-xob--new-node (&optional heading)
-  "Both a hook function and for general node creation. If 'heading' is given,
-then convert it into a new node in place. Otherwise function assumes it is called
+  "Both a hook function and for general node creation. If orgmode 'heading' is given,
+then convert it into a new node in place. Otherwise it is assumed to be called
 as a capture hook function."
   (let ((ID (org-id-get-create))
         (title (nth 4 (org-heading-components)))
@@ -687,19 +686,19 @@ as a capture hook function."
         node)
     (if heading
         (progn
-          (setq type ""))
+          (setq type "n.n"))
       (when (org-capture-get :exobrain-node)
         (setq type (org-capture-get :ntype))
-        (if (org-capture-get :todo) (org-todo)))
-      (org-entry-put (point) "CREATED" timestamp)
-      (org-entry-put (point) "MODIFIED" timestamp)
-      (org-entry-put (point) "TYPE" type)
-      (setq node (make-node :title title
-                            :type type 
-                            :backlinks (list)))
-      (puthash ID node org-xob--id-node)
-      (puthash title ID org-xob--title-id)
-      ID)))
+        (if (org-capture-get :todo) (org-todo))))
+    (org-entry-put (point) "CREATED" timestamp)
+    (org-entry-put (point) "MODIFIED" timestamp)
+    (org-entry-put (point) "TYPE" type)
+    (setq node (make-node :title title
+                          :type type 
+                          :backlinks (list)))
+    (puthash ID node org-xob--id-node)
+    (puthash title ID org-xob--title-id)
+    ID))
 
 (cl-defstruct node title type backlinks)
 
