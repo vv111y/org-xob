@@ -1865,7 +1865,12 @@ source is a plist that describes the content source."
     (org-narrow-to-subtree)
     (switch-to-buffer ind-buf)))
 
-;;; alternative open day node
+;; snip from old
+;; (setq org-xob-node-buffer (get-buffer-create morg-xob-short-title))
+;; (set-buffer org-xob-node-buffer)
+;; (org-mode)
+
+;;; old open day node - no
 
 (unless org-xob-today
   (save-excursion 
@@ -1876,3 +1881,9 @@ source is a plist that describes the content source."
     ;; (with-current-buffer org-xob-today)
     (org-mode)
     ))
+
+;;; crusht
+(setq org-xob-path "xob/")
+(org-xob--save-state)
+
+(push "KB-file-001.org" org-xob--KB-files)

@@ -134,10 +134,10 @@
 ;;;;; state
 
 ;; TODO clean
-(defvar org-xob-current-context
+(defvar org-xob-current-context nil
   "The current, active buffer for adding context material.")
 
-(defvar org-xob-today
+(defvar org-xob-today nil
   "The current day node.")
 
 (cl-defstruct xob-state kb-count kb-current kb-files t-id-table-fn id-n-table-fn)
@@ -229,7 +229,7 @@
           (setq-local org-xob-syncedp nil)
           ;; (add-hook 'after-change-functions #'org-xob--sync-edits)
           ;; (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-xob-syncedp nil 'APPEND 'LOCAL)))
-          (setq-local org-id-extra-files 'org-xob--KB-files))
+          (setq-local org-id-extra-files org-xob--KB-files))
       ;; (remove-hook 'after-change-functions #'org-xob--sync-edits)
       )))
 
@@ -237,28 +237,34 @@
 ;;;;; Main Commands
 ;;;###autoload
 (defun org-xob-start ()
-  "Start the xob system: check if state files exist and load state or initialize new."
+  "Start the xob system: load state or initialize new. Open new day node."
   (interactive)
-  (setq org-xob-on-p t)
-  (cl-loop for (k . v) in org-xob--objects
-           do (if (file-exists-p (concat org-xob-path v))
-                       (org-xob--load-object v k)
-                     (progn 
-                       (message "XOB: file %s missing, initializing new %s" v k)
-                       (if (equal "org-xob--KB-files" (symbol-name k))
-                           (set k ()))
-                       (if (equal "org-xob--KB-file" (symbol-name k))
-                           (set k (org-xob--new-KB-file))
-                         (set k (make-hash-table
-                                 :test 'equal
-                                 :size org-xob--table-size))))))
-  (unless (and org-xob-today
-               (org-time= nil nil))  ;; TODO
-    (condition-case nil
-        (setq org-xob-today (org-xob--capture "ct"))
-      (error (message "Unable to create day node.")))))
+  (if (and
+       (condition-case nil 
+           (cl-loop for (k . v) in org-xob--objects
+                    do (if (file-exists-p (concat org-xob-path v))
+                           (org-xob--load-object v k)
+                         (progn 
+                           (message "XOB: file %s missing, initializing new %s" v k)
+                           (if (equal "org-xob--KB-files" (symbol-name k))
+                               (set k nil)
+                             (if (equal "org-xob--KB-file" (symbol-name k))
+                                 (set k (org-xob--new-KB-file))
+                               (set k (make-hash-table
+                                       :test 'equal
+                                       :size org-xob--table-size)))))))
+         (error (message "Unable to load xob state.")))
+       (unless org-xob-today
+         (condition-case nil
+           (setq org-xob-today (org-xob--capture "ct"))
+           (error (message "Unable to create day node.")))))
+      (progn 
+        (setq org-xob-on-p t)
+        (message "xob started."))
+    (message "Unable to start xob.")))
 
 
+;; TODO
 ;;;###autoload
 (defun org-xob-stop ()
   "Stop xob system: save all state and close active buffers."
@@ -282,6 +288,7 @@
         (org-narrow-to-subtree))
     (error (message "todays day node missing."))))
 
+;; TODO mod for links
 ;;;###autoload
 (defun org-xob-get-node ()
   "Focus on a node for editing. If it does not exist, create it.
@@ -303,14 +310,14 @@ With C-u use alternative, experimental editing method."
                                              ;;     (org-xob--activate-node ID))
                                              (org-xob--edit-node ID title))))))
 
-;; TODO finish and/or superlink
+;; TODO superlink?
 ;; TODO do I change hash table name?
-;; TODO do I call this differently? 
+;; TODO use a modded get node, returns ID 
 ;;;###autoload
-(defun org-xob-link ()
+(defun org-xob-insert-link ()
   "Inserts a properly formatted xob node link at point."
   (interactive)
-  (when (not org-xob-on-p)
+  (unless org-xob-on-p
     (org-xob-start))
   (org-insert-link nil (concat "ID:" ID) (org-xob--ID-title ID))
   ;; call find-node 
@@ -335,7 +342,6 @@ With C-u use alternative, experimental editing method."
       (select-window org-xob--sideline-window)
       (display-buffer-same-window org-xob--context-buffer nil))))
 
-;; TODO
 ;;;###autoload
 (defun org-xob-heading-to-node ()
   "Convenience function to convert current content into xob KB nodes."
@@ -346,8 +352,8 @@ With C-u use alternative, experimental editing method."
 ;; TODO
 ;;;###autoload
 (defun org-xob-remove-node ()
-  "Converts node item at point to a heading.
-Simply removes heading ID from the hash tables."
+"Deletes node from xob system. Removes heading ID from the hash tables,
+and any backlinks referencing it."
   (interactive)
   (when (not org-xob-on-p)
     (org-xob-start))
@@ -465,12 +471,12 @@ This can be applied to heading at point or used in a mapping."
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
   (setq org-xob-short-title (truncate-string-to-width title 12))
-  ;; (setq org-xob-node-buffer (get-buffer-create morg-xob-short-title))
-  ;; (set-buffer org-xob-node-buffer)
-  ;; (org-mode)
   (org-id-goto ID)
   (setq org-xob-node-buffer (org-tree-to-indirect-buffer))
+
+  ;; TODO (pop-to-buffer-same-window BUFFER &optional NORECORD)
   (switch-to-buffer org-xob-node-buffer)
+
   (org-xob-minor-mode 1)
   (org-xob--make-context-buffer org-xob-short-title))
 
@@ -782,13 +788,12 @@ Maybe useful for syncing."
 
 (defun org-xob--save-state ()
   "Save exobrain state."
-  (if (not (file-directory-p org-xob--workspace))
-      (make-directory org-xob--workspace))
+  (if (not (file-directory-p org-xob-workspace))
+      (make-directory org-xob-workspace))
   (if (not (file-directory-p org-xob-path))
       (make-directory org-xob-path))
   (cl-loop for (k . v) in org-xob--objects
-           do (org-xob--save-object (concat org-xob-path v) k))
-  (org-xob-sync))
+           do (org-xob--save-object (concat org-xob-path v) k)))
 
 (defun org-xob--load-state ()
   "Load exobrain state."
@@ -809,18 +814,23 @@ Maybe useful for syncing."
       (set symbol (read (current-buffer))))))
 
 (defun org-xob--new-KB-file ()
-  "Create new KB file for next node in the brain."
+  "Create new KB file for next node in the brain. Returns the filename."
   (interactive)
-  (let ((filename (concat 
+  (let* ((filename (concat 
                    org-xob--KB-filename-prefix
                    (format "%03d" (xob-state-kb-count xob))
-                   ".org")))
-    (with-temp-buffer
-      (write-file filename))
+                   ".org"))
+         (fullname (concat org-xob-path filename)))
+    (with-temp-file fullname
+      (insert ""))
     (cl-pushnew filename (xob-state-kb-files xob))
+    (push filename org-xob--KB-files)
     (setf (xob-state-kb-current xob) filename)
+    (setf (xob-state-kb-count xob) (+ 1))
     (setq org-xob--KB-file filename)
-    (setf (xob-state-kb-count xob) (+ 1))))
+    (save-excursion
+      (find-file-noselect fullname))
+    filename))
 
 (defun org-xob-rebuild ()
   "Traverse all nodes and correct any meta errors."

@@ -265,3 +265,12 @@ that will overwrite current source tree item."
      (if (org-xob--is-source-p)
          (org-xob--map-source func)
        (funcall func))))
+
+(defun org-xob--save-state ()
+  "Save exobrain state."
+  (if (not (file-directory-p org-xob--workspace))
+      (make-directory org-xob--workspace))
+  (if (not (file-directory-p org-xob-path))
+      (make-directory org-xob-path))
+  (cl-loop for (k . v) in org-xob--objects
+           do (org-xob--save-object (concat org-xob-path v) k)))
