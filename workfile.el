@@ -1854,6 +1854,8 @@ source is a plist that describes the content source."
 (print (org-tree-to-indirect-buffer))
 
 (select-window (org-tree-to-indirect-buffer))
+
+;;; proper indirect buffer call
 (defun org-subtree-to-indirect-buffer ()
   (interactive)
   (let ((ind-buf (concat (buffer-name) "-narrowclone")))
@@ -1862,3 +1864,15 @@ source is a plist that describes the content source."
     (clone-indirect-buffer-other-window ind-buf t)
     (org-narrow-to-subtree)
     (switch-to-buffer ind-buf)))
+
+;;; alternative open day node
+
+(unless org-xob-today
+  (save-excursion 
+    (condition-case nil
+        (setq org-xob-today (find-file org-xob-current-log-file))
+      (error "xob log file not found."))
+    ;; (setq org-xob-today (get-buffer-create "org-xob-today"))
+    ;; (with-current-buffer org-xob-today)
+    (org-mode)
+    ))

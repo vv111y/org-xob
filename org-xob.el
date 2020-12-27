@@ -120,6 +120,12 @@
 (defvar org-xob--KB-filename-prefix "KB-file-"
   "suffix for KB filenames. A simple filecount value is appended for a new name")
 
+(defvar org-xob--log-file nil
+  "The current log file where day nodes and general activity is recorded.")
+
+(defvar org-xob--agend-file nil
+  "The current agenda file where all activity nodes other than day nodes go.")
+
 (defvar org-xob--active-nodes nil
   "a-list of active nodes. Those that were extracted from the KB and into the workspace.")
 
@@ -164,31 +170,34 @@
 ;;;;; capture variables
 
 (defvar org-xob--auto-types '(("day" . a.day)
-                                   ("session" . a.session)
-                                   ("project" . a.project)
-                                   ("log" . a.log)
-                                   ("log personal" . a.log.life)
-                                   ("log it tools" . a.log.it-tools)
-                                   ("log tools" . a.log.tools)
-                                   ("log project" . a.log.project)
-                                   ("article" . n.bib.article)
-                                   ("webpage" . n.bib.web)
-                                   ("fast" . n.n)
-                                   ("topic" . n.topic)
-                                   ))
+                              ("session" . a.session)  								;; 
+                              ("project" . a.project)									;; 
+                              ("log" . a.log) 												;; 
+                              ("log personal" . a.log.life)						;; rundschau too
+                              ("log it tools" . a.log.it-tools) 			;; 
+                              ("log tools" . a.log.tools)  						;; 
+                              ("log project" . a.log.project)					;; 
+                              ("article" . n.bib.article)							;; 
+                              ("webpage" . n.bib.web)									;; 
+                              ("fast" . n.n)													;; 
+                              ("topic" . n.topic)											;; 
+                              ))
 
 (defvar org-xob--templates
-      '(("f" "fast" entry (file org-xob--KB-file)
+      '(("n" "new node" entry (file org-xob--KB-file)
          "* %(eval title)  :node:\n%?\n** backlinks :bl:"
          :exobrain-node t
          :ntype "node"
          ;; :immediate-finish t
          :empty-lines-after 1)
-        ("ct" "today" entry (file org-xob--KB-file)
-         "* %() :node:\n\n** backlinks :bl:"
+        ("ct" "today" entry (file org-xob--log-file)
+         "* %(concat
+                    "[" (format-time-string "%F %a %R") "]")\n\n** backlinks :bl:"
          :exobrain-node t
          :immediate-finish t
          :ntype "context.day")
+        ("cp" "new project" entry (file file org-xob--agenda-file))
+        ("cs" "new session" entry (file file org-xob--agenda-file))
         ("tf" "todoID" entry (file "KB-file-000.org")
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
          :exobrain-node t
@@ -201,7 +210,6 @@
          :todo t
          :ntype "a.todo"
          )
-        ("hn" "heading to node" entry)
         ))
 
 ;;;; Minor Mode
@@ -246,37 +254,40 @@
                                  :size org-xob--table-size))))))
   (unless (and org-xob-today
                (org-time= nil nil))  ;; TODO
-    (setq org-xob-today (org-xob--capture "ct"))))
+    (condition-case nil
+        (setq org-xob-today (org-xob--capture "ct"))
+      (error (message "Unable to create day node.")))))
 
 
 ;;;###autoload
 (defun org-xob-stop ()
   "Stop xob system: save all state and close active buffers."
   (interactive)
-  (org-xob--save-state)
-  ;; save/clode active buffers
-  ;; maybe delete other objects
-  (setq org-xob-on-p nil))
+  (if org-xob-on-p
+      (progn 
+        (org-xob--save-state)
+        ;; save+close active buffers
+        ;; maybe delete other objects
+        (setq org-xob-on-p nil))))
 
-;; TODO
 ;;;###autoload
 (defun org-xob-open-day ()
   "Open todays node."
   (interactive)
-  (unless (org-xob-on-p)
-      (org-xob-start))
-  ;; (org-xob-)
-  ;; open buffer for a selected day node
-  ;; can open yesterdays file as well? 
-  ;; is exobrain started? 
-  )
+  (unless org-xob-on-p
+    (org-xob-start))
+  (condition-case nil
+      (progn
+        (org-id-goto org-xob-today)
+        (org-narrow-to-subtree))
+    (error (message "todays day node missing."))))
 
 ;;;###autoload
 (defun org-xob-get-node ()
   "Focus on a node for editing. If it does not exist, create it.
 With C-u use alternative, experimental editing method."
   (interactive)
-  (when (not org-xob-on-p)
+  (unless org-xob-on-p
     (org-xob-start))
   ;; Get node by title, or create new one 
   (helm :buffer "*xob get node*"
@@ -454,7 +465,7 @@ This can be applied to heading at point or used in a mapping."
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
   (setq org-xob-short-title (truncate-string-to-width title 12))
-  ;; (setq org-xob-node-buffer (get-buffer-create org-xob-short-title))
+  ;; (setq org-xob-node-buffer (get-buffer-create morg-xob-short-title))
   ;; (set-buffer org-xob-node-buffer)
   ;; (org-mode)
   (org-id-goto ID)
