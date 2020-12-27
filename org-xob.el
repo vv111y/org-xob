@@ -86,7 +86,7 @@
 ;;;; Variables
 
 (defvar org-xob-on-p nil)
-(setq org-xob-on-p nil)
+
 ;;;;; hash tables 
 
 (defvar org-xob--table-size 1000000
@@ -120,7 +120,7 @@
 (defvar org-xob--KB-filename-prefix "KB-file-"
   "suffix for KB filenames. A simple filecount value is appended for a new name")
 
-(defvar org-xob--log-file nil
+(defvar org-xob--log-file "xob-logfile.org"
   "The current log file where day nodes and general activity is recorded.")
 
 (defvar org-xob--agend-file nil
@@ -170,6 +170,7 @@
 ;;;;; capture variables
 
 (defvar org-xob--auto-types '(("day" . a.day)
+                              ("ct" . a.day)
                               ("session" . a.session)  								;; 
                               ("project" . a.project)									;; 
                               ("log" . a.log) 												;; 
@@ -240,7 +241,8 @@
   "Start the xob system: load state or initialize new. Open new day node."
   (interactive)
   (if (and
-       (condition-case nil 
+       (not org-xob-on-p)
+       (condition-case file-err 
            (cl-loop for (k . v) in org-xob--objects
                     do (if (file-exists-p (concat org-xob-path v))
                            (org-xob--load-object v k)
@@ -250,14 +252,17 @@
                                (set k nil)
                              (if (equal "org-xob--KB-file" (symbol-name k))
                                  (set k (org-xob--new-KB-file))
+                               (if (equal "org-xob--log-file" (symbol-name k))
+                                   (set k (progn
+                                            (with-temp-file (concat org-xob-path org-xob--log-file)
+                                              (insert ""))
+                                            (find-file-noselect (concat org-xob-path org-xob--log-file)))))
                                (set k (make-hash-table
                                        :test 'equal
                                        :size org-xob--table-size)))))))
          (error (message "Unable to load xob state.")))
-       (unless org-xob-today
-         (condition-case nil
-           (setq org-xob-today (org-xob--capture "ct"))
-           (error (message "Unable to create day node.")))))
+       (if (not org-xob-today)
+         (setq org-xob-today (org-xob--capture "ct"))))
       (progn 
         (setq org-xob-on-p t)
         (message "xob started."))
@@ -725,7 +730,7 @@ as a capture hook function."
          ID)
     ;; TODO test
     (if type 
-        (org-capture nil title)
+        (org-capture (concat org-xob-path org-xob--log-file) "ct")
       (org-capture))
     ID))
 
@@ -844,3 +849,4 @@ Maybe useful for syncing."
 (provide 'org-xob)
 
 ;;; org-xob.el ends here
+* START

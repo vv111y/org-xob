@@ -1887,3 +1887,38 @@ source is a plist that describes the content source."
 (org-xob--save-state)
 
 (push "KB-file-001.org" org-xob--KB-files)
+(setq org-xob-on-p nil)
+
+(if (not org-xob-today)
+    (setq org-xob-today (org-xob--capture "ct")))
+
+(setq org-xob--log-file "")
+
+(setq org-xob--templates
+      '(("n" "new node" entry (file org-xob--KB-file)
+         "* %(eval title)  :node:\n%?\n** backlinks :bl:"
+         :exobrain-node t
+         :ntype "node"
+         ;; :immediate-finish t
+         :empty-lines-after 1)
+        ("ct" "today" entry (file org-xob--log-file)
+         "* %(concat
+                    "[" (format-time-string "%F %a %R") "]")\n\n** backlinks :bl:"
+         :exobrain-node t
+         :immediate-finish t
+         :ntype "context.day")
+        ("cp" "new project" entry (file file org-xob--agenda-file))
+        ("cs" "new session" entry (file file org-xob--agenda-file))
+        ("tf" "todoID" entry (file "KB-file-000.org")
+         "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
+         :exobrain-node t
+         :todo t
+         :ntype "a.todo"
+         )
+        ("tp" "todoID" entry (file "KB-file-000.org")
+         "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
+         :exobrain-node t
+         :todo t
+         :ntype "a.todo"
+         )
+        ))
