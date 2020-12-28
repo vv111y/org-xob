@@ -191,9 +191,8 @@
          :ntype "node"
          ;; :immediate-finish t
          :empty-lines-after 1)
-        ("ct" "today" entry (file org-xob--log-file)
-         "* %(concat
-                    "[" (format-time-string "%F %a %R") "]")\n\n** backlinks :bl:"
+        ("ct" "today" entry (file (concat org-xob-path org-xob--log-file))
+         "* %(concat "[" (format-time-string "%F %a %R") "]")\n:BACKLINKS:\n:END:\n"
          :exobrain-node t
          :immediate-finish t
          :ntype "context.day")
@@ -240,32 +239,36 @@
 (defun org-xob-start ()
   "Start the xob system: load state or initialize new. Open new day node."
   (interactive)
-  (if (and
-       (not org-xob-on-p)
-       (condition-case file-err 
+  (if (not org-xob-on-p)
+      (if (and
            (cl-loop for (k . v) in org-xob--objects
                     do (if (file-exists-p (concat org-xob-path v))
                            (org-xob--load-object v k)
                          (progn 
                            (message "XOB: file %s missing, initializing new %s" v k)
-                           (if (equal "org-xob--KB-file" (symbol-name k))
-                               (set k (org-xob--new-KB-file))
-                             (if (equal "org-xob--log-file" (symbol-name k))
-                                 (set k (progn
-                                          (with-temp-file (concat org-xob-path org-xob--log-file)
-                                            (insert ""))
-                                          (find-file-noselect (concat org-xob-path org-xob--log-file))))
-                               (set k (make-hash-table
-                                       :test 'equal
-                                       :size org-xob--table-size)))))))
-         (error (message "Unable to load xob state.")))
-       (if (not org-xob-today)
-           (setq org-xob-today (org-xob--capture "ct"))
-         (nil)))
-      (progn 
-        (setq org-xob-on-p t)
-        (message "xob started."))
-    (message "Unable to start xob.")))
+                           (cond
+                            ((equal "org-xob--KB-file" (symbol-name k))
+                             (set k (org-xob--new-KB-file)))
+                            ((equal "org-xob--log-file" (symbol-name k))
+                             (set k (progn
+                                      (with-temp-file (concat org-xob-path org-xob--log-file)
+                                        (insert ""))
+                                      (find-file-noselect (concat org-xob-path org-xob--log-file)))))
+                            ((equal "org-xob--KB-files" (symbol-name k))
+                             (set k nil))
+                            ((or (equal "org-xob--title-id" (symbol-name k))
+                                 (equal "org-xob--id-node" (symbol-name k)))
+                             (set k (make-hash-table
+                                     :test 'equal
+                                     :size org-xob--table-size))))))
+                    finally return t)
+           (if (not org-xob-today)
+               (setq org-xob-today (org-xob--capture "ct")) t))
+          (progn 
+            (setq org-xob-on-p t)
+            (message "xob started."))
+        (message "Unable to start xob."))
+    (message "xob already started.")))
 
 
 ;; TODO
@@ -719,9 +722,10 @@ as a capture hook function."
                           :backlinks (list)))
     (puthash ID node org-xob--id-node)
     (puthash title ID org-xob--title-id)
-    ID))
+    (setq org-xob--last-captured ID)))
 
 (cl-defstruct node title type backlinks)
+(add-hook 'org-capture-mode-hook #'org-xob--new-node)
 
 (defun org-xob--capture (title)
   (let* ((org-capture-templates org-xob--templates)
@@ -731,9 +735,8 @@ as a capture hook function."
     (if type 
         (org-capture (concat org-xob-path org-xob--log-file) "ct")
       (org-capture))
-    ID))
+    org-xob--last-captured))
 
-(add-hook 'org-capture-mode-hook #'org-xob--new-node)
 
 ;; since I have forelinks, clicking link usually means to attend to
 (defun org-xob--link-hook-fn ()
@@ -812,10 +815,12 @@ Maybe useful for syncing."
 (defun org-xob--load-object (file symbol)
   "load saved object."
   (when (boundp symbol)
-    (with-temp-buffer
-      (insert-file-contents (concat org-xob-path file))
-      (goto-char (point-min))
-      (set symbol (read (current-buffer))))))
+    (condition-case nil 
+        (with-temp-buffer
+          (insert-file-contents (concat org-xob-path file))
+          (goto-char (point-min))
+          (set symbol (read (current-buffer))))
+      (error (message "Error loading file %s" file)))))
 
 (defun org-xob--new-KB-file ()
   "Create new KB file for next node in the brain. Returns the filename."

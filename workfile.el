@@ -1922,3 +1922,8 @@ source is a plist that describes the content source."
          :ntype "a.todo"
          )
         ))
+
+(and t (if (not org-xob-today) 
+           (setq org-xob-today (org-xob--capture "ct"))))
+
+(setq org-xob-today nil)
