@@ -248,21 +248,20 @@
                            (org-xob--load-object v k)
                          (progn 
                            (message "XOB: file %s missing, initializing new %s" v k)
-                           (if (equal "org-xob--KB-files" (symbol-name k))
-                               (set k nil)
-                             (if (equal "org-xob--KB-file" (symbol-name k))
-                                 (set k (org-xob--new-KB-file))
-                               (if (equal "org-xob--log-file" (symbol-name k))
-                                   (set k (progn
-                                            (with-temp-file (concat org-xob-path org-xob--log-file)
-                                              (insert ""))
-                                            (find-file-noselect (concat org-xob-path org-xob--log-file)))))
+                           (if (equal "org-xob--KB-file" (symbol-name k))
+                               (set k (org-xob--new-KB-file))
+                             (if (equal "org-xob--log-file" (symbol-name k))
+                                 (set k (progn
+                                          (with-temp-file (concat org-xob-path org-xob--log-file)
+                                            (insert ""))
+                                          (find-file-noselect (concat org-xob-path org-xob--log-file))))
                                (set k (make-hash-table
                                        :test 'equal
                                        :size org-xob--table-size)))))))
          (error (message "Unable to load xob state.")))
        (if (not org-xob-today)
-         (setq org-xob-today (org-xob--capture "ct"))))
+           (setq org-xob-today (org-xob--capture "ct"))
+         (nil)))
       (progn 
         (setq org-xob-on-p t)
         (message "xob started."))
@@ -849,4 +848,3 @@ Maybe useful for syncing."
 (provide 'org-xob)
 
 ;;; org-xob.el ends here
-* START
