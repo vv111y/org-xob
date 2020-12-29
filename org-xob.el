@@ -727,15 +727,13 @@ as a capture hook function."
 
 (cl-defstruct node title type backlinks)
 (add-hook 'org-capture-mode-hook #'org-xob--new-node)
+(remove-hook 'org-capture-mode-hook #'org-xob--new-node)
+(add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
 
 (defun org-xob--capture (title)
   (let* ((org-capture-templates org-xob--templates)
-         ;; (type (assoc-string title org-xob--auto-types))
          ID)
-    ;; TODO test
     (if (member title org-xob--auto-types)
-        ;; TODO redo I am not targeting this file
-        ;; (org-capture (concat org-xob-path org-xob--log-file) "ad")
         (org-capture nil title)
       (progn
         (setq org-xob--last-title title)
@@ -749,7 +747,7 @@ as a capture hook function."
   ;; TODO if on xob node, then open as edit
   ;; call get node or --edit-node
   (let ((ID (org-id-get (point) nil nil)))
-    (if (org-xob--id-node ID)
+    (if (gethash ID org-xob--id-node)
         (org-xob--activate-node ID))))
 
 (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)

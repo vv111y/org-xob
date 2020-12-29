@@ -1883,6 +1883,9 @@ source is a plist that describes the content source."
     ))
 
 ;;; crusht
+    :PROPERTIES:
+    :ID: 4F9789E0-2692-47A3-A040-2952CD4281CC
+    :END:
 (setq org-xob-path "xob/")
 (org-xob--save-state)
 
@@ -1917,7 +1920,9 @@ source is a plist that describes the content source."
 
 (setq org-xob--templates
       '(("nn" "new node" entry (file org-xob--KB-file)
-         "* %(eval org-xob--last-title) \n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
+         "* %(eval org-xob--last-title) \n:PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n:END:\n:BACKLINKS:\n:END:\n"
+         ;; "* %(eval org-xob--last-title) %((progn (org-entry-put (point) "CREATED" \"when\") \"\"))   :PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n\n:END:\n:BACKLINKS:\n:END:\n"
+
          :exobrain-node t
          :ntype "node"
          :func (lambda () t)
@@ -1958,7 +1963,7 @@ source is a plist that describes the content source."
          )
         ))
 
-(org-xob--capture "hello world")
+(org-xob--capture "hallo world")
 
 (setq xob-logfile (concat org-xob-path org-xob--log-file))
 
