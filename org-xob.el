@@ -96,41 +96,6 @@
 
 (defvar org-xob--id-node nil) 
 
-;;;;; file variables
-(defvar org-xob--dir "xob/" 
-  "Core directory for exobrain system.")
-
-(defvar org-xob-workspace "Users/Will/exobrain/" 
-  "Directory for all exobrain files.")
-
-(defvar org-xob-path (concat org-xob-workspace
-                                  org-xob--dir)
-  "Path to the core exobrain files.")
-
-(defvar org-xob-max-KB-filesize 524288
-  "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
-
-(defvar org-xob--KB-files nil
-  "List of all knowledge base files.")
-;; (setq org-xob--KB-files nil)
-
-(defvar org-xob--KB-file nil
-  "The currently active KB file to store previous versions of nodes.")
-
-(defvar org-xob--KB-filename-prefix "KB-file-"
-  "suffix for KB filenames. A simple filecount value is appended for a new name")
-
-(defvar org-xob--log-file "xob-logfile.org"
-  "The current log file where day nodes and general activity is recorded.")
-
-(defvar org-xob--agend-file nil
-  "The current agenda file where all activity nodes other than day nodes go.")
-
-(defvar org-xob--active-nodes nil
-  "a-list of active nodes. Those that were extracted from the KB and into the workspace.")
-
-(defvar org-xob-syncedp nil
-  "Buffer local variable that indicates whether the current contents of a buffer have been synced with the Knowledge Base.")
 ;;;;; state
 
 ;; TODO clean
@@ -148,24 +113,25 @@
                                 (org-xob--KB-files . "KB-files")
                                 (org-xob--KB-file . "current-KB-file")))
 
-;;;;; Keymaps
+;;;;; knowledge base sources
 
-;; This technique makes it easier and less verbose to define keymaps.
+(defvar org-xob--source-backlinks
+  '(:name "backlinks"
+          :tags ("KB" "backlinks")
+          :title nil 
+          :ID nil
+          :PID nil
+          :func org-xob--get-backlinks
+          :items nil))
 
-(defvar org-xob-map
-  ;; This makes it easy and much less verbose to define keys
-  (let ((map (make-sparse-keymap "org-xob map"))
-        (maps (list
-               ;; Mappings go here, e.g.:
-               "RET" #'org-xob-RET-command
-               [remap search-forward] #'org-xob-search-forward
-               )))
-    (cl-loop for (key fn) on maps by #'cddr
-             do (progn
-                  (when (stringp key)
-                    (setq key (kbd key)))
-                  (define-key map key fn)))
-    map))
+(defvar org-xob--source-forlinks
+  '(:name "forlinks"
+          :tags ("KB" "forlinks")
+          :title nil 
+          :ID nil
+          :PID nil
+          :func org-xob--get-forlinks
+          :items nil))
 
 ;;;;; capture variables
 
@@ -211,6 +177,60 @@
          :ntype "a.todo"
          )
         ))
+
+;;;;; file variables
+(defvar org-xob--dir "xob/" 
+  "Core directory for exobrain system.")
+
+(defvar org-xob-workspace "Users/Will/exobrain/" 
+  "Directory for all exobrain files.")
+
+(defvar org-xob-path (concat org-xob-workspace
+                                  org-xob--dir)
+  "Path to the core exobrain files.")
+
+(defvar org-xob-max-KB-filesize 524288
+  "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
+
+(defvar org-xob--KB-files nil
+  "List of all knowledge base files.")
+;; (setq org-xob--KB-files nil)
+
+(defvar org-xob--KB-file nil
+  "The currently active KB file to store previous versions of nodes.")
+
+(defvar org-xob--KB-filename-prefix "KB-file-"
+  "suffix for KB filenames. A simple filecount value is appended for a new name")
+
+(defvar org-xob--log-file "xob-logfile.org"
+  "The current log file where day nodes and general activity is recorded.")
+
+(defvar org-xob--agend-file nil
+  "The current agenda file where all activity nodes other than day nodes go.")
+
+(defvar org-xob--active-nodes nil
+  "a-list of active nodes. Those that were extracted from the KB and into the workspace.")
+
+(defvar org-xob-syncedp nil
+  "Buffer local variable that indicates whether the current contents of a buffer have been synced with the Knowledge Base.")
+;;;;; Keymaps
+
+;; This technique makes it easier and less verbose to define keymaps.
+
+(defvar org-xob-map
+  ;; This makes it easy and much less verbose to define keys
+  (let ((map (make-sparse-keymap "org-xob map"))
+        (maps (list
+               ;; Mappings go here, e.g.:
+               "RET" #'org-xob-RET-command
+               [remap search-forward] #'org-xob-search-forward
+               )))
+    (cl-loop for (key fn) on maps by #'cddr
+             do (progn
+                  (when (stringp key)
+                    (setq key (kbd key)))
+                  (define-key map key fn)))
+    map))
 
 ;;;; Minor Mode
 
@@ -265,6 +285,7 @@
            (if (not org-xob-today)
                (setq org-xob-today (org-xob--capture "ad")) t))
           (progn 
+            (setq org-xob--sideline-window nil)
             (setq org-xob-on-p t)
             (message "xob started."))
         (message "Unable to start xob."))
@@ -339,15 +360,16 @@ With C-u use alternative, experimental editing method."
 (defun org-xob-toggle-sideline ()
   "Toggles display of the contextual side window."
   (interactive)
-  (if org-xob--sideline-window 
+  (save-excursion 
+    (if org-xob--sideline-window 
+        (progn 
+          (delete-window org-xob--sideline-window)
+          (setq org-xob--sideline-window nil))
       (progn 
-        (delete-window org-xob--sideline-window)
-        (setq org-xob--sideline-window nil))
-    (progn 
-      (setq org-xob--sideline-window 
-            (split-window-right))
-      (select-window org-xob--sideline-window)
-      (display-buffer-same-window org-xob--context-buffer nil))))
+        (setq org-xob--sideline-window 
+              (split-window-right))
+        (select-window org-xob--sideline-window)
+        (display-buffer-same-window org-xob--context-buffer nil)))))
 
 ;; TODO change to use capture?
 ;;;###autoload
@@ -358,19 +380,22 @@ With C-u use alternative, experimental editing method."
     (org-xob--new-node (point))))
 
 ;; TODO
+;; for each exo-link in body, visit node and remove backlink
+;; for each exo-link in backlinks, visite node and kill link, leave link text
 ;;;###autoload
 (defun org-xob-remove-node ()
-"Deletes node from xob system. Removes heading ID from the hash tables,
+"Removes node at point from xob system, but does not delete the contents. Removes heading ID from the hash tables,
 and any backlinks referencing it."
   (interactive)
-  (when (not org-xob-on-p)
+  (unless org-xob-on-p
     (org-xob-start))
-  ;; TODO remove from other tables
-  ;; delete node
-  ;; delete context footprint
-  ;; for each exo-link in body, visit node and remove backlink
-  ;; for each exo-link in backlinks, visite node and kill link, leave link text
-  (remhash (org-id-get (point)) org-xob--id-node))
+  (save-excursion
+    (let* ((ID (org-id-get (point)))
+           (title (node-title (gethash ID org-xob--id-node))))
+      (remhash ID org-xob--id-node)
+      (remhash title org-xob--title-id)
+      (org-entry-put (point) "ID" "")
+      (org-id-update-id-locations (list (buffer-file-name)) 'silent))))
 
 ;;;;; KB Context Commands
 
@@ -480,42 +505,26 @@ This can be applied to heading at point or used in a mapping."
   "Create an indirect buffer of the node with name title."
   (setq org-xob-short-title (truncate-string-to-width title 12))
   (org-id-goto ID)
-  (setq org-xob-node-buffer (org-tree-to-indirect-buffer))
+  (setq org-xob-node-window (org-tree-to-indirect-buffer))
 
   ;; TODO (pop-to-buffer-same-window BUFFER &optional NORECORD)
-  (switch-to-buffer org-xob-node-buffer)
+  (select-window org-xob-node-window)
 
   (org-xob-minor-mode 1)
-  (org-xob--make-context-buffer org-xob-short-title))
+  (org-xob--make-context-buffer org-xob-short-title)
+  (select-window org-xob-node-window)
+  )
 
 (defun org-xob--make-context-buffer (title)
   "Create context buffer, but leave it empty by default."
   (interactive)
   (setq org-xob--context-buffer (get-buffer-create (concat  "*context-" title)))
   (with-current-buffer org-xob--context-buffer
-    (org-mode)))
+    (org-mode)
+    (org-xob-minor-mode 1)))
 
 ;;;;; Contexts Functions
 
-;; -- source definitions --
-;; TODO unfinished - local or not? fill in blanks, test
-(setq-local org-xob--source-backlinks
-            '(:name "backlinks"
-                    :tags ("KB")
-                    :title nil 
-                    :ID nil
-                    :PID nil
-                    :func org-xob--get-backlinks
-                    :items nil))
-
-(setq-local org-xob--source-forlinks
-            '(:name "forlinks"
-                    :tags ("KB")
-                    :title nil 
-                    :ID nil
-                    :PID nil
-                    :func org-xob--get-forlinks
-                    :items nil))
 
 (defun org-xob--node-get-links (source)
   "Populates source item list from the node. The items are represented by their

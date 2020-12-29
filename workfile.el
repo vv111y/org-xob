@@ -1979,3 +1979,6 @@ source is a plist that describes the content source."
 (setq org-xob-path "/Users/Will/exobrain/xob/xob-logfile.org" )
 
 (find-file "/Users/Will/exobrain/xob/xob-logfile.org" )
+(node-title (gethash "88934E1F-AEE0-4672-A5BA-ECFD5A32EFC7" org-xob--id-node))
+(node-title (gethash "3E5F74F6-D0BB-4BA4-8B73-9280AEE81955" org-xob--id-node))
+(gethash "3E5F74F6-D0BB-4BA4-8B73-9280AEE81955" org-xob--id-node)
