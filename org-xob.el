@@ -100,7 +100,7 @@
 (defvar org-xob--dir "xob/" 
   "Core directory for exobrain system.")
 
-(defvar org-xob-workspace "~/exobrain/" 
+(defvar org-xob-workspace "Users/Will/exobrain/" 
   "Directory for all exobrain files.")
 
 (defvar org-xob-path (concat org-xob-workspace
@@ -169,8 +169,8 @@
 
 ;;;;; capture variables
 
-(defvar org-xob--auto-types '(("day" . a.day)
-                              ("ct" . a.day)
+(defvar org-xob--auto-types '(
+                              ("ad" . a.day)
                               ("session" . a.session)  								;; 
                               ("project" . a.project)									;; 
                               ("log" . a.log) 												;; 
@@ -191,8 +191,8 @@
          :ntype "node"
          ;; :immediate-finish t
          :empty-lines-after 1)
-        ("ct" "today" entry (file (concat org-xob-path org-xob--log-file))
-         "* %(concat "[" (format-time-string "%F %a %R") "]")\n:BACKLINKS:\n:END:\n"
+        ("ad" "today" entry (file (concat org-xob-path org-xob--log-file))
+         "* %(concat \"[\" (format-time-string \"%F %a %R\") \"]\")\n:BACKLINKS:\n:END:\n"
          :exobrain-node t
          :immediate-finish t
          :ntype "context.day")
@@ -263,7 +263,7 @@
                                      :size org-xob--table-size))))))
                     finally return t)
            (if (not org-xob-today)
-               (setq org-xob-today (org-xob--capture "ct")) t))
+               (setq org-xob-today (org-xob--capture "ad")) t))
           (progn 
             (setq org-xob-on-p t)
             (message "xob started."))
@@ -704,8 +704,8 @@ then convert it into a new node in place. Otherwise it is assumed to be called
 as a capture hook function."
   (let ((ID (org-id-get-create))
         (title (nth 4 (org-heading-components)))
-        (timestamp (concat
-                    "[" (format-time-string "%F %a %R") "]"))
+        ;; (timestamp (concat
+        ;;             "[" (format-time-string "%F %a %R") "]"))
         type
         node)
     (if heading
@@ -713,10 +713,11 @@ as a capture hook function."
           (setq type "n.n"))
       (when (org-capture-get :exobrain-node)
         (setq type (org-capture-get :ntype))
+        ;; (funcall (org-capture-get :func))
         (if (org-capture-get :todo) (org-todo))))
-    (org-entry-put (point) "CREATED" timestamp)
-    (org-entry-put (point) "MODIFIED" timestamp)
-    (org-entry-put (point) "TYPE" type)
+    ;; (org-entry-put (point) "CREATED" timestamp)
+    ;; (org-entry-put (point) "MODIFIED" timestamp)
+    ;; (org-entry-put (point) "TYPE" type)
     (setq node (make-node :title title
                           :type type 
                           :backlinks (list)))
@@ -733,7 +734,9 @@ as a capture hook function."
          ID)
     ;; TODO test
     (if type 
-        (org-capture (concat org-xob-path org-xob--log-file) "ct")
+        ;; TODO redo I am not targeting this file
+        ;; (org-capture (concat org-xob-path org-xob--log-file) "ad")
+        (org-capture nil title)
       (org-capture))
     org-xob--last-captured))
 

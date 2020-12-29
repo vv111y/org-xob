@@ -1363,7 +1363,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (add-hook 'org-capture-mode-hook #'org-xob--new-node)
 
 (defvar org-xob--auto-types '(("day" . a.day)
-                              ("ct" . a.day)
+                              ("ad" . a.day)
                               ("session" . a.session)
                               ("project" . a.project)
                               ("log" . a.log)
@@ -1386,7 +1386,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
          :vid "0"
          ;; :immediate-finish t
          :empty-lines-after 1)
-        ("ct" "today" entry (file org-xob--KB-file)
+        ("ad" "today" entry (file org-xob--KB-file)
          "* %u \n:BACKLINKS:\n:END:\n\n"
          :exobrain-node t
          :immediate-finish t
@@ -1401,7 +1401,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 
 ;;;;; capture scraps
 (setq org-xob--KB-file "KB-file-000.org")
-(org-xob--capture "ct")
+(org-xob--capture "ad")
 (org-xob--capture "f")
 (org-xob--capture "d")
 (org-xob--capture "r")
@@ -1890,31 +1890,59 @@ source is a plist that describes the content source."
 (setq org-xob-on-p nil)
 
 (if (not org-xob-today)
-    (setq org-xob-today (org-xob--capture "ct")))
+    (setq org-xob-today (org-xob--capture "ad")))
 
 (setq org-xob--log-file "")
 
+(setq org-xob--auto-types '(
+                              ("ad" . a.day)
+                              ("as" . a.session)  								;; session
+                              ("ap" . a.project)									;; project
+                              ("al" . a.log) 											;; log
+                              ("all" . a.log.life)								;; log personal rundschau too
+                              ("alit" . a.log.it-tools) 					;; log it tools
+                              ("alt" . a.log.tools)  							;; log tools
+                              ("lp" . a.log.project)							;; log project
+                              ("na" . n.bib.article)							;; bib article
+                              ("nw" . n.bib.web)									;; bib webpage
+                              ("nn" . n.n)												;; new general node 
+                              ("nt" . n.topic)										;; kb topic
+                              ))
 (setq org-xob--templates
-      '(("n" "new node" entry (file org-xob--KB-file)
-         "* %(eval title)  :node:\n%?\n** backlinks :bl:"
+      '(("nn" "new node" entry (file org-xob--KB-file)
+         "* %(eval (string \"hi\"))  :node:\n%?\n** backlinks :bl:"
          :exobrain-node t
          :ntype "node"
+         :func (lambda () t)
          ;; :immediate-finish t
          :empty-lines-after 1)
-        ("ct" "today" entry (file org-xob--log-file)
-         "* %(concat
-                    "[" (format-time-string "%F %a %R") "]")\n\n** backlinks :bl:"
+
+        ("ad" "today" entry (function (lambda () (find-file (concat org-xob-path org-xob--log-file))))
+        ;; ("ad" "today" entry (file xob-logfile)
+        ;; ("ad" "today" entry (file org-xob--log-file)
+         "* Day Log %u\n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
          :exobrain-node t
+         :func (lambda () t)
+         ;; :func (lambda () (progn
+         ;;                     (org-insert-subheading '(4))
+         ;;                     (insert "hello world")))
          :immediate-finish t
-         :ntype "context.day")
-        ("cp" "new project" entry (file file org-xob--agenda-file))
-        ("cs" "new session" entry (file file org-xob--agenda-file))
+         :ntype "a.day")
+
+        ("ap" "new project" entry (file org-xob--agenda-file)
+         "* Day Log %u\n:PROPERTIES:\n:TYPE:\t\t\tactivity.day\n:END:\n:BACKLINKS:\n:END:\n"
+         :exobrain-node t
+         )
+
+        ("as" "new session" entry (file org-xob--agenda-file))
+
         ("tf" "todoID" entry (file "KB-file-000.org")
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
          :exobrain-node t
          :todo t
          :ntype "a.todo"
          )
+
         ("tp" "todoID" entry (file "KB-file-000.org")
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
          :exobrain-node t
@@ -1923,7 +1951,17 @@ source is a plist that describes the content source."
          )
         ))
 
+(setq xob-logfile (concat org-xob-path org-xob--log-file))
+
 (and t (if (not org-xob-today) 
-           (setq org-xob-today (org-xob--capture "ct"))))
+           (setq org-xob-today (org-xob--capture "ad"))))
 
 (setq org-xob-today nil)
+
+(org-capture-expand-file (concat org-xob-path org-xob--log-file))
+(org-capture-set-target-location (with-current-buffer ))
+
+(setq org-xob-workspace "/Users/Will/exobrain/" )
+(setq org-xob-path "/Users/Will/exobrain/xob/xob-logfile.org" )
+
+(find-file "/Users/Will/exobrain/xob/xob-logfile.org" )
