@@ -1894,23 +1894,30 @@ source is a plist that describes the content source."
 
 (setq org-xob--log-file "")
 
-(setq org-xob--auto-types '(
-                              ("ad" . a.day)
-                              ("as" . a.session)  								;; session
-                              ("ap" . a.project)									;; project
-                              ("al" . a.log) 											;; log
-                              ("all" . a.log.life)								;; log personal rundschau too
-                              ("alit" . a.log.it-tools) 					;; log it tools
-                              ("alt" . a.log.tools)  							;; log tools
-                              ("lp" . a.log.project)							;; log project
-                              ("na" . n.bib.article)							;; bib article
-                              ("nw" . n.bib.web)									;; bib webpage
-                              ("nn" . n.n)												;; new general node 
-                              ("nt" . n.topic)										;; kb topic
-                              ))
+;; ref: org-xob--auto-types '(
+;;                               ("ad" . a.day)
+;;                               ("as" . a.session)  								;; session
+;;                               ;; ("ap" . a.project)									;; project
+
+;;                               ("al" . a.log) 											;; log
+;;                               ("all" . a.log.life)								;; log personal rundschau too
+;;                               ("alit" . a.log.it-tools) 					;; log it tools
+;;                               ("alt" . a.log.tools)  							;; log tools
+;;                               ("lp" . a.log.project)							;; log project
+
+;;                               ("nn" . n.n)												;; new general node 
+;;                               ("nt" . n.topic)										;; kb topic
+;;                               ("na" . n.bib.article)							;; bib article
+;;                               ("nw" . n.bib.web)									;; bib webpage
+
+;;                               ("tf" . t.free)											;; unbound todo	
+;;                               ;; ("tp" . t.project)									;; project todo	
+
+(setq org-xob--auto-types '("ad" "as" "al" "all" "alit" "alt" "lp" "nn" "nt" "na" "nw" "tf" "tp"))
+
 (setq org-xob--templates
       '(("nn" "new node" entry (file org-xob--KB-file)
-         "* %(eval (string \"hi\"))  :node:\n%?\n** backlinks :bl:"
+         "* %(eval org-xob--last-title) \n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
          :exobrain-node t
          :ntype "node"
          :func (lambda () t)
@@ -1936,20 +1943,22 @@ source is a plist that describes the content source."
 
         ("as" "new session" entry (file org-xob--agenda-file))
 
-        ("tf" "todoID" entry (file "KB-file-000.org")
+        ("tf" "todo general" entry (file "KB-file-000.org")
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
          :exobrain-node t
          :todo t
          :ntype "a.todo"
          )
 
-        ("tp" "todoID" entry (file "KB-file-000.org")
+        ("tp" "todo project" entry (file "KB-file-000.org")
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
          :exobrain-node t
          :todo t
          :ntype "a.todo"
          )
         ))
+
+(org-xob--capture "hello world")
 
 (setq xob-logfile (concat org-xob-path org-xob--log-file))
 

@@ -349,6 +349,7 @@ With C-u use alternative, experimental editing method."
       (select-window org-xob--sideline-window)
       (display-buffer-same-window org-xob--context-buffer nil))))
 
+;; TODO change to use capture?
 ;;;###autoload
 (defun org-xob-heading-to-node ()
   "Convenience function to convert current content into xob KB nodes."
@@ -698,14 +699,13 @@ Used for activity material in day node."
 (defun org-xob--auto-clock-out ())
 ;;;;; Node Functions
 
+;; TODO move stuff to templates
 (defun org-xob--new-node (&optional heading)
   "Both a hook function and for general node creation. If orgmode 'heading' is given,
 then convert it into a new node in place. Otherwise it is assumed to be called
 as a capture hook function."
   (let ((ID (org-id-get-create))
         (title (nth 4 (org-heading-components)))
-        ;; (timestamp (concat
-        ;;             "[" (format-time-string "%F %a %R") "]"))
         type
         node)
     (if heading
@@ -730,14 +730,16 @@ as a capture hook function."
 
 (defun org-xob--capture (title)
   (let* ((org-capture-templates org-xob--templates)
-         (type (assoc-string title org-xob--auto-types))
+         ;; (type (assoc-string title org-xob--auto-types))
          ID)
     ;; TODO test
-    (if type 
+    (if (member title org-xob--auto-types)
         ;; TODO redo I am not targeting this file
         ;; (org-capture (concat org-xob-path org-xob--log-file) "ad")
         (org-capture nil title)
-      (org-capture))
+      (progn
+        (setq org-xob--last-title title)
+        (org-capture nil "nn")))
     org-xob--last-captured))
 
 
