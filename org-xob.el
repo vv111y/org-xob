@@ -68,10 +68,11 @@
 ;;;; Requirements
 
 (require 'org)
+(require 'org-element)
 (require 'org-id)
 (require 'org-ql)
-;; (require 'org-ml)
 (require 'cl-lib)
+(require 'org-super-links)
 
 ;;;; Customization
 
@@ -182,7 +183,7 @@
 (defvar org-xob--dir "xob/" 
   "Core directory for exobrain system.")
 
-(defvar org-xob-workspace "Users/Will/exobrain/" 
+(defvar org-xob-workspace "/Users/Will/exobrain/" 
   "Directory for all exobrain files.")
 
 (defvar org-xob-path (concat org-xob-workspace
@@ -299,7 +300,7 @@
   (interactive)
   (if org-xob-on-p
       (progn 
-        (org-xob--save-state)
+        (org-xob-save-state)
         ;; save+close active buffers
         ;; maybe delete other objects
         (setq org-xob-on-p nil))))
@@ -805,8 +806,9 @@ Maybe useful for syncing."
   ;; (maphash '#func org-xob--title-id)
   )
 
-(defun org-xob--save-state ()
+(defun org-xob-save-state ()
   "Save exobrain state."
+  (interactive)
   (if (not (file-directory-p org-xob-workspace))
       (make-directory org-xob-workspace))
   (if (not (file-directory-p org-xob-path))
