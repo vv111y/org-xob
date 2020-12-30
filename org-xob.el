@@ -74,6 +74,17 @@
 (require 'cl-lib)
 (require 'org-super-links)
 
+(declare-function org-super-links-link "org-super-links.el")
+(declare-function org-super-links-store-link "org-super-links.el")
+(declare-function org-super-links-insert-link "org-super-links.el")
+
+(setq org-super-links-backlink-into-drawer t)
+(setq org-super-links-link-prefix nil)
+(setq org-super-links-link-postfix nil)
+(setq org-super-links-backlink-postfix nil)
+(setq org-super-links-related-into-drawer nil)
+(setq org-super-links-search-function #'org-xob-get-node)
+
 ;;;; Customization
 
 (defgroup org-xob nil
@@ -348,7 +359,8 @@ With C-u use alternative, experimental editing method."
   (interactive)
   (unless org-xob-on-p
     (org-xob-start))
-  (org-insert-link nil (concat "ID:" ID) (org-xob--ID-title ID))
+  ;; (org-insert-link nil (concat "ID:" ID) (org-xob--ID-title ID))
+  (org-super-links-link)
   ;; call find-node 
   ;; if not there, make new node
   ;; make link 
