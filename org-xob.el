@@ -147,14 +147,14 @@
 
 ;;;;; capture variables
 
-(defvar org-xob--auto-types '("ad" "as" "al" "all" "alit" "alt" "lp" "nn" "nt" "na" "nw" "tf" "tp"))
+(defvar org-xob--auto-types '("ad" "as" "al" "all" "alit" "alt" "lp" "nt" "na" "nw" "tf" "tp"))
 
 (defvar org-xob--templates
       '(("nn" "new node" entry (file org-xob--KB-file)
          "* %(eval org-xob--last-title) \n:PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n:END:\n:BACKLINKS:\n:END:\n"
          ;; "* %(eval org-xob--last-title) %((progn (org-entry-put (point) "CREATED" \"when\") \"\"))   :PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n\n:END:\n:BACKLINKS:\n:END:\n"
 
-         :exobrain-node t
+         :xob-node t
          :ntype "node"
          :func (lambda () t)
          :immediate-finish t
@@ -162,7 +162,7 @@
 
         ("ad" "today" entry (function (lambda () (find-file (concat org-xob-path org-xob--log-file))))
          "* Day Log %u\n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
-         :exobrain-node t
+         :xob-node t
          :func (lambda () t)
          ;; :func (lambda () (progn
          ;;                     (org-insert-subheading '(4))
@@ -172,21 +172,21 @@
 
         ("ap" "new project" entry (file org-xob--agenda-file)
          "* Project fillin \n:PROPERTIES:\n:TYPE:\t\t\ta.project\n:END:\n:BACKLINKS:\n:END:\n"
-         :exobrain-node t
+         :xob-node t
          )
 
         ("as" "new session" entry (file org-xob--agenda-file))
 
         ("tf" "todo general" entry (file "KB-file-000.org")
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
-         :exobrain-node t
+         :xob-node t
          :todo t
          :ntype "a.todo"
          )
 
         ("tp" "todo project" entry (file "KB-file-000.org")
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
-         :exobrain-node t
+         :xob-node t
          :todo t
          :ntype "a.todo"
          )
@@ -332,8 +332,7 @@
 
 ;;;###autoload
 (defun org-xob--get-create-node ()
-  "Find or create new xob KB node using helm."
-  (interactive)
+  "Find or create new xob KB node using helm. Returns node (ID title) as a list."
   (unless org-xob-on-p
     (org-xob-start))
   (helm :buffer "*xob get node*"
@@ -728,30 +727,28 @@ Used for activity material in day node."
   "Both a hook function and for general node creation. If orgmode 'heading' is given,
 then convert it into a new node in place. Otherwise it is assumed to be called
 as a capture hook function."
-  (let ((ID (org-id-get-create))
-        (title (nth 4 (org-heading-components)))
-        type
-        node)
-    (if heading
-        (progn
-          (setq type "n.n"))
-      (when (org-capture-get :exobrain-node)
-        (setq type (org-capture-get :ntype))
-        ;; (funcall (org-capture-get :func))
-        (if (org-capture-get :todo) (org-todo))))
-    ;; (org-entry-put (point) "CREATED" timestamp)
-    ;; (org-entry-put (point) "MODIFIED" timestamp)
-    ;; (org-entry-put (point) "TYPE" type)
-    (setq node (make-node :title title
-                          :type type 
-                          :backlinks (list)))
-    (puthash ID node org-xob--id-node)
-    (puthash title ID org-xob--title-id)
-    (setq org-xob--last-captured ID)))
+  (if (org-capture-get :xob-node)
+      (let ((ID (org-id-get-create))
+            (title (nth 4 (org-heading-components)))
+            type node)
+        (if heading
+            (setq type "n.n")
+          (setq type (org-capture-get :ntype))
+          ;; (funcall (org-capture-get :func))
+          (if (org-capture-get :todo) (org-todo)))
+        ;; (org-entry-put (point) "CREATED" timestamp)
+        ;; (org-entry-put (point) "MODIFIED" timestamp)
+        ;; (org-entry-put (point) "TYPE" type)
+        (setq node (make-node :title title
+                              :type type 
+                              :backlinks (list)))
+        (puthash ID node org-xob--id-node)
+        (puthash title ID org-xob--title-id)
+        (setq org-xob--last-captured ID))))
 
 (cl-defstruct node title type backlinks)
-(add-hook 'org-capture-mode-hook #'org-xob--new-node)
-(remove-hook 'org-capture-mode-hook #'org-xob--new-node)
+;; (add-hook 'org-capture-mode-hook #'org-xob--new-node)
+;; (remove-hook 'org-capture-mode-hook #'org-xob--new-node)
 (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
 
 (defun org-xob--capture (title)
