@@ -155,7 +155,7 @@
          ;; "* %(eval org-xob--last-title) %((progn (org-entry-put (point) "CREATED" \"when\") \"\"))   :PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n\n:END:\n:BACKLINKS:\n:END:\n"
 
          :xob-node t
-         :ntype "node"
+         :ntype "n.n"
          :func (lambda () t)
          :immediate-finish t
          :empty-lines-after 1)
@@ -168,20 +168,28 @@
          ;;                     (org-insert-subheading '(4))
          ;;                     (insert "hello world")))
          :immediate-finish t
-         :ntype "a.day")
+         :ntype "a.day"
+         )
 
         ("ap" "new project" entry (file org-xob--agenda-file)
          "* Project fillin \n:PROPERTIES:\n:TYPE:\t\t\ta.project\n:END:\n:BACKLINKS:\n:END:\n"
          :xob-node t
+         :ntype "a.project"
+         :immediate-finish t
          )
 
-        ("as" "new session" entry (file org-xob--agenda-file))
+        ("as" "new session" entry (file org-xob--agenda-file)
+         :xob-node t
+         :ntype "a.session"
+         :immediate-finish t
+         )
 
         ("tf" "todo general" entry (file "KB-file-000.org")
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
          :xob-node t
          :todo t
          :ntype "a.todo"
+         :immediate-finish t
          )
 
         ("tp" "todo project" entry (file "KB-file-000.org")
@@ -189,6 +197,7 @@
          :xob-node t
          :todo t
          :ntype "a.todo"
+         :immediate-finish t
          )
         ))
 
@@ -275,6 +284,8 @@
   (interactive)
   (if (not org-xob-on-p)
       (if (and
+           (unless (file-directory-p org-xob-path)
+             (make-directory org-xob-path t))
            (cl-loop for (k . v) in org-xob--objects
                     do (if (file-exists-p (concat org-xob-path v))
                            (org-xob--load-object v k)
