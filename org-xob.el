@@ -328,15 +328,12 @@
         (org-narrow-to-subtree))
     (error (message "todays day node missing."))))
 
-;; TODO mod for links
 ;;;###autoload
-(defun org-xob-get-node ()
-  "Focus on a node for editing. If it does not exist, create it.
-With C-u use alternative, experimental editing method."
+(defun org-xob--get-create-node ()
+  "Find or create new xob KB node using helm."
   (interactive)
   (unless org-xob-on-p
     (org-xob-start))
-  ;; Get node by title, or create new one 
   (helm :buffer "*xob get node*"
         :sources (helm-build-sync-source "xob-kb"
                    :candidates (lambda ()
@@ -346,28 +343,26 @@ With C-u use alternative, experimental editing method."
                    :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
                                              (unless ID
                                                (setq ID (org-xob--capture title)))
-                                             ;; (if (eq arg 4) 
-                                             ;;     (org-xob--activate-node ID))
-                                             (org-xob--edit-node ID title))))))
+                                             (list ID title))))))
 
-;; TODO superlink?
-;; TODO do I change hash table name?
-;; TODO use a modded get node, returns ID 
+;;;###autoload
+(defun org-xob-get-node ()
+  "Focus on a node for editing. If it does not exist, create it."
+  (interactive)
+  (unless org-xob-on-p
+    (org-xob-start))
+  (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+    (org-xob--edit-node ID title)))
+
 ;;;###autoload
 (defun org-xob-insert-link ()
   "Inserts a properly formatted xob node link at point."
   (interactive)
   (unless org-xob-on-p
     (org-xob-start))
-  ;; (org-insert-link nil (concat "ID:" ID) (org-xob--ID-title ID))
-  (org-super-links-link)
-  ;; call find-node 
-  ;; if not there, make new node
-  ;; make link 
-  ;; is backlink already there?
-  ;; else make backlink 
-  ;; add entry to forelink tree, source plist
-  )
+  (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+    (org-super-links--insert-link (org-id-find ID 'MARKERP))
+    (org-xob--source-refresh 'forlinks)))
 
 ;;;###autoload
 (defun org-xob-toggle-sideline ()
@@ -509,24 +504,22 @@ This can be applied to heading at point or used in a mapping."
 ;;;;; Buffer Functions 
 
 ;; Parsing <- heading?
-
 ;; TODO local var on indirect buffer?
-
 ;; TODO recheck: probably do more for both
 
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
   (setq org-xob-short-title (truncate-string-to-width title 12))
-  (org-id-goto ID)
-  (setq org-xob-node-window (org-tree-to-indirect-buffer))
-
-  ;; TODO (pop-to-buffer-same-window BUFFER &optional NORECORD)
-  (select-window org-xob-node-window)
-
+  (if (get-buffer org-xob-short-title)
+      (kill-buffer org-xob-short-title))
+  (save-excursion
+    (save-window-excursion
+      (org-id-goto ID)
+      (clone-indirect-buffer-other-window org-xob-short-title t)
+      (org-narrow-to-subtree)))
+  (switch-to-buffer org-xob-short-title)
   (org-xob-minor-mode 1)
-  (org-xob--make-context-buffer org-xob-short-title)
-  (select-window org-xob-node-window)
-  )
+  (org-xob--make-context-buffer org-xob-short-title))
 
 (defun org-xob--make-context-buffer (title)
   "Create context buffer, but leave it empty by default."

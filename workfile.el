@@ -70,7 +70,7 @@
 (-non-nil
  (mapcar (lambda (file)
            (let ((case-fold-search nil))
-             (with-current-buffer (find-buffer-visiting file)
+             (with-current-buffer (forg-xob-short-titlefer-visiting file)
                (org-with-wide-buffer
                 (goto-char (point-min))
                 (cl-loop with regexp = (format org-heading-keyword-regexp-format "MAYBE")
@@ -84,7 +84,7 @@
 (-non-nil
  (mapcar (lambda (file)
            (let ((case-fold-search nil))
-             (with-current-buffer (find-buffer-visiting file)
+             (with-current-buffer (forg-xob-short-titlefer-visiting file)
                (org-with-wide-buffer
                 (goto-char (point-min))
                 ;; (cl-loop with regexp = (format org-heading-keyword-regexp-format "MAYBE")
@@ -1858,12 +1858,12 @@ source is a plist that describes the content source."
 ;;; proper indirect buffer call
 (defun org-subtree-to-indirect-buffer ()
   (interactive)
-  (let ((ind-buf (concat (buffer-name) "-narrowclone")))
-    (if (get-buffer ind-buf)
-        (kill-buffer ind-buf))
-    (clone-indirect-buffer-other-window ind-buf t)
+  (let ((org-xob-short-title (concat (buffer-name) "-narrowclone")))
+    (if (get-buffer org-xob-short-title)
+        (kill-buffer org-xob-short-title))
+    (clone-indirect-buffer-other-window org-xob-short-title t)
     (org-narrow-to-subtree)
-    (switch-to-buffer ind-buf)))
+    (switch-to-buffer org-xob-short-title)))
 
 ;; snip from old
 ;; (setq org-xob-node-buffer (get-buffer-create morg-xob-short-title))
@@ -1984,3 +1984,12 @@ source is a plist that describes the content source."
 (gethash "3E5F74F6-D0BB-4BA4-8B73-9280AEE81955" org-xob--id-node)
 
 (require 'org-super-links)
+
+(defun org-subtree-to-indirect-buffer ()
+  (interactive)
+  (let ((org-xob-short-title (concat (buffer-name) "-narrowclone")))
+    (if (get-buffer org-xob-short-title)
+        (kill-buffer org-xob-short-title))
+    (clone-indirect-buffer-other-window org-xob-short-title t)
+    (org-narrow-to-subtree)
+    (switch-to-buffer org-xob-short-title)))

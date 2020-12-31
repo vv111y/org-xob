@@ -274,3 +274,6 @@ that will overwrite current source tree item."
       (make-directory org-xob-path))
   (cl-loop for (k . v) in org-xob--objects
            do (org-xob--save-object (concat org-xob-path v) k)))
+
+;; old way for inserting link
+(org-insert-link nil (concat "ID:" ID) (org-xob--ID-title ID))
