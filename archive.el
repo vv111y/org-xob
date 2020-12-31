@@ -277,3 +277,18 @@ that will overwrite current source tree item."
 
 ;; old way for inserting link
 (org-insert-link nil (concat "ID:" ID) (org-xob--ID-title ID))
+
+(defvar org-xob--auto-types '(
+                              ("ad" . a.day)
+                              ("session" . a.session)  								;; 
+                              ("project" . a.project)									;; 
+                              ("log" . a.log) 												;; 
+                              ("log personal" . a.log.life)						;; rundschau too
+                              ("log it tools" . a.log.it-tools) 			;; 
+                              ("log tools" . a.log.tools)  						;; 
+                              ("log project" . a.log.project)					;; 
+                              ("article" . n.bib.article)							;; 
+                              ("webpage" . n.bib.web)									;; 
+                              ("fast" . n.n)													;; 
+                              ("topic" . n.topic)											;; 
+                              ))

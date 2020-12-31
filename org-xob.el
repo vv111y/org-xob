@@ -147,42 +147,44 @@
 
 ;;;;; capture variables
 
-(defvar org-xob--auto-types '(
-                              ("ad" . a.day)
-                              ("session" . a.session)  								;; 
-                              ("project" . a.project)									;; 
-                              ("log" . a.log) 												;; 
-                              ("log personal" . a.log.life)						;; rundschau too
-                              ("log it tools" . a.log.it-tools) 			;; 
-                              ("log tools" . a.log.tools)  						;; 
-                              ("log project" . a.log.project)					;; 
-                              ("article" . n.bib.article)							;; 
-                              ("webpage" . n.bib.web)									;; 
-                              ("fast" . n.n)													;; 
-                              ("topic" . n.topic)											;; 
-                              ))
+(defvar org-xob--auto-types '("ad" "as" "al" "all" "alit" "alt" "lp" "nn" "nt" "na" "nw" "tf" "tp"))
 
 (defvar org-xob--templates
-      '(("n" "new node" entry (file org-xob--KB-file)
-         "* %(eval title)  :node:\n%?\n** backlinks :bl:"
+      '(("nn" "new node" entry (file org-xob--KB-file)
+         "* %(eval org-xob--last-title) \n:PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n:END:\n:BACKLINKS:\n:END:\n"
+         ;; "* %(eval org-xob--last-title) %((progn (org-entry-put (point) "CREATED" \"when\") \"\"))   :PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n\n:END:\n:BACKLINKS:\n:END:\n"
+
          :exobrain-node t
          :ntype "node"
-         ;; :immediate-finish t
-         :empty-lines-after 1)
-        ("ad" "today" entry (file (concat org-xob-path org-xob--log-file))
-         "* %(concat \"[\" (format-time-string \"%F %a %R\") \"]\")\n:BACKLINKS:\n:END:\n"
-         :exobrain-node t
+         :func (lambda () t)
          :immediate-finish t
-         :ntype "context.day")
-        ("cp" "new project" entry (file file org-xob--agenda-file))
-        ("cs" "new session" entry (file file org-xob--agenda-file))
-        ("tf" "todoID" entry (file "KB-file-000.org")
+         :empty-lines-after 1)
+
+        ("ad" "today" entry (function (lambda () (find-file (concat org-xob-path org-xob--log-file))))
+         "* Day Log %u\n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
+         :exobrain-node t
+         :func (lambda () t)
+         ;; :func (lambda () (progn
+         ;;                     (org-insert-subheading '(4))
+         ;;                     (insert "hello world")))
+         :immediate-finish t
+         :ntype "a.day")
+
+        ("ap" "new project" entry (file org-xob--agenda-file)
+         "* Project fillin \n:PROPERTIES:\n:TYPE:\t\t\ta.project\n:END:\n:BACKLINKS:\n:END:\n"
+         :exobrain-node t
+         )
+
+        ("as" "new session" entry (file org-xob--agenda-file))
+
+        ("tf" "todo general" entry (file "KB-file-000.org")
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
          :exobrain-node t
          :todo t
          :ntype "a.todo"
          )
-        ("tp" "todoID" entry (file "KB-file-000.org")
+
+        ("tp" "todo project" entry (file "KB-file-000.org")
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
          :exobrain-node t
          :todo t

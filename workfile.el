@@ -1926,12 +1926,10 @@ source is a plist that describes the content source."
          :exobrain-node t
          :ntype "node"
          :func (lambda () t)
-         ;; :immediate-finish t
+         :immediate-finish t
          :empty-lines-after 1)
 
         ("ad" "today" entry (function (lambda () (find-file (concat org-xob-path org-xob--log-file))))
-        ;; ("ad" "today" entry (file xob-logfile)
-        ;; ("ad" "today" entry (file org-xob--log-file)
          "* Day Log %u\n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
          :exobrain-node t
          :func (lambda () t)
