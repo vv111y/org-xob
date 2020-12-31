@@ -379,6 +379,13 @@
         (select-window org-xob--sideline-window)
         (display-buffer-same-window org-xob--context-buffer nil)))))
 
+;;;###autoload
+(defun org-xob-refresh-context ()
+  "Refresh all displayed sources"
+  (interactive)
+  (dolist (el org-xob--node-sources)
+    (org-xob--source-refresh el)))
+
 ;; TODO change to use capture?
 ;;;###autoload
 (defun org-xob-heading-to-node ()
