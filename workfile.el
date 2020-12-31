@@ -1991,3 +1991,4 @@ source is a plist that describes the content source."
     (clone-indirect-buffer-other-window org-xob-short-title t)
     (org-narrow-to-subtree)
     (switch-to-buffer org-xob-short-title)))
+(setq bb (find-file "KB-file-000.org"))
