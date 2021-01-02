@@ -269,12 +269,9 @@
       (org-xob-start))
     (if org-xob-minor-mode
         (progn 
-          (setq-local org-xob-syncedp nil)
-          ;; (add-hook 'after-change-functions #'org-xob--sync-edits)
-          ;; (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-xob-syncedp nil 'APPEND 'LOCAL)))
-          (setq-local org-id-extra-files org-xob--KB-files))
-      ;; (remove-hook 'after-change-functions #'org-xob--sync-edits)
-      )))
+          (add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
+          (setq-local org-xob--context-buffer nil)
+          (setq-local org-xob--sideline-window nil)))))
 
 ;;;; Commands
 ;;;;; Main Commands
@@ -284,7 +281,7 @@
   (interactive)
   (if (not org-xob-on-p)
       (if (and
-           (unless (file-directory-p org-xob-path)
+           (if (file-directory-p org-xob-path) t
              (make-directory org-xob-path t))
            (cl-loop for (k . v) in org-xob--objects
                     do (if (file-exists-p (concat org-xob-path v))
@@ -294,11 +291,6 @@
                            (cond
                             ((equal "org-xob--KB-file" (symbol-name k))
                              (set k (org-xob--new-KB-file)))
-                            ((equal "org-xob--log-file" (symbol-name k))
-                             (set k (progn
-                                      (with-temp-file (concat org-xob-path org-xob--log-file)
-                                        (insert ""))
-                                      (find-file-noselect (concat org-xob-path org-xob--log-file)))))
                             ((equal "org-xob--KB-files" (symbol-name k))
                              (set k nil))
                             ((or (equal "org-xob--title-id" (symbol-name k))
@@ -307,17 +299,24 @@
                                      :test 'equal
                                      :size org-xob--table-size))))))
                     finally return t)
-           (if (not org-xob-today)
-               (setq org-xob-today (org-xob--capture "ad")) t))
+           (if (file-exists-p (concat org-xob-path org-xob--log-file)) t
+             (with-temp-file (concat org-xob-path org-xob--log-file)
+               (message "XOB: Day log file missing, initializing new")
+               (insert "") t)))
           (progn 
-            (setq org-xob--sideline-window nil)
+            (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
+            (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+            (setq org-id-extra-files org-xob--KB-files)
+            (setq org-xob-today (gethash (concat "[" (format-time-string "%F %a") "]")
+                                         org-xob--title-id))
+            (if (not org-xob-today)
+                (setq org-xob-today (org-xob--capture "ad")) t)
             (setq org-xob-on-p t)
             (message "xob started."))
         (message "Unable to start xob."))
     (message "xob already started.")))
 
 
-;; TODO
 ;;;###autoload
 (defun org-xob-stop ()
   "Stop xob system: save all state and close active buffers."
@@ -325,8 +324,13 @@
   (if org-xob-on-p
       (progn 
         (org-xob-save-state)
-        ;; save+close active buffers
-        ;; maybe delete other objects
+        (with-current-buffer org-xob--log-file
+          (save-buffer)
+          (kill-buffer))
+        (setq org-xob-today nil)
+        (remove-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
+        (remove-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+        (setq org-id-extra-files nil)
         (setq org-xob-on-p nil))))
 
 ;;;###autoload
@@ -548,6 +552,11 @@ This can be applied to heading at point or used in a mapping."
     (org-mode)
     (org-xob-minor-mode 1)))
 
+(defun org-xob--kill-context-buffer-hook ()
+  "Kill the context buffer when closing the node edit buffer. Made local variable."
+  (with-current-buffer org-xob--context-buffer
+    (kill-buffer)))
+
 ;;;;; Contexts Functions
 
 
@@ -758,9 +767,6 @@ as a capture hook function."
         (setq org-xob--last-captured ID))))
 
 (cl-defstruct node title type backlinks)
-;; (add-hook 'org-capture-mode-hook #'org-xob--new-node)
-;; (remove-hook 'org-capture-mode-hook #'org-xob--new-node)
-(add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
 
 (defun org-xob--capture (title)
   (let* ((org-capture-templates org-xob--templates)
@@ -782,7 +788,6 @@ as a capture hook function."
     (if (gethash ID org-xob--id-node)
         (org-xob--activate-node ID))))
 
-(add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
 
 
 ;;;;; Node Versioning

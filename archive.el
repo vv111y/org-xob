@@ -292,3 +292,20 @@ that will overwrite current source tree item."
                               ("fast" . n.n)													;; 
                               ("topic" . n.topic)											;; 
                               ))
+
+;;; old node edit  
+;; old minor mode
+;; (add-hook 'after-change-functions #'org-xob--sync-edits)
+;; (add-hook 'after-change-functions (lambda () set (make-local-variable 'org-xob-syncedp nil 'APPEND 'LOCAL)))
+;; (setq-local org-xob-syncedp nil)
+
+;; primary fn to capture every single edit
+;; (remove-hook 'after-change-functions #'org-xob--sync-edits)
+
+;;; capture hook belongs in finalize
+;; (add-hook 'org-capture-mode-hook #'org-xob--new-node)
+
+;;; alternative open logfile and have a pointer 
+
+(setq org-xob--log 
+      (find-file-noselect (concat org-xob-path org-xob--log-file)))

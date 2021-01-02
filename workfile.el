@@ -1261,9 +1261,9 @@ inhibit-modification-hooks
 (defun xob-new-file ()
   (interactive)
   (let ((filename (concat 
-                          org-xob--KB-filename-prefix
-                          (format "%03d" (xob-state-kb-count xob))
-                          ".org")))
+                   org-xob--KB-filename-prefix
+                   (format "%03d" (xob-state-kb-count xob))
+                   ".org")))
     (with-temp-buffer
       (write-file filename))
     (cl-pushnew filename (xob-state-kb-files xob))
@@ -1992,3 +1992,18 @@ source is a plist that describes the content source."
     (org-narrow-to-subtree)
     (switch-to-buffer org-xob-short-title)))
 (setq bb (find-file "KB-file-000.org"))
+
+;;; auto kill context buffer
+(add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
+
+(defun org-xob--kill-context-buffer-hook ()
+  "Kill the context buffer when closing the node edit buffer. Made local variable.")
+
+;;; attempt to append kb files for org-id
+(listp org-agenda-text-search-extra-files)
+
+(symbol-plist org-id-extra-files)
+
+(setq org-id-extra-files (cl-set-difference org-id-extra-files org-xob--KB-files))
+;; (mapcar (lambda (x) (setq ac-sources (delq x ac-sources)))
+;;         '(ac-source-dictionary ac-source-words-in-same-mode-buffers))
