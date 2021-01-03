@@ -106,7 +106,7 @@
 
 (defvar org-xob--title-id nil)
 
-(defvar org-xob--id-node nil) 
+(defvar org-xob--id-title nil) 
 
 ;;;;; state
 
@@ -114,7 +114,7 @@
   "The current day node.")
 
 (defvar org-xob--objects '((org-xob--title-id . "title-id-table")
-                                (org-xob--id-node . "id-node-table")
+                                (org-xob--id-title . "id-node-table")
                                 (org-xob--KB-files . "KB-files")
                                 (org-xob--KB-file . "current-KB-file")))
 
@@ -290,7 +290,7 @@
                         ((equal "org-xob--KB-files" (symbol-name k))
                          (set k nil))
                         ((or (equal "org-xob--title-id" (symbol-name k))
-                             (equal "org-xob--id-node" (symbol-name k)))
+                             (equal "org-xob--id-title" (symbol-name k)))
                          (set k (make-hash-table
                                  :test 'equal
                                  :size org-xob--table-size))))))
@@ -385,7 +385,6 @@
   (dolist (el org-xob--node-sources)
     (org-xob--source-refresh el)))
 
-;; TODO change to use capture?
 ;;;###autoload
 (defun org-xob-heading-to-node ()
   "Convenience function to convert current content into xob KB nodes."
@@ -405,8 +404,8 @@ and any backlinks referencing it."
     (org-xob-start))
   (save-excursion
     (let* ((ID (org-id-get (point)))
-           (title (node-title (gethash ID org-xob--id-node))))
-      (remhash ID org-xob--id-node)
+           (title (gethash ID org-xob--id-title)))
+      (remhash ID org-xob--id-title)
       (remhash title org-xob--title-id)
       (org-entry-put (point) "ID" "")
       (org-id-update-id-locations (list (buffer-file-name)) 'silent))))
@@ -618,7 +617,7 @@ todo - possibly refresh item contents if changes were made.
 (defun org-xob--source-add-item (ID)
   "Appends a single entry to the end of the source subtree.
 Assumes point is on the source heading."
-  (let ((title (gethash ID org-xob--id-node)))
+  (let ((title (gethash ID org-xob--id-title)))
     (if title 
         (save-excursion 
           (org-insert-subheading '(4))
@@ -669,6 +668,7 @@ Otherwise apply to source at point."
      (message "not a xob source."))))
 
 ;; --predicates--
+;; TODO simpler
 (defun org-xob--is-node-p (&optional ID)
   "Check if a heading is a xob node. Called interactively it defaults to heading at point.
 If an ID argument is supplied, then check the heading associated with it."
@@ -676,7 +676,7 @@ If an ID argument is supplied, then check the heading associated with it."
   (let ((temp (if ID ID
                 (org-id-get nil))))
     (if temp
-        (if (gethash temp org-xob--id-node) t nil)
+        (if (gethash temp org-xob--id-title) t nil)
       nil)))
 
 (defun org-xob--is-source-p (&optional ID)
@@ -758,14 +758,9 @@ as a capture hook function."
         ;; (org-entry-put (point) "CREATED" timestamp)
         ;; (org-entry-put (point) "MODIFIED" timestamp)
         ;; (org-entry-put (point) "TYPE" type)
-        (setq node (make-node :title title
-                              :type type 
-                              :backlinks (list)))
-        (puthash ID node org-xob--id-node)
+        (puthash ID title org-xob--id-title)
         (puthash title ID org-xob--title-id)
         (setq org-xob--last-captured ID))))
-
-(cl-defstruct node title type backlinks)
 
 (defun org-xob--capture (title)
   (let* ((org-capture-templates org-xob--templates)
@@ -784,8 +779,8 @@ as a capture hook function."
   ;; TODO if on xob node, then open as edit
   ;; call get node or --edit-node
   (let ((ID (org-id-get (point) nil nil)))
-    (if (gethash ID org-xob--id-node)
-        (org-xob--activate-node ID))))
+    (if (gethash ID org-xob--id-title)
+        (org-xob--edit-node ID))))
 
 
 
@@ -832,7 +827,6 @@ Maybe useful for syncing."
   ;; (maphash '#func org-xob--title-id)
   )
 
-;; TODO UPDATE
 (defun org-xob-save-state ()
   "Save exobrain state."
   (interactive)
@@ -886,7 +880,7 @@ Maybe useful for syncing."
   ;; empty current structs, keep current kb file, logfile, agendafile
   (and 
    (setq org-xob--KB-files nil)
-   (clrhash org-xob--id-node)
+   (clrhash org-xob--id-title)
    (clrhash org-xob--title-id)
    (message "XOB: cleared KB file list & hash tables."))
   ;; rebuild kbfiles: goto dir, for each file: has name prefix, .org suffix -> add
@@ -913,7 +907,7 @@ Maybe useful for syncing."
                (progn
                  (setq ID (org-id-get (point)))
                  (setq title (nth 4 (org-heading-components)))
-                 (puthash ID title org-xob--id-node)
+                 (puthash ID title org-xob--id-title)
                  (puthash title ID org-xob--title-id))))))
    (message "XOB: finished rebuilding xob hashtables."))
   (and 
