@@ -302,8 +302,13 @@ that will overwrite current source tree item."
 ;; primary fn to capture every single edit
 ;; (remove-hook 'after-change-functions #'org-xob--sync-edits)
 
-;;; capture hook belongs in finalize
+;;; capture stuff 
+;; capture hook belongs in finalize
 ;; (add-hook 'org-capture-mode-hook #'org-xob--new-node)
+
+;; :func (lambda () (progn
+;;                     (org-insert-subheading '(4))
+;;                     (insert "hello world")))
 
 ;;; alternative open logfile and have a pointer 
 

@@ -2007,3 +2007,35 @@ source is a plist that describes the content source."
 (setq org-id-extra-files (cl-set-difference org-id-extra-files org-xob--KB-files))
 ;; (mapcar (lambda (x) (setq ac-sources (delq x ac-sources)))
 ;;         '(ac-source-dictionary ac-source-words-in-same-mode-buffers))
+;;; changed buffer
+
+(defun vvp ()
+  (print "buffer changed!"))
+
+(add-hook 'first-change-hook 'org-xob--log-node-edit nil :local)
+
+(defun org-xob--log-node-edit (title)
+  "Logs node edit activity to the day node."
+  (with-current-buffer org-xob-today-buffer
+    (let (place)
+      (org-map-entries
+       (lambda () (progn (when (equal (nth 4 (org-heading-components))
+                                                      (title))
+                                           (setq place (point)))
+                                         (goto-char place))) 'tree))))
+
+(defun org-xob--log-node-edit (title)
+  "Logs node edit activity to the day node."
+  (let (place)
+    (print (org-map-entries
+            (lambda () (progn (when (equal (nth 4 (org-heading-components))
+                                           title)
+                                (setq place (point)))
+                              )) nil 'tree))
+    ;; (goto-char place)
+    (print place)
+    ))
+(setq a 8)
+(setq-local a a)
+(org-xob--log-node-edit "todo-to-log refile")
+;; (org-find-olp '("todo-to-log refile") 'this-buffer)

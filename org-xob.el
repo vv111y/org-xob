@@ -303,10 +303,13 @@
             (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
             (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
             (setq org-id-extra-files org-xob--KB-files)
-            (setq org-xob-today (gethash (concat "[" (format-time-string "%F %a") "]")
+            (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
+            (setq org-xob-today (gethash org-xob-today-string 
                                          org-xob--title-id))
             (if (not org-xob-today)
                 (setq org-xob-today (org-xob--capture "ad")) t)
+            (setq org-xob-today-buffer
+                  (find-file (concat org-xob-path org-xob--log-file)))
             (setq org-xob-on-p t)
             (message "xob started."))
         (message "Unable to start xob."))
@@ -528,15 +531,17 @@ This can be applied to heading at point or used in a mapping."
 
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
-  (setq org-xob-short-title (truncate-string-to-width title 12))
-  (if (get-buffer org-xob-short-title)
-      (kill-buffer org-xob-short-title))
-  (save-excursion
-    (save-window-excursion
-      (org-id-goto ID)
-      (clone-indirect-buffer-other-window org-xob-short-title t)
-      (org-narrow-to-subtree)))
-  (switch-to-buffer org-xob-short-title)
+  (let (short-title (truncate-string-to-width title 20))
+    (if (get-buffer short-title)
+        (kill-buffer short-title))
+    (save-excursion
+      (save-window-excursion
+        (org-id-goto ID)
+        (clone-indirect-buffer-other-window short-title t)
+        (org-narrow-to-subtree)))
+    (switch-to-buffer short-title)
+    (setq-local ID ID title title org-xob-short-title short-title))
+  (setq-local log-entry (org-xob--insert-link-header ID title org-xob-today))
   (org-xob-minor-mode 1)
   (org-xob--make-context-buffer org-xob-short-title))
 
@@ -545,8 +550,7 @@ This can be applied to heading at point or used in a mapping."
   (interactive)
   (setq org-xob--context-buffer (get-buffer-create (concat  "*context-" title)))
   (with-current-buffer org-xob--context-buffer
-    (org-mode)
-    (org-xob-minor-mode 1)))
+    (org-mode)))
 
 (defun org-xob--kill-context-buffer-hook ()
   "Kill the context buffer when closing the node edit buffer. Made local variable."
@@ -712,25 +716,22 @@ If an ID argument is supplied, then check the heading associated with it."
          (message "%s not found." ID))))))
 
 ;; --link headers--
-(defun org-xob--insert-link-header (ID)
-  "Inserts a subheading with an org link to the node."
-  (condition-case nil
-      (progn
-        (org-insert-subheading (4))
-        (org-edit-headline (org-xob--node-link ID)))
-    (error (message "Node %s not found" ID))))
-
-(defun org-xob--push-heading-link (ID target)
-  "Inserts a subheading into target with a link to node ID as the title.
-Used for activity material in day node."
-  (save-window-excursion
-    (condition-case nil 
-        (progn 
-          (org-id-goto target)
-          (org-insert-subheading)
-          (org-insert-link nil ID (node-title (org-xob--id-node ID))))
-      (error (message "Node %s not found" target)))))
-
+(defun org-xob--insert-link-header (ID title target)
+  "Checks if link subheader exist at target. If not, inserts a
+subheading with an org link to the node with ID and title.
+Returns mark for the link subheader."
+  (save-excursion
+    (save-window-excursion 
+      (with-current-buffer org-xob-today-buffer)
+      (let (place)
+        (org-id-goto target)
+        (org-map-entries (lambda () (when (equal (nth 4 (org-heading-components))
+                                                 (title))
+                                      (setq place (point)))) 'tree)
+        (unless place
+          (org-insert-subheading (4))
+          (org-edit-headline (org-insert-link nil ID title)))
+        (set-marker m)))))
 
 ;;;;; Activity
 ;;;;;; Clocking
