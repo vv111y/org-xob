@@ -2,10 +2,10 @@
 
 ;; Copyright (C) 2020 Willy Rempel  
 ;; Author: Willy Rempel <willy.rempel@acm.org>
-;; URL: http://example.com/org-xob.el
-;; Version: 0.1-pre
-;; Package-Requires: ((emacs "25.2") (dash))
-;; Keywords: something
+;; URL: https://github.com/vv111y/org-xob.el
+;; Version: 0.5-pre
+;; Package-Requires: ((emacs "25.2") (org) (org-element) (org-id) (org-ql) (cl-lib) (org-super-links))
+;; Keywords: 
 
 ;; This file is not part of GNU Emacs.
 
@@ -21,13 +21,15 @@
 ;;;;; Manual
 
 ;; Install these required packages:
-
-;; + foo
-;; + bar
+;; + org
+;; + org-element
+;; + org-id
+;; + org-ql
+;; + cl-lib
+;; + org-super-links
 
 ;; Then put this file in your load-path, and put this in your init
 ;; file:
-
 ;; (require 'org-xob)
 
 ;;;; Usage
@@ -65,6 +67,7 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Code:
+
 ;;;; Requirements
 
 (require 'org)
@@ -191,22 +194,17 @@
         ))
 
 ;;;;; file variables
-(defvar org-xob--dir "xob/" 
+(defvar org-xob-dir "~/xob/" 
   "Core directory for exobrain system.")
 
-(defvar org-xob-workspace "/Users/Will/exobrain/" 
-  "Directory for all exobrain files.")
-
-(defvar org-xob-path (concat org-xob-workspace
-                                  org-xob--dir)
-  "Path to the core exobrain files.")
+;; TODO remove when done
+(setq org-xob-dir "./xob/")
 
 (defvar org-xob-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
 
 (defvar org-xob--KB-files nil
   "List of all knowledge base files.")
-;; (setq org-xob--KB-files nil)
 
 (defvar org-xob--KB-file nil
   "The currently active KB file to store previous versions of nodes.")
@@ -264,6 +262,7 @@
   ,@body)
 
 ;;;; Commands
+
 ;;;;; Main Commands
 ;;;###autoload
 (defun org-xob-start ()
@@ -275,11 +274,11 @@
         (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
         (message "XOB: hooks enabled."))
-       (if (file-directory-p org-xob-path) (message "XOB: directory found.") 
+       (if (file-directory-p org-xob-dir) (message "XOB: directory found.") 
          (prog1 (message "XOB: directory not found, creating.")
-           (make-directory org-xob-path t)))
+           (make-directory org-xob-dir t)))
        (cl-loop for (k . v) in org-xob--objects
-                do (if (file-exists-p (concat org-xob-path v))
+                do (if (file-exists-p (concat org-xob-dir v))
                        (prog1 (message "XOB: found %s" v)
                          (org-xob--load-object v k))
                      (progn 
@@ -295,9 +294,9 @@
                                  :test 'equal
                                  :size org-xob--table-size))))))
                 finally return t)
-       (if (file-exists-p (concat org-xob-path org-xob--log-file))
+       (if (file-exists-p (concat org-xob-dir org-xob--log-file))
            (message "XOB: found log file.")
-         (with-temp-file (concat org-xob-path org-xob--log-file)
+         (with-temp-file (concat org-xob-dir org-xob--log-file)
            (message "XOB: log file missing, initializing new.")
            (insert "") t))
        (setq org-id-extra-files org-xob--KB-files)
@@ -309,7 +308,7 @@
                                       org-xob--title-id))
          (setq org-xob-today (org-xob--capture "ad")))
         (setq org-xob-today-buffer
-              (find-file (concat org-xob-path org-xob--log-file)))
+              (find-file (concat org-xob-dir org-xob--log-file)))
         (message "XOB: Todays log entry opened.")))
       (prog1 
         (setq org-xob-on-p t)
@@ -506,6 +505,7 @@ This can be applied to heading at point or used in a mapping."
                   (buffer-substring (point) (mark))))))
 
 ;;;; Backend
+
 ;;;;; Buffer Functions 
 
 ;; Parsing <- heading?
@@ -821,7 +821,7 @@ Maybe useful for syncing."
 
 ;;;;; xob Management
 (defun org-xob-visit-nodes (func)
-  "Iterate over all KB nodes in all files as opposed to relying on the hashtables."
+  "Iterate over all KB nodes in all files. Apply function func to each node at point."
   (interactive)
   (save-excursion
     (dolist (kb-file-name org-xob--KB-files)
@@ -836,17 +836,15 @@ Maybe useful for syncing."
 (defun org-xob-save-state ()
   "Save exobrain state."
   (interactive)
-  (if (not (file-directory-p org-xob-workspace))
-      (make-directory org-xob-workspace))
-  (if (not (file-directory-p org-xob-path))
-      (make-directory org-xob-path))
+  (unless (file-directory-p org-xob-dir)
+      (make-directory org-xob-dir))
   (cl-loop for (k . v) in org-xob--objects
-           do (org-xob--save-object (concat org-xob-path v) k)))
+           do (org-xob--save-object (concat org-xob-dir v) k)))
 
 (defun org-xob--load-state ()
   "Load exobrain state."
   (cl-loop for (k . v) in org-xob--objects
-           do (org-xob--load-object (concat org-xob-path v) k)))
+           do (org-xob--load-object (concat org-xob-dir v) k)))
 
 (defun org-xob--save-object (file data)
   "save emacs object. "
@@ -858,7 +856,7 @@ Maybe useful for syncing."
   (when (boundp symbol)
     (condition-case nil 
         (with-temp-buffer
-          (insert-file-contents (concat org-xob-path file))
+          (insert-file-contents (concat org-xob-dir file))
           (goto-char (point-min))
           (set symbol (read (current-buffer))))
       (error (message "Error loading file %s" file)))))
@@ -870,7 +868,7 @@ Maybe useful for syncing."
                    org-xob--KB-filename-prefix
                    (format "%03d" org-xob--kb-file-counter)
                    ".org"))
-         (fullname (concat org-xob-path filename)))
+         (fullname (concat org-xob-dir filename)))
     (with-temp-file fullname
       (insert ""))
     (push filename org-xob--KB-files)
@@ -895,7 +893,7 @@ Maybe useful for syncing."
     (lambda (filename)
       (if (string-prefix-p org-xob--KB-filename-prefix filename)
           (add-to-list 'org-xob--KB-files filename)))
-    (directory-files org-xob-path nil "\.org$" t))
+    (directory-files org-xob-dir nil "\.org$" t))
    (message "XOB: re-registered all KB files."))	;; TODO full paths?
   (and 
    (org-id-update-id-locations)
