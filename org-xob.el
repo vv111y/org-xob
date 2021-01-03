@@ -111,14 +111,8 @@
 ;;;;; state
 
 ;; TODO clean
-(defvar org-xob-current-context nil
-  "The current, active buffer for adding context material.")
-
 (defvar org-xob-today nil
   "The current day node.")
-
-(cl-defstruct xob-state kb-count kb-current kb-files t-id-table-fn id-n-table-fn)
-(setq xob (make-xob-state :kb-count 0 :t-id-table-fn "title-id-table" :id-n-table-fn "id-node-table"))
 
 (defvar org-xob--objects '((org-xob--title-id . "title-id-table")
                                 (org-xob--id-node . "id-node-table")
@@ -238,7 +232,7 @@
 
 (defvar org-xob-map
   ;; This makes it easy and much less verbose to define keys
-  (let ((map (make-sparse-keymap "org-xob map"))
+  (let ((map (make-sparse-keymap "org-xob-map"))
         (maps (list
                ;; Mappings go here, e.g.:
                "RET" #'org-xob-RET-command
@@ -304,6 +298,7 @@
         (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
         (setq org-id-extra-files org-xob--KB-files)
+        (setq org-xob--kb-file-counter (length 'org-xob--KB-files))
         (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
         (setq org-xob-today (gethash org-xob-today-string 
                                      org-xob--title-id))
@@ -867,15 +862,13 @@ Maybe useful for syncing."
   (interactive)
   (let* ((filename (concat 
                    org-xob--KB-filename-prefix
-                   (format "%03d" (xob-state-kb-count xob))
+                   (format "%03d" org-xob--kb-file-counter)
                    ".org"))
          (fullname (concat org-xob-path filename)))
     (with-temp-file fullname
       (insert ""))
-    (cl-pushnew filename (xob-state-kb-files xob))
     (push filename org-xob--KB-files)
-    (setf (xob-state-kb-current xob) filename)
-    (setf (xob-state-kb-count xob) (+ 1))
+    (setq org-xob--kb-file-counter (+ 1 org-xob--kb-file-counter))
     (setq org-xob--KB-file filename)
     (save-excursion
       (find-file-noselect fullname))

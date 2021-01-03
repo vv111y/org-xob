@@ -1257,7 +1257,7 @@ inhibit-modification-hooks
 ;;; trial #2 xob state : alternate use struct for state
 (cl-defstruct xob-state kb-count kb-current kb-files t-id-table-fn id-n-table-fn)
 (setq xob (make-xob-state :kb-count 0 :t-id-table-fn "title-id-table" :id-n-table-fn "id-node-table"))
-
+;;; xob-new-file, save/load object
 (defun xob-new-file ()
   (interactive)
   (let ((filename (concat 
@@ -1417,7 +1417,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;; (defun org-xob--get-entry (key)
 ;;   (format "getting entry %s" key))
 
-;;; var prob
+;;; xob--objects 
 (org-xob--activate-node '"5fc3aafe-fa83-4ec4-9db3-12e703d31bb2")
 (org-xob--save-state)
 (symbol-value (car (car org-xob--objects)))
@@ -1655,13 +1655,13 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (org-entry-put (point) "NID" 
                (org-entry-get (point) "ID" nil nil))
 
-;;;; tags
+;;;; old: tags
 (defvar orb-xob--bl-tag "backlinks")
 (defvar orb-xob--fl-tag "forlinks")
 (defvar orb-xob--A-tag "A")
 (defvar orb-xob--node-tag "node")
 
-;;; [2020-12-19 Sat 09:43] 
+;;;; define generic sources [2020-12-19 Sat 09:43] 
 
 (defun org-xob--display-source (source mainID)
   "Open a source tree for node mainID into the context buffer.
@@ -1752,7 +1752,7 @@ source is a plist that describes the content source."
 ;; this may not needed for full node, I will ignore ID altogether, and just use PID. 
 ;; I may need to change where org-id is used. 
 (org-id-get-create 'FORCE)
-;;; try macro
+;;;; change entries: try macro
 
 (defmacro vvm (&rest body)
   ;; (declare (debug (body)))
@@ -1815,7 +1815,7 @@ source is a plist that describes the content source."
   ;; (org-back-to-heading)
   ;; (org-end-of-meta-data)
   )
-;;; try nested lambdas instead of macro
+;;;; change entries: try nested lambdas instead of macro
 
 (defun nln (payload)
   (let ((func (lambda () (progn 
@@ -1882,10 +1882,8 @@ source is a plist that describes the content source."
     (org-mode)
     ))
 
-;;; crusht
-    :PROPERTIES:
-    :ID: 4F9789E0-2692-47A3-A040-2952CD4281CC
-    :END:
+;;; crusht: templates and edit buffer stuff
+
 (setq org-xob-path "xob/")
 (org-xob--save-state)
 
