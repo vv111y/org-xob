@@ -317,3 +317,6 @@ that will overwrite current source tree item."
 
 ;; setq returns value
 (setq vvm (setq vv "test"))
+
+(setq vvm '(1 2 3 4))
+(member 5 vvm)

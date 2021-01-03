@@ -571,23 +571,22 @@ source is a plist that describes the content source."
   (interactive)
   (save-window-excursion 
     (with-current-buffer org-xob--context-buffer
-      ;; TODO ok?
-      (if (not (member source org-xob--node-soures)))
-      ;; TODO ok?
-      (if (not (org-xob--goto-heading (plist-get source :PID)))
-          (progn
-            (goto-char (point-max)) ;; respecting content below is this needed?
-            (org-insert-heading (4) 'invisible-ok 'TOP)
-            (org-edit-headline (plist-get source :title))
-            (plist-put source :ID (org-id-get-create))
-            (dolist (el (plist-get source :tags))
-              (org-toggle-tag el 'ON))
-            (org-toggle-tag (plist-get source :name)'ON)
-            ;; FIX? for kb needs the parent id , but not all sources
-            ;; (plist-put source :items (funcall (plist-get source :func)))
-            (funcall (plist-get source :func) source)
-            (cons source 'org-xob--node-sources)))
-      (org-xob-refresh-source source))))
+      (if (member source org-xob--node-soures)
+          (progn 
+            (unless (org-xob--goto-heading (plist-get source :PID))
+              (goto-char (point-max)) ;; respecting content below is this needed?
+              (org-insert-heading (4) 'invisible-ok 'TOP)
+              (org-edit-headline (plist-get source :title))
+              (plist-put source :ID (org-id-get-create))
+              (dolist (el (plist-get source :tags))
+                (org-toggle-tag el 'ON))
+              (org-toggle-tag (plist-get source :name)'ON)
+              ;; FIX? for kb needs the parent id , but not all sources
+              ;; (plist-put source :items (funcall (plist-get source :func)))
+              (funcall (plist-get source :func) source)
+              (cons source 'org-xob--node-sources))
+            (org-xob-refresh-source source))
+        (message "XOB: not a valid context source.")))))
 
 (defun org-xob--source-refresh (source)
   "Remake source tree. Check if items need to be added or removed.
@@ -597,7 +596,6 @@ todo - possibly refresh item contents if changes were made.
     (org-xob--map-source
      (lambda ()
        (let ((pid (org-entry-get (point) "PID")))
-         ;; TODO any quoting? is that best way to delete?
          (if (member pid temp)
              (setq temp (delete pid temp))
            (progn
@@ -767,9 +765,6 @@ as a capture hook function."
     org-xob--last-captured))
 
 
-;; since I have forelinks, clicking link usually means to attend to
-;; TODO if on xob node, then open as edit
-;; call get node or --edit-node
 (defun org-xob--link-hook-fn ()
   "If a link is a xob node, then reopen node in xob edit mode." 
   (let ((link (org-element-context))
