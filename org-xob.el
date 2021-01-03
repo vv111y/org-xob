@@ -832,6 +832,7 @@ Maybe useful for syncing."
   ;; (maphash '#func org-xob--title-id)
   )
 
+;; TODO UPDATE
 (defun org-xob-save-state ()
   "Save exobrain state."
   (interactive)
@@ -883,30 +884,41 @@ Maybe useful for syncing."
   "Remakes xob data structures, traverse all nodes in all KB files in the xob directory."
   (interactive)
   ;; empty current structs, keep current kb file, logfile, agendafile
-  (setq org-xob--KB-files nil)
-  (clrhash org-xob--id-node)
-  (clrhash org-xob--title-id)
+  (and 
+   (setq org-xob--KB-files nil)
+   (clrhash org-xob--id-node)
+   (clrhash org-xob--title-id)
+   (message "XOB: cleared KB file list & hash tables."))
   ;; rebuild kbfiles: goto dir, for each file: has name prefix, .org suffix -> add
-  (mapc
-   (lambda (filename)
-     (if (string-prefix-p org-xob--KB-filename-prefix filename)
-         (add-to-list 'org-xob--KB-files filename)))
-   (directory-files org-xob-path nil "\.org$" t))	;; TODO full paths?
-  (org-id-update-id-locations)
-  (save-excursion
-    (dolist (kb-file-name org-xob--KB-files)
-      (with-current-buffer (find-file kb-file-name))
-      (goto-char (point-min))
-      (unless (org-at-heading-p)
-        (outline-next-heading))
-      (while
-          (if (org-xob--is-node-p)
-              (progn
-                (setq ID (org-id-get (point)))
-                (setq title (nth 4 (org-heading-components)))
-                (puthash ID title org-xob--id-node)
-                (puthash title ID org-xob--title-id))))))
-  (org-xob--save-state))
+  (and 
+   (mapc
+    (lambda (filename)
+      (if (string-prefix-p org-xob--KB-filename-prefix filename)
+          (add-to-list 'org-xob--KB-files filename)))
+    (directory-files org-xob-path nil "\.org$" t))
+   (message "XOB: re-registered all KB files."))	;; TODO full paths?
+  (and 
+   (org-id-update-id-locations)
+   (message "XOB: updated org-id hashtable."))
+  (and
+   (message "XOB: traversing all KB files...")
+   (save-excursion
+     (dolist (kb-file-name org-xob--KB-files)
+       (with-current-buffer (find-file kb-file-name))
+       (goto-char (point-min))
+       (unless (org-at-heading-p)
+         (outline-next-heading))
+       (while
+           (if (org-xob--is-node-p)
+               (progn
+                 (setq ID (org-id-get (point)))
+                 (setq title (nth 4 (org-heading-components)))
+                 (puthash ID title org-xob--id-node)
+                 (puthash title ID org-xob--title-id))))))
+   (message "XOB: finished rebuilding xob hashtables."))
+  (and 
+   (org-xob--save-state)
+   (message "XOB: saved xob state.")))
 
 
 ;;; End
