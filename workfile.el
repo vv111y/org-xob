@@ -2040,3 +2040,8 @@ source is a plist that describes the content source."
 ;;; bkj
 ;; message returns the string
 (setq vvm (message "woh"))
+
+(org-element-property :path (org-element-at-point))
+(org-element-context)
+
+(link (:type "ID" :path "7451C5E2-E3E1-4EC3-B2EF-174143E8DEE9" :format bracket :raw-link "ID:7451C5E2-E3E1-4EC3-B2EF-174143E8DEE9" :application nil :search-option nil :begin 222089 :end 222141 :contents-begin 222132 :contents-end 222139 :post-blank 0 :parent (paragraph (:begin 222089 :end 222142 :contents-begin 222089 :contents-end 222142 :post-blank 0 :post-affiliated 222089 :parent nil))))

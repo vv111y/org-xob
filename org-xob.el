@@ -428,7 +428,6 @@ Removes heading ID from the hash tables, and any backlinks referencing it."
     (org-xob--node-get-links org-xob--source-forlinks)
     (org-xob--source-build org-xob--source-forlinks)))
 
-;; TODO
 ;;;###autoload
 (defun org-xob-ql-search ()
   "Use org-ql to search the KB. Creates a new source in the context buffer."
@@ -436,7 +435,6 @@ Removes heading ID from the hash tables, and any backlinks referencing it."
 
 ;;;;; Context Presentation Commands
 
-;; TODO for all, should only do at a subheading, at source head do map 
 ;;;###autoload
 (defun org-xob-clear-heading ()
   "Converts subtree to the headline and properties drawer only.
@@ -508,10 +506,6 @@ This can be applied to heading at point or used in a mapping."
 
 ;;;;; Buffer Functions 
 
-;; Parsing <- heading?
-;; TODO local var on indirect buffer?
-;; TODO recheck: probably do more for both
-
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
   (let (short-title (truncate-string-to-width title 20))
@@ -551,23 +545,23 @@ This can be applied to heading at point or used in a mapping."
 respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
 (which are all other links xob KB nodes). Assumes org-superlinks convention
 where the backlinks are in a BACKLINKS drawer."
-  ;; TODO window?
   (save-window-excursion
-    ;; for name, test equal of not-equal
-    (let* ((linktype (plist-get source :name))
-           (test (if (equal linktype "backlinks")
-                     (lambda (x) (x))
-                   (if (equal linktype "forelinks")
-                       (lambda (x) (not x))))))
-       (org-id-goto (plist-get source :PID))
-       (org-with-wide-buffer
-        (plist-put source :items
-                   (org-element-map (org-element-parse-buffer) 'link
-                     (lambda (link)
-                       (if (funcall test (equal (org-element-property
-                                                 :drawer-name (cadr (org-element-lineage link)))
-                                                "BACKLINKS"))
-                           (org-element-property :path link)))))))))
+    (save-excursion
+      ;; for name, test equal of not-equal
+      (let* ((linktype (plist-get source :name))
+             (test (if (equal linktype "backlinks")
+                       (lambda (x) (x))
+                     (if (equal linktype "forelinks")
+                         (lambda (x) (not x))))))
+        (org-id-goto (plist-get source :PID))
+        (org-with-wide-buffer
+         (plist-put source :items
+                    (org-element-map (org-element-parse-buffer) 'link
+                      (lambda (link)
+                        (if (funcall test (equal (org-element-property
+                                                  :drawer-name (cadr (org-element-lineage link)))
+                                                 "BACKLINKS"))
+                            (org-element-property :path link))))))))))
 
 ;; --source tree fns--
 (defun org-xob--source-build (source)
@@ -774,13 +768,18 @@ as a capture hook function."
 
 
 ;; since I have forelinks, clicking link usually means to attend to
+;; TODO if on xob node, then open as edit
+;; call get node or --edit-node
 (defun org-xob--link-hook-fn ()
   "If a link is a xob node, then reopen node in xob edit mode." 
-  ;; TODO if on xob node, then open as edit
-  ;; call get node or --edit-node
-  (let ((ID (org-id-get (point) nil nil)))
-    (if (gethash ID org-xob--id-title)
-        (org-xob--edit-node ID))))
+  (let ((link (org-element-context))
+        ID)
+    (if (equal "ID" (org-element-property :type link))
+        (progn 
+          (setq ID (org-element-property :path link))
+          (if (gethash ID org-xob--id-title)
+              (org-xob--edit-node ID)))
+      nil)))
 
 
 
@@ -894,7 +893,7 @@ Maybe useful for syncing."
       (if (string-prefix-p org-xob--KB-filename-prefix filename)
           (add-to-list 'org-xob--KB-files filename)))
     (directory-files org-xob-dir nil "\.org$" t))
-   (message "XOB: re-registered all KB files."))	;; TODO full paths?
+   (message "XOB: re-registered all KB files."))	
   (and 
    (org-id-update-id-locations)
    (message "XOB: updated org-id hashtable."))
