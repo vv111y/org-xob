@@ -2037,3 +2037,6 @@ source is a plist that describes the content source."
 (setq-local a a)
 (org-xob--log-node-edit "todo-to-log refile")
 ;; (org-find-olp '("todo-to-log refile") 'this-buffer)
+;;; bkj
+;; message returns the string
+(setq vvm (message "woh"))

@@ -314,3 +314,6 @@ that will overwrite current source tree item."
 
 (setq org-xob--log 
       (find-file-noselect (concat org-xob-path org-xob--log-file)))
+
+;; setq returns value
+(setq vvm (setq vv "test"))

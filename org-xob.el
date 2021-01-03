@@ -110,7 +110,6 @@
 
 ;;;;; state
 
-;; TODO clean
 (defvar org-xob-today nil
   "The current day node.")
 
@@ -271,12 +270,18 @@
   "Start the xob system: load state or initialize new. Open new day node."
   (interactive)
   (if (and
-       (not org-xob-on-p)
-       (if (file-directory-p org-xob-path) t
-         (make-directory org-xob-path t))
+       (if org-xob-on-p (progn (message "XOB: already started.") nil) t)
+       (and
+        (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
+        (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+        (message "XOB: hooks enabled."))
+       (if (file-directory-p org-xob-path) (message "XOB: directory found.") 
+         (prog1 (message "XOB: directory not found, creating.")
+           (make-directory org-xob-path t)))
        (cl-loop for (k . v) in org-xob--objects
                 do (if (file-exists-p (concat org-xob-path v))
-                       (org-xob--load-object v k)
+                       (prog1 (message "XOB: found %s" v)
+                         (org-xob--load-object v k))
                      (progn 
                        (message "XOB: file %s missing, initializing new %s" v k)
                        (cond
@@ -290,26 +295,26 @@
                                  :test 'equal
                                  :size org-xob--table-size))))))
                 finally return t)
-       (if (file-exists-p (concat org-xob-path org-xob--log-file)) t
+       (if (file-exists-p (concat org-xob-path org-xob--log-file))
+           (message "XOB: found log file.")
          (with-temp-file (concat org-xob-path org-xob--log-file)
-           (message "XOB: Day log file missing, initializing new")
-           (insert "") t)))
-      (progn 
-        (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
-        (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
-        (setq org-id-extra-files org-xob--KB-files)
-        (setq org-xob--kb-file-counter (length 'org-xob--KB-files))
-        (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
-        (setq org-xob-today (gethash org-xob-today-string 
-                                     org-xob--title-id))
-        (if (not org-xob-today)
-            (setq org-xob-today (org-xob--capture "ad")) t)
+           (message "XOB: log file missing, initializing new.")
+           (insert "") t))
+       (setq org-id-extra-files org-xob--KB-files)
+       (setq org-xob--kb-file-counter (length 'org-xob--KB-files))
+       (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
+       (and 
+        (or
+         (setq org-xob-today (gethash org-xob-today-string 
+                                      org-xob--title-id))
+         (setq org-xob-today (org-xob--capture "ad")))
         (setq org-xob-today-buffer
               (find-file (concat org-xob-path org-xob--log-file)))
+        (message "XOB: Todays log entry opened.")))
+      (prog1 
         (setq org-xob-on-p t)
-        (message "xob started."))
-    (message "Unable to start xob."))
-  (message "xob already started."))
+        (message "XOB: started."))
+    (message "XOB: Unable to (re)start.")))
 
 ;;;###autoload
 (defun org-xob-stop ()
