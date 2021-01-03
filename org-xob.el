@@ -152,27 +152,23 @@
 (defvar org-xob--templates
       '(("nn" "new node" entry (file org-xob--KB-file)
          "* %(eval org-xob--last-title) \n:PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n:END:\n:BACKLINKS:\n:END:\n"
-         ;; "* %(eval org-xob--last-title) %((progn (org-entry-put (point) "CREATED" \"when\") \"\"))   :PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n\n:END:\n:BACKLINKS:\n:END:\n"
-
          :xob-node t
          :ntype "n.n"
          :func (lambda () t)
          :immediate-finish t
          :empty-lines-after 1)
 
-        ("ad" "today" entry (function (lambda () (find-file (concat org-xob-path org-xob--log-file))))
-         "* Day Log %u\n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
+        ("ad" "today" entry (file+olp+datetree org-xob--log-file)
+         "* %u\n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
          :xob-node t
          :func (lambda () t)
-         ;; :func (lambda () (progn
-         ;;                     (org-insert-subheading '(4))
-         ;;                     (insert "hello world")))
          :immediate-finish t
          :ntype "a.day"
          )
 
+        ;; TODO finish agenda entries
         ("ap" "new project" entry (file org-xob--agenda-file)
-         "* Project fillin \n:PROPERTIES:\n:TYPE:\t\t\ta.project\n:END:\n:BACKLINKS:\n:END:\n"
+         "* Project  \n:PROPERTIES:\n:TYPE:\t\t\ta.project\n:END:\n:BACKLINKS:\n:END:\n"
          :xob-node t
          :ntype "a.project"
          :immediate-finish t
@@ -184,7 +180,7 @@
          :immediate-finish t
          )
 
-        ("tf" "todo general" entry (file "KB-file-000.org")
+        ("tf" "todo general" entry (file org-xob--agenda-file)
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
          :xob-node t
          :todo t
@@ -192,7 +188,7 @@
          :immediate-finish t
          )
 
-        ("tp" "todo project" entry (file "KB-file-000.org")
+        ("tp" "todo project" entry (file org-xob--agenda-file)
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
          :xob-node t
          :todo t
