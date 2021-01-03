@@ -397,8 +397,8 @@
 ;; for each exo-link in backlinks, visite node and kill link, leave link text
 ;;;###autoload
 (defun org-xob-remove-node ()
-"Removes node at point from xob system, but does not delete the contents. Removes heading ID from the hash tables,
-and any backlinks referencing it."
+"Removes node at point from xob system, but does not delete the contents.
+Removes heading ID from the hash tables, and any backlinks referencing it."
   (interactive)
   (unless org-xob-on-p
     (org-xob-start))
@@ -821,11 +821,17 @@ Maybe useful for syncing."
 
 ;;;;; xob Management
 (defun org-xob-visit-nodes (func)
-  "Iterate over all KB in all files"
+  "Iterate over all KB nodes in all files as opposed to relying on the hashtables."
   (interactive)
-  ;; (maphash '#func org-id-locations)
-  ;; (maphash '#func org-xob--title-id)
-  )
+  (save-excursion
+    (dolist (kb-file-name org-xob--KB-files)
+      (with-current-buffer (find-file kb-file-name)
+        (goto-char (point-min))
+        (unless (org-at-heading-p)
+          (outline-next-heading))
+        (while
+            (if (org-xob--is-node-p)
+                (funcall func)))))))
 
 (defun org-xob-save-state ()
   "Save exobrain state."
@@ -896,19 +902,13 @@ Maybe useful for syncing."
    (message "XOB: updated org-id hashtable."))
   (and
    (message "XOB: traversing all KB files...")
-   (save-excursion
-     (dolist (kb-file-name org-xob--KB-files)
-       (with-current-buffer (find-file kb-file-name))
-       (goto-char (point-min))
-       (unless (org-at-heading-p)
-         (outline-next-heading))
-       (while
-           (if (org-xob--is-node-p)
-               (progn
-                 (setq ID (org-id-get (point)))
-                 (setq title (nth 4 (org-heading-components)))
-                 (puthash ID title org-xob--id-title)
-                 (puthash title ID org-xob--title-id))))))
+   (let (ID title)
+     (org-xob-visit-nodes 
+      #'(lambda ()
+          (setq ID (org-id-get (point)))
+          (setq title (nth 4 (org-heading-components)))
+          (puthash ID title org-xob--id-title)
+          (puthash title ID org-xob--title-id))))
    (message "XOB: finished rebuilding xob hashtables."))
   (and 
    (org-xob--save-state)
