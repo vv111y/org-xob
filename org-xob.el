@@ -251,7 +251,7 @@
                   (define-key map key fn)))
     map))
 
-;;;; Minor Mode
+;;;; Minor Mode & Macros
 
 ;;;###autoload
 (define-minor-mode org-xob-minor-mode
@@ -263,11 +263,12 @@
   (progn 
     (unless org-xob-on-p
       (org-xob-start))
-    (if org-xob-minor-mode
-        (progn 
-          (add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
-          (setq-local org-xob--context-buffer nil)
-          (setq-local org-xob--sideline-window nil)))))
+    (if org-xob-minor-mode t t)))
+
+(defmacro with-org-xob-on (&rest body)
+  (unless org-xob-on-p
+    (org-xob-start))
+  ,@body)
 
 ;;;; Commands
 ;;;;; Main Commands
@@ -275,46 +276,45 @@
 (defun org-xob-start ()
   "Start the xob system: load state or initialize new. Open new day node."
   (interactive)
-  (if (not org-xob-on-p)
-      (if (and
-           (if (file-directory-p org-xob-path) t
-             (make-directory org-xob-path t))
-           (cl-loop for (k . v) in org-xob--objects
-                    do (if (file-exists-p (concat org-xob-path v))
-                           (org-xob--load-object v k)
-                         (progn 
-                           (message "XOB: file %s missing, initializing new %s" v k)
-                           (cond
-                            ((equal "org-xob--KB-file" (symbol-name k))
-                             (set k (org-xob--new-KB-file)))
-                            ((equal "org-xob--KB-files" (symbol-name k))
-                             (set k nil))
-                            ((or (equal "org-xob--title-id" (symbol-name k))
-                                 (equal "org-xob--id-node" (symbol-name k)))
-                             (set k (make-hash-table
-                                     :test 'equal
-                                     :size org-xob--table-size))))))
-                    finally return t)
-           (if (file-exists-p (concat org-xob-path org-xob--log-file)) t
-             (with-temp-file (concat org-xob-path org-xob--log-file)
-               (message "XOB: Day log file missing, initializing new")
-               (insert "") t)))
-          (progn 
-            (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
-            (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
-            (setq org-id-extra-files org-xob--KB-files)
-            (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
-            (setq org-xob-today (gethash org-xob-today-string 
-                                         org-xob--title-id))
-            (if (not org-xob-today)
-                (setq org-xob-today (org-xob--capture "ad")) t)
-            (setq org-xob-today-buffer
-                  (find-file (concat org-xob-path org-xob--log-file)))
-            (setq org-xob-on-p t)
-            (message "xob started."))
-        (message "Unable to start xob."))
-    (message "xob already started.")))
-
+  (if (and
+       (not org-xob-on-p)
+       (if (file-directory-p org-xob-path) t
+         (make-directory org-xob-path t))
+       (cl-loop for (k . v) in org-xob--objects
+                do (if (file-exists-p (concat org-xob-path v))
+                       (org-xob--load-object v k)
+                     (progn 
+                       (message "XOB: file %s missing, initializing new %s" v k)
+                       (cond
+                        ((equal "org-xob--KB-file" (symbol-name k))
+                         (set k (org-xob--new-KB-file)))
+                        ((equal "org-xob--KB-files" (symbol-name k))
+                         (set k nil))
+                        ((or (equal "org-xob--title-id" (symbol-name k))
+                             (equal "org-xob--id-node" (symbol-name k)))
+                         (set k (make-hash-table
+                                 :test 'equal
+                                 :size org-xob--table-size))))))
+                finally return t)
+       (if (file-exists-p (concat org-xob-path org-xob--log-file)) t
+         (with-temp-file (concat org-xob-path org-xob--log-file)
+           (message "XOB: Day log file missing, initializing new")
+           (insert "") t)))
+      (progn 
+        (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
+        (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+        (setq org-id-extra-files org-xob--KB-files)
+        (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
+        (setq org-xob-today (gethash org-xob-today-string 
+                                     org-xob--title-id))
+        (if (not org-xob-today)
+            (setq org-xob-today (org-xob--capture "ad")) t)
+        (setq org-xob-today-buffer
+              (find-file (concat org-xob-path org-xob--log-file)))
+        (setq org-xob-on-p t)
+        (message "xob started."))
+    (message "Unable to start xob."))
+  (message "xob already started."))
 
 ;;;###autoload
 (defun org-xob-stop ()
@@ -323,7 +323,7 @@
   (if org-xob-on-p
       (progn 
         (org-xob-save-state)
-        (with-current-buffer org-xob--log-file
+        (with-current-buffer org-xob-today-buffer
           (save-buffer)
           (kill-buffer))
         (setq org-xob-today nil)
@@ -343,22 +343,6 @@
         (org-id-goto org-xob-today)
         (org-narrow-to-subtree))
     (error (message "todays day node missing."))))
-
-;;;###autoload
-(defun org-xob--get-create-node ()
-  "Find or create new xob KB node using helm. Returns node (ID title) as a list."
-  (unless org-xob-on-p
-    (org-xob-start))
-  (helm :buffer "*xob get node*"
-        :sources (helm-build-sync-source "xob-kb"
-                   :candidates (lambda ()
-                                 (let* ((cans (hash-table-keys org-xob--title-id)))
-                                   (cons helm-input cans)))
-                   :volatile t
-                   :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
-                                             (unless ID
-                                               (setq ID (org-xob--capture title)))
-                                             (list ID title))))))
 
 ;;;###autoload
 (defun org-xob-get-node ()
@@ -542,6 +526,9 @@ This can be applied to heading at point or used in a mapping."
     (switch-to-buffer short-title)
     (setq-local ID ID title title org-xob-short-title short-title))
   (setq-local log-entry (org-xob--insert-link-header ID title org-xob-today))
+  (setq-local org-xob--context-buffer nil)
+  (setq-local org-xob--sideline-window nil)
+  (add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
   (org-xob-minor-mode 1)
   (org-xob--make-context-buffer org-xob-short-title))
 
@@ -738,6 +725,21 @@ Returns mark for the link subheader."
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
 ;;;;; Node Functions
+
+(defun org-xob--get-create-node ()
+  "Find or create new xob KB node using helm. Returns node (ID title) as a list."
+  (unless org-xob-on-p
+    (org-xob-start))
+  (helm :buffer "*xob get node*"
+        :sources (helm-build-sync-source "xob-kb"
+                   :candidates (lambda ()
+                                 (let* ((cans (hash-table-keys org-xob--title-id)))
+                                   (cons helm-input cans)))
+                   :volatile t
+                   :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
+                                             (unless ID
+                                               (setq ID (org-xob--capture title)))
+                                             (list ID title))))))
 
 ;; TODO move stuff to templates
 (defun org-xob--new-node (&optional heading)
