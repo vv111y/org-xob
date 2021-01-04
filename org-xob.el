@@ -309,7 +309,15 @@
          (setq org-xob-today (org-xob--capture "ad")))
         (setq org-xob-today-buffer
               (find-file (concat org-xob-dir org-xob--log-file)))
-        (message "XOB: Todays log entry opened.")))
+        (message "XOB: Todays log entry opened."))
+       (and
+        (if (file-exists-p (concat org-xob-dir org-xob--agenda-file))
+            (message "XOB: found xob agenda file.")
+          (with-temp-file (concat org-xob-dir org-xob--agenda-file)
+            (message "XOB: xob agenda file missing, initializing new.")
+            (insert "") t))
+        (unless (member org-xob--agend-file org-agenda-files)
+          (push org-xob--agend-file org-agenda-files))))
       (prog1 
         (setq org-xob-on-p t)
         (message "XOB: started."))
