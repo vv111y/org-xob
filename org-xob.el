@@ -143,7 +143,9 @@
 
 ;;;;; capture variables
 
-(defvar org-xob--auto-types '("ad" "as" "al" "all" "alit" "alt" "lp" "nt" "na" "nw" "tf" "tp"))
+(defvar org-xob--auto-templates '("ad" "as" "al" "all" "alit" "alt" "lp" "nt" "na" "nw" "tf" "tp"))
+
+(defvar org-xob--node-types '("a.day" "a.project" "a.session" "a.log" "a.log.life" "a.log.tools" "a.log.project" "a.todo" "n.n" "n.topic" "n.bib.article" "n.bib.web" "t.free" "t.project"))
 
 (defvar org-xob--templates
       '(("nn" "new node" entry (file org-xob--KB-file)
@@ -371,19 +373,34 @@
     (org-xob--source-refresh 'forlinks)))
 
 ;;;###autoload
-(defun org-xob-toggle-sideline ()
-  "Toggles display of the contextual side window."
+(defun org-xob-toggle-sideline (&optional side-buffer)
+  "Toggle sideline window on and off. If optional side-buffer is
+provided as an argument, then display the buffer as well."
   (interactive)
   (save-excursion 
-    (if org-xob--sideline-window 
-        (progn 
-          (delete-window org-xob--sideline-window)
-          (setq org-xob--sideline-window nil))
+    (if side-buffer
+        (if org-xob--sideline-window 
+            (display-buffer-same-window side-buffer nil)
+          (progn 
+            (setq org-xob--sideline-window 
+                  (split-window-right))
+            (select-window org-xob--sideline-window)
+            (display-buffer-same-window side-buffer nil))
+          (progn
+            (delete-window org-xob--sideline-window)
+            (setq org-xob--sideline-window nil)))
       (progn 
         (setq org-xob--sideline-window 
               (split-window-right))
         (select-window org-xob--sideline-window)
-        (display-buffer-same-window org-xob--context-buffer nil)))))
+        ))))
+
+;;;###autoload
+(defun org-xob-toggle-context ()
+  "Toggles display of the contextual side window."
+  (interactive)
+  ;; (display-buffer-same-window org-xob--context-buffer nil)))))
+  )
 
 ;;;###autoload
 (defun org-xob-refresh-context ()
@@ -547,7 +564,6 @@ This can be applied to heading at point or used in a mapping."
 
 ;;;;; Contexts Functions
 
-
 (defun org-xob--node-get-links (source)
   "Populates source item list from the node. The items are represented by their
 respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
@@ -572,6 +588,17 @@ where the backlinks are in a BACKLINKS drawer."
                             (org-element-property :path link))))))))))
 
 ;; --source tree fns--
+(defun org-xob--is-source-p (&optional ID)
+  "Check if a heading is a valid xob source.
+Called interactively it defaults to heading at point.
+If an ID argument is supplied, then check the heading associated with it."
+  (interactive)
+  (let ((temp (if ID ID
+                (org-id-get nil))))
+    (if temp
+        (if (member temp org-xob--node-sources) t nil)
+      nil)))
+
 (defun org-xob--source-build (source)
   "Open a source tree into the context buffer. If it is already there,
 then refresh it. source items are shown as org headings.
@@ -667,65 +694,27 @@ Otherwise apply to source at point."
                (outline-get-next-sibling))))
      (message "not a xob source."))))
 
-;; --predicates--
-;; TODO simpler
-(defun org-xob--is-node-p (&optional ID)
-  "Check if a heading is a xob node. Called interactively it defaults to heading at point.
-If an ID argument is supplied, then check the heading associated with it."
-  (interactive)
-  (let ((temp (if ID ID
-                (org-id-get nil))))
-    (if temp
-        (if (gethash temp org-xob--id-title) t nil)
-      nil)))
-
-(defun org-xob--is-source-p (&optional ID)
-  "Check if a heading is a valid xob source.
-Called interactively it defaults to heading at point.
-If an ID argument is supplied, then check the heading associated with it."
-  (interactive)
-  (let ((temp (if ID ID
-                (org-id-get nil))))
-    (if temp
-        (if (member temp org-xob--node-sources) t nil)
-      nil)))
-
-;; --navigation--
-(defun org-xob--goto-buffer-heading (ID)
-  "Go to heading in current buffer with ID. Does not require org-id."
-  (let ((m (point)))
-    (org-with-wide-buffer 
-     (goto-char (point-min))
-     (if (re-search-forward ID nil t)
-         (org-back-to-heading 'invisible-ok)
-       (progn
-         (goto-char m)
-         (message "%s not found." ID))))))
-
-;; --link headers--
-(defun org-xob--insert-link-header (ID title target)
-  "Checks if link subheader exist at target. If not, inserts a
-subheading with an org link to the node with ID and title.
-Returns mark for the link subheader."
-  (save-excursion
-    (save-window-excursion 
-      (with-current-buffer org-xob-today-buffer)
-      (let (place)
-        (org-id-goto target)
-        (org-map-entries (lambda () (when (equal (nth 4 (org-heading-components))
-                                                 (title))
-                                      (setq place (point)))) 'tree)
-        (unless place
-          (org-insert-subheading (4))
-          (org-edit-headline (org-insert-link nil ID title)))
-        (set-marker m)))))
-
 ;;;;; Activity
 ;;;;;; Clocking
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
 ;;;;; Node Functions
 
+(defun org-xob--is-node-p (&optional ID DEEPCHECK)
+  "Check if a heading is a xob node. Called interactively it defaults to heading at point.
+If an ID argument is supplied, then check the heading associated with it."
+  (interactive)
+  (let ((temp (if ID ID
+                (org-id-get nil))))
+    (if temp
+        (if DEEPCHECK
+            (progn
+              )
+          (if (gethash temp org-xob--id-title) t nil))
+      nil)
+    ))
+
+;; --new nodes and links--
 (defun org-xob--get-create-node ()
   "Find or create new xob KB node using helm. Returns node (ID title) as a list."
   (unless org-xob-on-p
@@ -772,7 +761,6 @@ as a capture hook function."
         (org-capture nil "nn")))
     org-xob--last-captured))
 
-
 (defun org-xob--link-hook-fn ()
   "If a link is a xob node, then reopen node in xob edit mode." 
   (let ((link (org-element-context))
@@ -784,6 +772,35 @@ as a capture hook function."
               (org-xob--edit-node ID)))
       nil)))
 
+;; --navigation--
+(defun org-xob--goto-buffer-heading (ID)
+  "Go to heading in current buffer with ID. Does not require org-id."
+  (let ((m (point)))
+    (org-with-wide-buffer 
+     (goto-char (point-min))
+     (if (re-search-forward ID nil t)
+         (org-back-to-heading 'invisible-ok)
+       (progn
+         (goto-char m)
+         (message "%s not found." ID))))))
+
+;; --link headers--
+(defun org-xob--insert-link-header (ID title target)
+  "Checks if link subheader exist at target. If not, inserts a
+subheading with an org link to the node with ID and title.
+Returns mark for the link subheader."
+  (save-excursion
+    (save-window-excursion 
+      (with-current-buffer org-xob-today-buffer)
+      (let (place)
+        (org-id-goto target)
+        (org-map-entries (lambda () (when (equal (nth 4 (org-heading-components))
+                                                 (title))
+                                      (setq place (point)))) 'tree)
+        (unless place
+          (org-insert-subheading (4))
+          (org-edit-headline (org-insert-link nil ID title)))
+        (set-marker m)))))
 
 
 ;;;;; Node Versioning
