@@ -437,7 +437,6 @@ Removes heading ID from the hash tables, and any backlinks referencing it."
     (org-xob--node-get-links org-xob--source-backlinks)
     (org-xob--source-build org-xob--source-backlinks)))
 
-;; TEST
 ;;;###autoload
 (defun org-xob-show-forlinks ()
   (interactive)
@@ -451,6 +450,13 @@ Removes heading ID from the hash tables, and any backlinks referencing it."
   (interactive))
 
 ;;;;; Context Presentation Commands
+
+;;;###autoload
+(defun org-xob-refresh-context ()
+  "Refresh all displayed sources"
+  (interactive)
+  (dolist (el org-xob--node-sources)
+    (org-xob--source-refresh el)))
 
 ;;;###autoload
 (defun org-xob-clear-heading ()
@@ -837,7 +843,6 @@ Maybe useful for syncing."
 ;;;;; xob Management
 (defun org-xob-visit-nodes (func)
   "Iterate over all KB nodes in all files. Apply function func to each node at point."
-  (interactive)
   (save-excursion
     (dolist (kb-file-name org-xob--KB-files)
       (with-current-buffer (find-file kb-file-name)
@@ -893,6 +898,7 @@ Maybe useful for syncing."
       (find-file-noselect fullname))
     filename))
 
+;;;###autoload
 (defun org-xob-rebuild ()
   "Remakes xob data structures, traverse all nodes in all KB files in the xob directory."
   (interactive)
