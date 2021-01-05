@@ -372,56 +372,12 @@
     (org-super-links--insert-link (org-id-find ID 'MARKERP))
     (org-xob--source-refresh 'forlinks)))
 
-;;;###autoload
-(defun org-xob-toggle-sideline (&optional side-buffer)
-  "Toggle sideline window on and off. If optional side-buffer is
-provided as an argument, then display the buffer as well."
-  (interactive)
-  (save-excursion 
-    (if side-buffer
-        (if org-xob--sideline-window 
-            (display-buffer-same-window side-buffer nil)
-          (progn 
-            (setq org-xob--sideline-window 
-                  (split-window-right))
-            (select-window org-xob--sideline-window)
-            (display-buffer-same-window side-buffer nil))
-          (progn
-            (delete-window org-xob--sideline-window)
-            (setq org-xob--sideline-window nil)))
-      (progn 
-        (setq org-xob--sideline-window 
-              (split-window-right))
-        (select-window org-xob--sideline-window)
-        ))))
-
-;;;###autoload
-(defun org-xob-toggle-context ()
-  "Toggles display of the contextual side window."
-  (interactive)
-  ;; (display-buffer-same-window org-xob--context-buffer nil)))))
-  )
-
-;;;###autoload
-(defun org-xob-refresh-context ()
-  "Refresh all displayed sources"
-  (interactive)
-  (dolist (el org-xob--node-sources)
-    (org-xob--source-refresh el)))
-
-;;;###autoload
-(defun org-xob-heading-to-node ()
-  "Convenience function to convert current content into xob KB nodes."
-  (interactive)
-  (unless (org-xob--is-node-p)
-    (org-xob--new-node (point))))
-
 ;; TODO
 ;; for each exo-link in body, visit node and remove backlink
 ;; for each exo-link in backlinks, visite node and kill link, leave link text
 ;;;###autoload
 (defun org-xob-remove-node ()
-"Removes node at point from xob system, but does not delete the contents.
+  "Removes node at point from xob system, but does not delete the contents.
 Removes heading ID from the hash tables, and any backlinks referencing it."
   (interactive)
   (unless org-xob-on-p
@@ -434,9 +390,45 @@ Removes heading ID from the hash tables, and any backlinks referencing it."
       (org-entry-put (point) "ID" "")
       (org-id-update-id-locations (list (buffer-file-name)) 'silent))))
 
+;;;###autoload
+(defun org-xob-heading-to-node ()
+  "Convenience function to convert current content into xob KB nodes."
+  (interactive)
+  (unless (org-xob--is-node-p)
+    (org-xob--new-node (point))))
+
+;;;;; Sideline Commands
+;;;###autoload
+(defun org-xob-show-side-buffer (abuffer)
+  "Show abuffer in the sideline window."
+  (interactive)
+  (unless org-xob--sideline-window
+    (org-xob-toggle-sideline))
+  (save-excursion
+    (select-window org-xob--sideline-window)
+    (display-buffer-same-window abuffer nil)))
+
+;;;###autoload
+(defun org-xob-toggle-sideline ()
+  "Toggles display of the sideline window."
+  (interactive)
+  (save-excursion 
+    (if org-xob--sideline-window 
+        (progn 
+          (delete-window org-xob--sideline-window)
+          (setq org-xob--sideline-window nil))
+      (setq org-xob--sideline-window 
+            (split-window-right)))))
+
+;;;###autoload
+(defun org-xob-toggle-context ()
+  "Toggles display of the contextual side window."
+  (interactive)
+  ;; (display-buffer-same-window org-xob--context-buffer nil)))))
+  )
+
 ;;;;; KB Context Commands
 
-;; TEST
 ;;;###autoload
 (defun org-xob-show-backlinks ()
   "Show backlinks contents, including subheading content."
