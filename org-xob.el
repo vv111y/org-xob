@@ -933,6 +933,20 @@ Maybe useful for syncing."
    (org-xob--save-state)
    (message "XOB: saved xob state.")))
 
+;;;###autoload
+(defun org-xob-stats ()
+  "Give basic information about the xob system."
+  (interactive)
+  ;; popup window
+  (display-buffer-use-some-window (get-buffer-create "XOB Stats"))
+  (goto-char (point-max))
+  (insert "XOB Statistics")
+  (insert "--------------")
+  (insert "title-id-table entries:\t\t\t%s" (hash-table-count org-xob--title-id))
+  (insert "id-title-table entries:\t\t\t%s" (hash-table-count org-xob--id-node))
+  (insert "org-id entries:\t\t\t%s" (hash-table-count org-id-locations))
+  (insert "KB files count:\t\t\t%s" (length org-xob--KB-files))
+  (insert "current-KB-file:\t\t\t%s" org-xob--KB-file ))
 
 ;;; End
 
