@@ -702,17 +702,21 @@ Otherwise apply to source at point."
 
 (defun org-xob--is-node-p (&optional ID DEEPCHECK)
   "Check if a heading is a xob node. Called interactively it defaults to heading at point.
-If an ID argument is supplied, then check the heading associated with it."
+If an ID argument is supplied, then check the heading associated with it.
+With option DEEPCHECK, do not use any table lookup, but check whether the heading
+has valid UUID formatted ID and xob TYPE properties in the property drawer.
+Deepcheck only works on heading at point, any ID argument is ignored."
   (interactive)
-  (let ((temp (if ID ID
-                (org-id-get nil))))
-    (if temp
-        (if DEEPCHECK
-            (progn
-              )
-          (if (gethash temp org-xob--id-title) t nil))
-      nil)
-    ))
+  (if DEEPCHECK
+      (if (and
+           (org-uuidgen-p (org-entry-get (point) "ID"))
+           (member (org-entry-get (point) "TYPE")
+                   org-xob--node-types))
+          t nil)
+    (let ((temp (if ID ID (org-id-get nil))))
+      (if temp
+          (if (gethash temp org-xob--id-title) t nil)
+        nil))))
 
 ;; --new nodes and links--
 (defun org-xob--get-create-node ()
@@ -849,7 +853,7 @@ Maybe useful for syncing."
         (unless (org-at-heading-p)
           (outline-next-heading))
         (while
-            (if (org-xob--is-node-p)
+            (if (org-xob--is-node-p nil 'DEEPCHECK)
                 (funcall func)))))))
 
 (defun org-xob-save-state ()
