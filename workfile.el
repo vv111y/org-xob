@@ -1959,7 +1959,7 @@ source is a plist that describes the content source."
          )
         ))
 
-(org-xob--capture "hallo world")
+(org-xob--capture "nn")
 
 (setq xob-logfile (concat org-xob-path org-xob--log-file))
 
@@ -1967,6 +1967,7 @@ source is a plist that describes the content source."
            (setq org-xob-today (org-xob--capture "ad"))))
 
 (setq org-xob-today nil)
+(org-id-goto org-xob-today)
 
 (org-capture-expand-file (concat org-xob-path org-xob--log-file))
 (org-capture-set-target-location (with-current-buffer ))
@@ -2045,3 +2046,13 @@ source is a plist that describes the content source."
 (org-element-context)
 
 (link (:type "ID" :path "7451C5E2-E3E1-4EC3-B2EF-174143E8DEE9" :format bracket :raw-link "ID:7451C5E2-E3E1-4EC3-B2EF-174143E8DEE9" :application nil :search-option nil :begin 222089 :end 222141 :contents-begin 222132 :contents-end 222139 :post-blank 0 :parent (paragraph (:begin 222089 :end 222142 :contents-begin 222089 :contents-end 222142 :post-blank 0 :post-affiliated 222089 :parent nil))))
+
+(setq org-xob-on-p nil)
+(org-xob--load-object "id-node-table" 'org-xob--id-title)
+(universal-argument) 
+(defun helm-M-x--notify-prefix-arg ()
+  ;; Notify a prefix-arg set AFTER calling M-x.
+  (when prefix-arg
+    (with-helm-window
+      (helm-display-mode-line (helm-get-current-source) 'force))))
+(pop org-agenda-files)

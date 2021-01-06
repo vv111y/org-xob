@@ -148,7 +148,7 @@
 (defvar org-xob--node-types '("a.day" "a.project" "a.session" "a.log" "a.log.life" "a.log.tools" "a.log.project" "a.todo" "n.n" "n.topic" "n.bib.article" "n.bib.web" "t.free" "t.project"))
 
 (defvar org-xob--templates
-      '(("nn" "new node" entry (file org-xob--KB-file)
+  `(("nn" "new node" entry (file ,(concat org-xob-path org-xob--KB-file))
          "* %(eval org-xob--last-title) \n:PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n:END:\n:BACKLINKS:\n:END:\n"
          :xob-node t
          :ntype "n.n"
@@ -156,7 +156,7 @@
          :immediate-finish t
          :empty-lines-after 1)
 
-        ("ad" "today" entry (file+olp+datetree org-xob--log-file)
+        ("ad" "today" entry (file+datetree ,(concat org-xob-path org-xob--log-file))
          "* %u\n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
          :xob-node t
          :func (lambda () t)
@@ -165,20 +165,20 @@
          )
 
         ;; TODO finish agenda entries
-        ("ap" "new project" entry (file org-xob--agenda-file)
+        ("ap" "new project" entry (file ,(concat org-xob-path org-xob--agenda-file))
          "* Project  \n:PROPERTIES:\n:TYPE:\t\t\ta.project\n:END:\n:BACKLINKS:\n:END:\n"
          :xob-node t
          :ntype "a.project"
          :immediate-finish t
          )
 
-        ("as" "new session" entry (file org-xob--agenda-file)
+        ("as" "new session" entry (file ,(concat org-xob-path org-xob--agenda-file))
          :xob-node t
          :ntype "a.session"
          :immediate-finish t
          )
 
-        ("tf" "todo general" entry (file org-xob--agenda-file)
+        ("tf" "todo general" entry (file ,(concat org-xob-path org-xob--agenda-file))
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
          :xob-node t
          :todo t
@@ -186,7 +186,7 @@
          :immediate-finish t
          )
 
-        ("tp" "todo project" entry (file org-xob--agenda-file)
+        ("tp" "todo project" entry (file ,(concat org-xob-path org-xob--agenda-file))
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
          :xob-node t
          :todo t
@@ -200,7 +200,7 @@
   "Core directory for exobrain system.")
 
 ;; TODO remove when done
-(setq org-xob-dir "./xob/")
+(setq org-xob-dir "~/xob/")
 
 (defvar org-xob-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
@@ -217,7 +217,7 @@
 (defvar org-xob--log-file "xob-logfile.org"
   "The current log file where day nodes and general activity is recorded.")
 
-(defvar org-xob--agend-file nil
+(defvar org-xob--agenda-file "xob-agendafile.org"
   "The current agenda file where all activity nodes other than day nodes go.")
 
 (defvar org-xob--active-nodes nil
@@ -302,15 +302,16 @@
            (message "XOB: log file missing, initializing new.")
            (insert "") t))
        (setq org-id-extra-files org-xob--KB-files)
-       (setq org-xob--kb-file-counter (length 'org-xob--KB-files))
+       (setq org-xob--kb-file-counter (length org-xob--KB-files))
        (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
        (and 
         (or
          (setq org-xob-today (gethash org-xob-today-string 
                                       org-xob--title-id))
          (setq org-xob-today (org-xob--capture "ad")))
-        (setq org-xob-today-buffer
-              (find-file (concat org-xob-dir org-xob--log-file)))
+        (save-window-excursion
+          (setq org-xob-today-buffer
+                (find-file (concat org-xob-dir org-xob--log-file))))
         (message "XOB: Todays log entry opened."))
        (and
         (if (file-exists-p (concat org-xob-dir org-xob--agenda-file))
@@ -318,8 +319,8 @@
           (with-temp-file (concat org-xob-dir org-xob--agenda-file)
             (message "XOB: xob agenda file missing, initializing new.")
             (insert "") t))
-        (unless (member org-xob--agend-file org-agenda-files)
-          (push org-xob--agend-file org-agenda-files))))
+        (unless (member org-xob--agenda-file org-agenda-files)
+          (push (concat org-xob-dir org-xob--agenda-file) org-agenda-files))))
       (prog1 
         (setq org-xob-on-p t)
         (message "XOB: started."))
@@ -531,7 +532,7 @@ This can be applied to heading at point or used in a mapping."
 
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
-  (let (short-title (truncate-string-to-width title 20))
+  (let ((short-title (truncate-string-to-width title 20)))
     (if (get-buffer short-title)
         (kill-buffer short-title))
     (save-excursion
@@ -843,15 +844,16 @@ Maybe useful for syncing."
 ;;;;; xob Management
 (defun org-xob-visit-nodes (func)
   "Iterate over all KB nodes in all files. Apply function func to each node at point."
-  (save-excursion
-    (dolist (kb-file-name org-xob--KB-files)
-      (with-current-buffer (find-file kb-file-name)
-        (goto-char (point-min))
-        (unless (org-at-heading-p)
-          (outline-next-heading))
-        (while
-            (if (org-xob--is-node-p nil 'DEEPCHECK)
-                (funcall func)))))))
+  (save-window-excursion
+    (save-excursion
+      (dolist (kb-file-name org-xob--KB-files)
+        (with-current-buffer (find-file kb-file-name)
+          (goto-char (point-min))
+          (unless (org-at-heading-p)
+            (outline-next-heading))
+          (while
+              (if (org-xob--is-node-p 'DEEPCHECK)
+                  (funcall func))))))))
 
 (defun org-xob-save-state ()
   "Save exobrain state."
@@ -903,17 +905,16 @@ Maybe useful for syncing."
   "Remakes xob data structures, traverse all nodes in all KB files in the xob directory."
   (interactive)
   ;; empty current structs, keep current kb file, logfile, agendafile
-  (and 
-   (setq org-xob--KB-files nil)
-   (clrhash org-xob--id-title)
-   (clrhash org-xob--title-id)
-   (message "XOB: cleared KB file list & hash tables."))
+  (setq org-xob--KB-files nil)
+  (clrhash org-xob--id-title)
+  (clrhash org-xob--title-id)
+  (message "XOB: cleared KB file list & hash tables.")
   ;; rebuild kbfiles: goto dir, for each file: has name prefix, .org suffix -> add
   (and 
    (mapc
     (lambda (filename)
-      (if (string-prefix-p org-xob--KB-filename-prefix filename)
-          (add-to-list 'org-xob--KB-files filename)))
+      ;; (if (string-prefix-p org-xob--KB-filename-prefix filename))
+      (add-to-list 'org-xob--KB-files filename))
     (directory-files org-xob-dir nil "\.org$" t))
    (message "XOB: re-registered all KB files."))	
   (and 
