@@ -148,7 +148,7 @@
 (defvar org-xob--node-types '("a.day" "a.project" "a.session" "a.log" "a.log.life" "a.log.tools" "a.log.project" "a.todo" "n.n" "n.topic" "n.bib.article" "n.bib.web" "t.free" "t.project"))
 
 (defvar org-xob--templates
-  `(("nn" "new node" entry (file ,(concat org-xob-path org-xob--KB-file))
+  `(("nn" "new node" entry (file ,(concat org-xob-dir org-xob--KB-file))
          "* %(eval org-xob--last-title) \n:PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n:END:\n:BACKLINKS:\n:END:\n"
          :xob-node t
          :ntype "n.n"
@@ -156,7 +156,7 @@
          :immediate-finish t
          :empty-lines-after 1)
 
-        ("ad" "today" entry (file+datetree ,(concat org-xob-path org-xob--log-file))
+        ("ad" "today" entry (file+datetree ,(concat org-xob-dir org-xob--log-file))
          "* %u\n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
          :xob-node t
          :func (lambda () t)
@@ -165,20 +165,20 @@
          )
 
         ;; TODO finish agenda entries
-        ("ap" "new project" entry (file ,(concat org-xob-path org-xob--agenda-file))
+        ("ap" "new project" entry (file ,(concat org-xob-dir org-xob--agenda-file))
          "* Project  \n:PROPERTIES:\n:TYPE:\t\t\ta.project\n:END:\n:BACKLINKS:\n:END:\n"
          :xob-node t
          :ntype "a.project"
          :immediate-finish t
          )
 
-        ("as" "new session" entry (file ,(concat org-xob-path org-xob--agenda-file))
+        ("as" "new session" entry (file ,(concat org-xob-dir org-xob--agenda-file))
          :xob-node t
          :ntype "a.session"
          :immediate-finish t
          )
 
-        ("tf" "todo general" entry (file ,(concat org-xob-path org-xob--agenda-file))
+        ("tf" "todo general" entry (file ,(concat org-xob-dir org-xob--agenda-file))
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
          :xob-node t
          :todo t
@@ -186,7 +186,7 @@
          :immediate-finish t
          )
 
-        ("tp" "todo project" entry (file ,(concat org-xob-path org-xob--agenda-file))
+        ("tp" "todo project" entry (file ,(concat org-xob-dir org-xob--agenda-file))
          "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
          :xob-node t
          :todo t
@@ -706,13 +706,16 @@ With option DEEPCHECK, do not use any table lookup, but check whether the headin
 has valid UUID formatted ID and xob TYPE properties in the property drawer.
 Deepcheck only works on heading at point, any ID argument is ignored."
   (interactive)
-  (if DEEPCHECK
-      (if (and
-           (org-uuidgen-p (org-entry-get (point) "ID"))
-           (member (org-entry-get (point) "TYPE")
-                   org-xob--node-types))
-          t nil)
-    (let ((temp (if ID ID (org-id-get nil))))
+  (let (temp type)
+    (if DEEPCHECK
+        (if (and
+             (org-at-heading-p)
+             (setq temp (org-entry-get (point) "ID"))
+             (eq 0 (org-uuidgen-p temp))
+             (setq type (org-entry-get (point) "TYPE"))
+             (member type org-xob--node-types))
+            t nil)
+      (setq temp (if ID ID (org-id-get nil)))
       (if temp
           (if (gethash temp org-xob--id-title) t nil)
         nil))))
@@ -849,13 +852,13 @@ Maybe useful for syncing."
       (dolist (kb-file-name org-xob--KB-files)
         (with-current-buffer (find-file kb-file-name)
           (goto-char (point-min))
-          (unless (org-at-heading-p)
-            (outline-next-heading))
-          (while
-              (if (org-xob--is-node-p 'DEEPCHECK)
-                  (funcall func))))))))
+          (while 
+              (progn 
+                (if (org-xob--is-node-p "" 'DEEPCHECK)
+                    (funcall func))
+                (outline-next-heading))))))))
 
-(defun org-xob-save-state ()
+(defun org-xob--save-state ()
   "Save exobrain state."
   (interactive)
   (unless (file-directory-p org-xob-dir)
@@ -914,40 +917,45 @@ Maybe useful for syncing."
    (mapc
     (lambda (filename)
       ;; (if (string-prefix-p org-xob--KB-filename-prefix filename))
-      (add-to-list 'org-xob--KB-files filename))
+      (add-to-list 'org-xob--KB-files (concat org-xob-dir filename)))
     (directory-files org-xob-dir nil "\.org$" t))
    (message "XOB: re-registered all KB files."))	
   (and 
    (org-id-update-id-locations)
    (message "XOB: updated org-id hashtable."))
-  (and
-   (message "XOB: traversing all KB files...")
-   (let (ID title)
-     (org-xob-visit-nodes 
-      #'(lambda ()
-          (setq ID (org-id-get (point)))
-          (setq title (nth 4 (org-heading-components)))
-          (puthash ID title org-xob--id-title)
-          (puthash title ID org-xob--title-id))))
-   (message "XOB: finished rebuilding xob hashtables."))
-  (and 
-   (org-xob--save-state)
-   (message "XOB: saved xob state.")))
+  (message "XOB: traversing all KB files...")
+  (let (ID title)
+    (org-xob-visit-nodes 
+     #'(lambda ()
+         (setq ID (org-id-get (point)))
+         (setq title (nth 4 (org-heading-components)))
+         (puthash ID title org-xob--id-title)
+         (puthash title ID org-xob--title-id))))
+  (message "XOB: finished rebuilding xob hashtables.")
+  (org-xob-stats)
+  (org-xob--save-state)
+  (message "XOB: saved xob state."))
 
 ;;;###autoload
 (defun org-xob-stats ()
   "Give basic information about the xob system."
   (interactive)
   ;; popup window
-  (display-buffer-use-some-window (get-buffer-create "XOB Stats"))
-  (goto-char (point-max))
-  (insert "XOB Statistics")
-  (insert "--------------")
-  (insert "title-id-table entries:\t\t\t%s" (hash-table-count org-xob--title-id))
-  (insert "id-title-table entries:\t\t\t%s" (hash-table-count org-xob--id-node))
-  (insert "org-id entries:\t\t\t%s" (hash-table-count org-id-locations))
-  (insert "KB files count:\t\t\t%s" (length org-xob--KB-files))
-  (insert "current-KB-file:\t\t\t%s" org-xob--KB-file ))
+  (display-buffer-use-some-window (get-buffer-create "XOB Stats")
+                                  '(display-buffer-below-selected))
+  (with-current-buffer "XOB Stats"
+    (erase-buffer)
+    (insert "XOB Statistics\n")
+    (insert "--------------\n")
+    (insert (concat "title-id-table entries:\t\t\t"
+                    (number-to-string (hash-table-count org-xob--title-id)) "\n"))
+    (insert (concat "id-title-table entries:\t\t\t"                       
+                    (number-to-string (hash-table-count org-xob--id-node)) "\n"))
+    (insert (concat "org-id entries:\t\t\t\t\t\t\t"                               
+                    (number-to-string (hash-table-count org-id-locations)) "\n"))
+    (insert (concat "KB files count:\t\t\t\t\t\t\t"
+                    (number-to-string (length org-xob--KB-files)) "\n"))
+    (insert (concat "current-KB-file:\t\t\t\t\t\t" org-xob--KB-file "\n"))))
 
 ;;; End
 

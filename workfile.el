@@ -2056,3 +2056,4 @@ source is a plist that describes the content source."
     (with-helm-window
       (helm-display-mode-line (helm-get-current-source) 'force))))
 (pop org-agenda-files)
+(insert (concat "\npath: " org-xob-path "\n"))
