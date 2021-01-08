@@ -378,20 +378,30 @@
 ;; for each exo-link in backlinks, visite node and kill link, leave link text
 ;;;###autoload
 (defun org-xob-remove-node (&optional ID)
-  "Removes node at point from xob system, but does not delete the contents.
-Removes heading ID from the hash tables, and any backlinks referencing it."
+  "Removes node at point from xob system, but does not delete the node itself.
+Removes node from the hash tables, and any backlinks in other nodes referencing it.
+If called with optional ID argument, then remove the node with that ID."
   (interactive)
-  (unless org-xob-on-p
-    (org-xob-start))
-  (save-excursion
-   (if ID
-       (org-id-goto ID))
-   (let* ((ID (org-id-get (point)))
-          (title (gethash ID org-xob--id-title)))
-     (remhash ID org-xob--id-title)
-     (remhash title org-xob--title-id)
-     (org-entry-put (point) "ID" "")
-     (org-id-update-id-locations (list (buffer-file-name)) 'silent))))
+  (unless org-xob-on-p (org-xob-start))
+  (save-window-excursion
+    (save-excursion
+      (if ID
+          (org-id-goto ID))
+      (let* ((ID (org-id-get (point)))
+             (title (gethash ID org-xob--id-title))
+             (forelinks (org-xob--node-get-links "forelinks"))
+             link-element)
+        (dolist (el forelinks)
+          (org-id-goto el)
+          (save-restriction
+            (org-narrow-to-subtree)
+            (setq link-element (org-super-links--find-link ID))
+            (if link-element
+                (org-super-links--delete-link link-element))))
+        (remhash ID org-xob--id-title)
+        (remhash title org-xob--title-id)
+        (org-entry-put (point) "ID" "")
+        (org-id-update-id-locations (list (buffer-file-name)) 'silent)))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
