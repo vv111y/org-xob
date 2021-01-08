@@ -377,19 +377,21 @@
 ;; for each exo-link in body, visit node and remove backlink
 ;; for each exo-link in backlinks, visite node and kill link, leave link text
 ;;;###autoload
-(defun org-xob-remove-node ()
+(defun org-xob-remove-node (&optional ID)
   "Removes node at point from xob system, but does not delete the contents.
 Removes heading ID from the hash tables, and any backlinks referencing it."
   (interactive)
   (unless org-xob-on-p
     (org-xob-start))
   (save-excursion
-    (let* ((ID (org-id-get (point)))
-           (title (gethash ID org-xob--id-title)))
-      (remhash ID org-xob--id-title)
-      (remhash title org-xob--title-id)
-      (org-entry-put (point) "ID" "")
-      (org-id-update-id-locations (list (buffer-file-name)) 'silent))))
+   (if ID
+       (org-id-goto ID))
+   (let* ((ID (org-id-get (point)))
+          (title (gethash ID org-xob--id-title)))
+     (remhash ID org-xob--id-title)
+     (remhash title org-xob--title-id)
+     (org-entry-put (point) "ID" "")
+     (org-id-update-id-locations (list (buffer-file-name)) 'silent))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
@@ -432,18 +434,17 @@ Removes heading ID from the hash tables, and any backlinks referencing it."
 
 ;;;###autoload
 (defun org-xob-show-backlinks ()
-  "Show backlinks contents, including subheading content."
+  "Add backlinks contents to the context buffer."
   (interactive)
-  (save-window-excursion
-    (org-xob--node-get-links org-xob--source-backlinks)
-    (org-xob--source-build org-xob--source-backlinks)))
+  (org-xob--node-get-link-entries org-xob--source-backlinks)
+  (org-xob--source-build org-xob--source-backlinks))
 
 ;;;###autoload
 (defun org-xob-show-forlinks ()
+  "Add forelinks contents to the context buffer."
   (interactive)
-  (save-window-excursion
-    (org-xob--node-get-links org-xob--source-forlinks)
-    (org-xob--source-build org-xob--source-forlinks)))
+  (org-xob--node-get-link-entries org-xob--source-forlinks)
+  (org-xob--source-build org-xob--source-forlinks))
 
 ;;;###autoload
 (defun org-xob-ql-search ()
@@ -563,28 +564,16 @@ This can be applied to heading at point or used in a mapping."
 
 ;;;;; Contexts Functions
 
-(defun org-xob--node-get-links (source)
+(defun org-xob--node-get-link-entries (source)
   "Populates source item list from the node. The items are represented by their
 respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
-(which are all other links xob KB nodes). Assumes org-superlinks convention
+(which are all other links to xob KB nodes). Assumes org-super-links convention
 where the backlinks are in a BACKLINKS drawer."
   (save-window-excursion
     (save-excursion
-      ;; for name, test equal of not-equal
-      (let* ((linktype (plist-get source :name))
-             (test (if (equal linktype "backlinks")
-                       (lambda (x) (x))
-                     (if (equal linktype "forelinks")
-                         (lambda (x) (not x))))))
-        (org-id-goto (plist-get source :PID))
-        (org-with-wide-buffer
-         (plist-put source :items
-                    (org-element-map (org-element-parse-buffer) 'link
-                      (lambda (link)
-                        (if (funcall test (equal (org-element-property
-                                                  :drawer-name (cadr (org-element-lineage link)))
-                                                 "BACKLINKS"))
-                            (org-element-property :path link))))))))))
+      (org-id-goto (plist-get source :PID))
+      (plist-put source :items
+                 (org-xob--node-get-links (plist-get source :name))))))
 
 ;; --source tree fns--
 (defun org-xob--is-source-p (&optional ID)
@@ -736,7 +725,7 @@ Deepcheck only works on heading at point, any ID argument is ignored."
                                                (setq ID (org-xob--capture title)))
                                              (list ID title))))))
 
-;; TODO move stuff to templates
+;; leaving commented as refs for now 
 (defun org-xob--new-node (&optional heading)
   "Both a hook function and for general node creation. If orgmode 'heading' is given,
 then convert it into a new node in place. Otherwise it is assumed to be called
@@ -808,6 +797,24 @@ Returns mark for the link subheader."
           (org-edit-headline (org-insert-link nil ID title)))
         (set-marker m)))))
 
+(defun org-xob--node-get-links (linktype)
+  "Return list of link paths within the node at point. If linktype is 'backlinks'
+then return only links in the backlinks drawer. If linktype is 'forelinks'
+then return all other links."
+  (let* ((test (if (equal linktype "backlinks")
+                   (lambda (x) (x))
+                 (if (equal linktype "forelinks")
+                     (lambda (x) (not x))))))
+    (save-excursion
+      (save-restriction
+        (org-back-to-heading t)
+        (org-narrow-to-subtree)
+        (org-element-map (org-element-parse-buffer) 'link
+          (lambda (link)
+            (if (funcall test (equal (org-element-property
+                                      :drawer-name (cadr (org-element-lineage link)))
+                                     "BACKLINKS"))
+                (org-element-property :path link))))))))
 
 ;;;;; Node Versioning
 
