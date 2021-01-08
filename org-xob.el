@@ -408,7 +408,13 @@ If called with optional ID argument, then remove the node with that ID."
   "Convenience function to convert current content into xob KB nodes."
   (interactive)
   (unless (org-xob--is-node-p)
-    (org-xob--new-node (point))))
+    (org-xob--new-node (point))
+    (let ((filename (buffer-file-name)))
+      (unless (member filename org-xob--KB-files)
+        (push filename org-xob--KB-files)))
+    (org-xob--save-object
+     (alist-get 'org-xob--KB-files org-xob--objects)
+     org-xob--KB-files)))
 
 ;;;;; Sideline Commands
 ;;;###autoload

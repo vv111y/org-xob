@@ -2059,3 +2059,4 @@ source is a plist that describes the content source."
 (insert (concat "\npath: " org-xob-path "\n"))
 
 (org-xob--node-get-links "forelinks")
+(alist-get 'org-xob--KB-files org-xob--objects)
