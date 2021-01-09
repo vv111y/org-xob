@@ -947,6 +947,7 @@ Maybe useful for syncing."
   (and 
    (mapc
     (lambda (filename)
+      ;; disable, allow for any filename
       ;; (if (string-prefix-p org-xob--KB-filename-prefix filename))
       (add-to-list 'org-xob--KB-files (concat org-xob-dir filename)))
     (directory-files org-xob-dir nil "\.org$" t))
