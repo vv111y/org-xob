@@ -560,18 +560,26 @@ This can be applied to heading at point or used in a mapping."
     (switch-to-buffer short-title)
     (setq-local ID ID title title org-xob-short-title short-title))
   (setq-local log-entry (org-xob--insert-link-header ID title org-xob-today))
-  (setq-local org-xob--context-buffer nil)
+  (setq-local org-xob--context-buffer
+              (get-buffer-create (concat  "*context-" title)))
   (setq-local org-xob--sideline-window nil)
+  (setq-local org-xob--source-backlinks)
+  (setq-local org-xob--source-forlinks)
   (add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
   (org-xob-minor-mode 1)
-  (org-xob--make-context-buffer org-xob-short-title))
+  (org-xob--make-context-buffer org-xob-short-title
+                                (current-buffer)
+                                org-xob--source-backlinks
+                                org-xob--source-forlinks))
 
-(defun org-xob--make-context-buffer (title)
-  "Create context buffer, but leave it empty by default."
-  (interactive)
-  (setq org-xob--context-buffer (get-buffer-create (concat  "*context-" title)))
+(defun org-xob--make-context-buffer (title edit-buffer backlinks forlinks)
+  "Create context buffer, leave it empty by default. set title and buffer
+local variables for the edit buffer and the back and for links source objects."
   (with-current-buffer org-xob--context-buffer
-    (org-mode)))
+    (org-mode)
+    (setq-local org-xob--edit-buffer edit-buffer)
+    (setq-local org-xob--source-backlinks backlinks)
+    (setq-local org-xob--source-forlinks forlinks)))
 
 (defun org-xob--kill-context-buffer-hook ()
   "Kill the context buffer when closing the node edit buffer. Made local variable."
