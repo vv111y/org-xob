@@ -2060,3 +2060,30 @@ source is a plist that describes the content source."
 
 (org-xob--node-get-links "forelinks")
 (alist-get 'org-xob--KB-files org-xob--objects)
+
+;;; dir-local
+(setq test '("hi" "there"))
+
+(add-dir-local-variable 'org-mode 'test "hi")
+
+(modify-dir-local-variable 'org-mode 'test test 'add-or-replace)
+
+(setq vvn "#+PROPERTY: xob t")
+(save-excursion 
+  (goto-char (point-min))
+  (newline)
+  (goto-char (point-min))
+  (insert vvn)
+  (org-ctrl-c-ctrl-c)
+  )
+
+(org-entry-get (point) "xob" t nil)
+
+;;; option to read only first characters of a file without opening in buffer.
+(insert-file-contents "/Users/Will/spacemacs/.cache/junk/2021/01/10-105722.org"
+                      nil
+                      0
+                      121
+                      nil)
+
+(org-collect-keywords '("XOB_FILE" "XOB_AGENDA"))

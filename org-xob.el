@@ -200,31 +200,44 @@
   "Core directory for exobrain system.")
 
 ;; TODO remove when done
-(setq org-xob-dir "~/xob/")
+;; (setq org-xob-dir "~/xob/")
+;; (setq org-xob--KB-files nil)
 
 (defvar org-xob-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
 
+(defvar org-xob--KB-filename-prefix "KB-file-"
+  "suffix for KB filenames. A simple filecount value is appended for a new name")
+
+;; lists of the xob files
 (defvar org-xob--KB-files nil
   "List of all knowledge base files.")
 
+(defvar org-xob--log-files nil
+  "List of all xog log files.")
+
+(defvar org-xob--agenda-files nil
+  "List of all xob agenda files.")
+
+(defvar org-xob--archive-files nil
+  "List of all xob archive files.")
+
+;; the currently active file
 (defvar org-xob--KB-file nil
   "The currently active KB file to store previous versions of nodes.")
-
-(defvar org-xob--KB-filename-prefix "KB-file-"
-  "suffix for KB filenames. A simple filecount value is appended for a new name")
 
 (defvar org-xob--log-file "xob-logfile.org"
   "The current log file where day nodes and general activity is recorded.")
 
 (defvar org-xob--agenda-file "xob-agendafile.org"
-  "The current agenda file where all activity nodes other than day nodes go.")
+  "The current xob agenda file where all activity nodes other than day nodes go.")
 
-(defvar org-xob--active-nodes nil
-  "a-list of active nodes. Those that were extracted from the KB and into the workspace.")
+(defvar org-xob--xob-header "#+PROPERTY: xob t")
+(defvar org-xob--log-header "#+PROPERTY: xob-log t")
+(defvar org-xob--agenda-header "#+PROPERTY: xob-agenda t")
+(defvar org-xob--archive-header "#+PROPERTY: xob-archive t")
+(defvar org-xob--current-header "#+PROPERTY: xob-current-file t")
 
-(defvar org-xob-syncedp nil
-  "Buffer local variable that indicates whether the current contents of a buffer have been synced with the Knowledge Base.")
 ;;;;; Keymaps
 
 ;; This technique makes it easier and less verbose to define keymaps.
@@ -234,8 +247,8 @@
   (let ((map (make-sparse-keymap "org-xob-map"))
         (maps (list
                ;; Mappings go here, e.g.:
-               "RET" #'org-xob-RET-command
-               [remap search-forward] #'org-xob-search-forward
+               ;; C-tab free
+               "C-RET" '#(lambda () (message "Override!"))
                )))
     (cl-loop for (key fn) on maps by #'cddr
              do (progn
@@ -248,7 +261,7 @@
 
 ;;;###autoload
 (define-minor-mode org-xob-minor-mode
-  "Org-Exobrain Minor Mode."
+  "Org-Exobrain Minor Mode. For this release it is only used in the context buffer."
   :lighter " xob"
   :keymap  (let ((map (make-sparse-keymap))) map)
   :group 'org-xob
@@ -627,7 +640,7 @@ source is a plist that describes the content source."
               (plist-put source :ID (org-id-get-create))
               (dolist (el (plist-get source :tags))
                 (org-toggle-tag el 'ON))
-              (org-toggle-tag (plist-get source :name)'ON)
+              (org-toggle-tag (plist-get source :name) 'ON)
               ;; FIX? for kb needs the parent id , but not all sources
               ;; (plist-put source :items (funcall (plist-get source :func)))
               (funcall (plist-get source :func) source)
@@ -673,17 +686,17 @@ the node content as a string.
 When called with point on the given context item, only that item will be
 updated. If called on a context source heading, then the update is applied
 to all source items."
-  (let ((func (lambda () (progn 
-                           (org-xob-clear-heading)
-                           (org-end-of-meta-data)
-                           (insert
-                            (save-excursion
-                              (org-id-goto (org-entry-get (point) "PID"))
-                              (org-with-wide-buffer
-                               (org-save-outline-visibility t
-                                 (org-narrow-to-subtree)
-                                 (outline-show-all)
-                                 (funcall payload)))))))))
+  (let ((func '#(lambda () (progn 
+                             (org-xob-clear-heading)
+                             (org-end-of-meta-data)
+                             (insert
+                              (save-excursion
+                                (org-id-goto (org-entry-get (point) "PID"))
+                                (org-with-wide-buffer
+                                 (org-save-outline-visibility t
+                                   (org-narrow-to-subtree)
+                                   (outline-show-all)
+                                   (funcall payload)))))))))
     (if (org-xob--is-source-p)
         (org-xob--map-source func)
       (funcall func))))
@@ -692,19 +705,20 @@ to all source items."
   "Apply the function func to every child-item of a xob source.
 If the optional ID of a xob source is given, then apply func to that source.
 Otherwise apply to source at point."
-  (if ID
-      (org-id-goto ID))
-  (org-with-wide-buffer 
-   (if (org-xob--is-source-p) 
-       (progn
-         (org-narrow-to-subtree)
-         (outline-show-all)
-         (outline-next-heading)
-         (while
-             (progn 
-               (funcall func)
-               (outline-get-next-sibling))))
-     (message "not a xob source."))))
+  (save-excursion
+    (if ID
+        (org-id-goto ID))
+    (org-with-wide-buffer 
+     (if (org-xob--is-source-p) 
+         (progn
+           (org-narrow-to-subtree)
+           (outline-show-all)
+           (outline-next-heading)
+           (while
+               (progn 
+                 (funcall func)
+                 (outline-get-next-sibling))))
+       (message "not a xob source.")))))
 
 ;;;;; Activity
 ;;;;;; Clocking
@@ -876,6 +890,30 @@ Maybe useful for syncing."
 
 
 ;;;;; xob Management
+(defun org-xob--register-files ()
+  "Scan through the xob directory, properly identify and register various xob files."
+  (mapc
+   (lambda (filename)
+     (with-temp-buffer
+       (insert-file-contents filename nil 0 256 nil)
+       (let* ((x (org-collect-keywords '("PROPERTY")))
+              (current (if (member "xob-current-file t" x) t nil)))
+         (if (member "xob t" x)
+             (cond 
+              ((member "xob-log t" x)
+               (push  filename org-xob--log-files)
+               (if current (setq org-xob--log-file filename)))
+              ((member "xob-agenda t" x)
+               (push  filename org-xob--agenda-files)
+               (if  current (setq org-xob--agedna-file filename)))
+              ((member "xob-archive t" x)
+               (push  filename org-xob--archive-files)
+               (if current (message "XOB: error, file %s has both archive and current-file flags set." filename)))
+              (t
+               (push filename org-xob--KB-files)
+               (if current (setq org-xob--KB-file filename))))))))
+   (directory-files org-xob-dir nil "\.org$" t)))
+
 (defun org-xob-visit-nodes (func)
   "Iterate over all KB nodes in all files. Apply function func to each node at point."
   (save-window-excursion
