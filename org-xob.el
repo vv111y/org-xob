@@ -232,11 +232,11 @@
 (defvar org-xob--agenda-file "xob-agendafile.org"
   "The current xob agenda file where all activity nodes other than day nodes go.")
 
-(defvar org-xob--xob-header "#+PROPERTY: xob t")
-(defvar org-xob--log-header "#+PROPERTY: xob-log t")
-(defvar org-xob--agenda-header "#+PROPERTY: xob-agenda t")
-(defvar org-xob--archive-header "#+PROPERTY: xob-archive t")
-(defvar org-xob--current-header "#+PROPERTY: xob-current-file t")
+(defvar org-xob--xob-header "#+PROPERTY: xob t\n")
+(defvar org-xob--log-header "#+PROPERTY: xob-log t\n")
+(defvar org-xob--agenda-header "#+PROPERTY: xob-agenda t\n")
+(defvar org-xob--archive-header "#+PROPERTY: xob-archive t\n")
+(defvar org-xob--current-header "#+PROPERTY: xob-current-file t\n")
 
 ;;;;; Keymaps
 
@@ -892,6 +892,13 @@ Maybe useful for syncing."
 ;;;;; xob Management
 (defun org-xob--register-files ()
   "Scan through the xob directory, properly identify and register various xob files."
+  (setq org-xob--KB-files nil
+        org-xob--agenda-files nil
+        org-xob--log-files nil
+        org-xob--archive-files nil
+        org-xob--KB-file nil
+        org-xob--agenda-file nil
+        org-xob--log-file nil)
   (mapc
    (lambda (filename)
      (with-temp-buffer
