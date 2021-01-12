@@ -570,14 +570,22 @@ If ID is given, then convert todo with that ID."
             (org-todo 'none)
             (org-schedule '(4))
             (org-deadline '(4))
-            (if (goto-char (org-log-beginning))
-                (progn
-                  (forward-line -1)
-                  (org-mark-element)
-                  (kill-region (point) (mark))
-                  (org-xob-)))
-            (org-entry-put (point) "TYPE" "a.log"))
-        (message: "XOB: entry is not done.")))))
+            (when-let* ((log-start (org-log-beginning))
+                        (log-entry (org-xob--insert-link-header
+                                    (org-id-get)
+                                    (nth 4 (org-heading-components))
+                                    org-xob-today)))
+              (goto-char log-start)
+              (forward-line -1)
+              (org-mark-element)
+              (kill-region (point) (mark))
+              (org-id-goto log-entry)
+              (org-end-of-meta-data)
+              (yank)))
+        (org-entry-put (point) "TYPE" "a.log")
+        ;; TODO move to a KB file?
+        )
+        (message: "XOB: todo entry is not done."))))
 ;;;; Backend
 ;;;;; Buffer Functions
 

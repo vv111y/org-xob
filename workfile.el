@@ -2130,3 +2130,7 @@ source is a plist that describes the content source."
 ;; nope (org-element-set-element (org-element-at-point) '(nil . nil))
 (org-element-set-contents (org-element-at-point) nil)
 (org-schedule '(4))
+
+(when-let* ((b nil)
+           (c (insert "cee")))
+  (print "body"))
