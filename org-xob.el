@@ -141,6 +141,49 @@
           :func org-xob--get-forlinks
           :items nil))
 
+;;;;; file variables
+(defvar org-xob-dir "~/xob/" 
+  "Core directory for exobrain system.")
+
+;; TODO remove when done
+;; (setq org-xob-dir "~/xob/")
+;; (setq org-xob--KB-files nil)
+
+(defvar org-xob-max-KB-filesize 524288
+  "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
+
+(defvar org-xob--KB-filename-prefix "KB-file-"
+  "suffix for KB filenames. A simple filecount value is appended for a new name")
+
+;; lists of the xob files
+(defvar org-xob--KB-files nil
+  "List of all knowledge base files.")
+
+(defvar org-xob--log-files nil
+  "List of all xog log files.")
+
+(defvar org-xob--agenda-files nil
+  "List of all xob agenda files.")
+
+(defvar org-xob--archive-files nil
+  "List of all xob archive files.")
+
+;; the currently active file
+(defvar org-xob--KB-file nil
+  "The currently active KB file to store previous versions of nodes.")
+
+(defvar org-xob--log-file "xob-logfile.org"
+  "The current log file where day nodes and general activity is recorded.")
+
+(defvar org-xob--agenda-file "xob-agendafile.org"
+  "The current xob agenda file where all activity nodes other than day nodes go.")
+
+(defvar org-xob--xob-header "#+PROPERTY: xob t\n")
+(defvar org-xob--log-header "#+PROPERTY: xob-log t\n")
+(defvar org-xob--agenda-header "#+PROPERTY: xob-agenda t\n")
+(defvar org-xob--archive-header "#+PROPERTY: xob-archive t\n")
+(defvar org-xob--current-header "#+PROPERTY: xob-current-file t\n")
+
 ;;;;; capture variables
 
 (defvar org-xob--auto-templates '("ad" "as" "al" "all" "alit" "alt" "lp" "nt" "na" "nw" "tf" "tp"))
@@ -194,49 +237,6 @@
          :immediate-finish t
          )
         ))
-
-;;;;; file variables
-(defvar org-xob-dir "~/xob/" 
-  "Core directory for exobrain system.")
-
-;; TODO remove when done
-;; (setq org-xob-dir "~/xob/")
-;; (setq org-xob--KB-files nil)
-
-(defvar org-xob-max-KB-filesize 524288
-  "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
-
-(defvar org-xob--KB-filename-prefix "KB-file-"
-  "suffix for KB filenames. A simple filecount value is appended for a new name")
-
-;; lists of the xob files
-(defvar org-xob--KB-files nil
-  "List of all knowledge base files.")
-
-(defvar org-xob--log-files nil
-  "List of all xog log files.")
-
-(defvar org-xob--agenda-files nil
-  "List of all xob agenda files.")
-
-(defvar org-xob--archive-files nil
-  "List of all xob archive files.")
-
-;; the currently active file
-(defvar org-xob--KB-file nil
-  "The currently active KB file to store previous versions of nodes.")
-
-(defvar org-xob--log-file "xob-logfile.org"
-  "The current log file where day nodes and general activity is recorded.")
-
-(defvar org-xob--agenda-file "xob-agendafile.org"
-  "The current xob agenda file where all activity nodes other than day nodes go.")
-
-(defvar org-xob--xob-header "#+PROPERTY: xob t\n")
-(defvar org-xob--log-header "#+PROPERTY: xob-log t\n")
-(defvar org-xob--agenda-header "#+PROPERTY: xob-agenda t\n")
-(defvar org-xob--archive-header "#+PROPERTY: xob-archive t\n")
-(defvar org-xob--current-header "#+PROPERTY: xob-current-file t\n")
 
 ;;;;; Keymaps
 
