@@ -902,7 +902,7 @@ Maybe useful for syncing."
   (mapc
    (lambda (filename)
      (with-temp-buffer
-       (insert-file-contents filename nil 0 256 nil)
+       (insert-file-contents-literally filename nil 0 256 nil)
        (let* ((x (org-collect-keywords '("PROPERTY")))
               (current (if (member "xob-current-file t" x) t nil)))
          (if (member "xob t" x)
