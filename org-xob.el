@@ -248,7 +248,7 @@
         (maps (list
                ;; Mappings go here, e.g.:
                ;; C-tab free
-               "C-RET" '#(lambda () (message "Override!"))
+               "C-RET" #'(lambda () (message "Override!"))
                )))
     (cl-loop for (key fn) on maps by #'cddr
              do (progn
@@ -277,7 +277,6 @@
   ,@body)
 
 ;;;; Commands
-
 ;;;;; Main Commands
 ;;;###autoload
 (defun org-xob-start ()
@@ -686,7 +685,7 @@ the node content as a string.
 When called with point on the given context item, only that item will be
 updated. If called on a context source heading, then the update is applied
 to all source items."
-  (let ((func '#(lambda () (progn 
+  (let ((func '(lambda () (progn 
                              (org-xob-clear-heading)
                              (org-end-of-meta-data)
                              (insert
