@@ -971,9 +971,17 @@ Maybe useful for syncing."
                    ".org"))
          (fullname (concat org-xob-dir filename)))
     (with-temp-file fullname
-      (insert ""))
+      (goto-char (point-min))
+      (insert org-xob--xob-header)
+      (insert org-xob--current-header))
     (push filename org-xob--KB-files)
     (setq org-xob--kb-file-counter (+ 1 org-xob--kb-file-counter))
+    (save-excursion
+      (with-current-buffer (find-file-literally org-xob--KB-file)
+        (goto-char (point-min))
+        (re-search-forward "CURRENT")
+        (kill-whole-line 1)
+        (save-buffer)))
     (setq org-xob--KB-file filename)
     (save-excursion
       (find-file-noselect fullname))
