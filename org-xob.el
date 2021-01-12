@@ -1,16 +1,16 @@
 ;;; org-xob.el --- advanced knowledge management system in Org-mode -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020 Willy Rempel  
+;; Copyright (C) 2020 Willy Rempel
 ;; Author: Willy Rempel <willy.rempel@acm.org>
 ;; URL: https://github.com/vv111y/org-xob.el
 ;; Version: 0.5-pre
 ;; Package-Requires: ((emacs "25.2") (org) (org-element) (org-id) (org-ql) (cl-lib) (org-super-links))
-;; Keywords: 
+;; Keywords:
 
 ;; This file is not part of GNU Emacs.
 
 ;;; Commentary:
-;; Making the most of org-mode. Another attempt at an exo-brain inspired by: zettlekasten, wikis, roam, and all the other ways to organize ourselves. 
+;; Making the most of org-mode. Another attempt at an exo-brain inspired by: zettlekasten, wikis, roam, and all the other ways to organize ourselves.
 
 ;;;; Installation
 
@@ -102,14 +102,14 @@
 
 (defvar org-xob-on-p nil)
 
-;;;;; hash tables 
+;;;;; hash tables
 
 (defvar org-xob--table-size 1000000
   "Size of the hash tables.")
 
 (defvar org-xob--title-id nil)
 
-(defvar org-xob--id-title nil) 
+(defvar org-xob--id-title nil)
 
 ;;;;; state
 
@@ -126,7 +126,7 @@
 (defvar org-xob--source-backlinks
   '(:name "backlinks"
           :tags ("KB" "backlinks")
-          :title nil 
+          :title nil
           :ID nil
           :PID nil
           :func org-xob--get-backlinks
@@ -135,14 +135,14 @@
 (defvar org-xob--source-forlinks
   '(:name "forlinks"
           :tags ("KB" "forlinks")
-          :title nil 
+          :title nil
           :ID nil
           :PID nil
           :func org-xob--get-forlinks
           :items nil))
 
 ;;;;; file variables
-(defvar org-xob-dir "~/xob/" 
+(defvar org-xob-dir "~/xob/"
   "Core directory for exobrain system.")
 
 ;; TODO remove when done
@@ -266,7 +266,7 @@
   :keymap  (let ((map (make-sparse-keymap))) map)
   :group 'org-xob
   :require 'org-xob
-  (progn 
+  (progn
     (unless org-xob-on-p
       (org-xob-start))
     (if org-xob-minor-mode t t)))
@@ -288,14 +288,14 @@
         (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
         (message "XOB: hooks enabled."))
-       (if (file-directory-p org-xob-dir) (message "XOB: directory found.") 
+       (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
          (prog1 (message "XOB: directory not found, creating.")
            (make-directory org-xob-dir t)))
        (cl-loop for (k . v) in org-xob--objects
                 do (if (file-exists-p (concat org-xob-dir v))
                        (prog1 (message "XOB: found %s" v)
                          (org-xob--load-object v k))
-                     (progn 
+                     (progn
                        (message "XOB: file %s missing, initializing new %s" v k)
                        (cond
                         ((equal "org-xob--KB-file" (symbol-name k))
@@ -316,9 +316,9 @@
        (setq org-id-extra-files org-xob--KB-files)
        (setq org-xob--kb-file-counter (length org-xob--KB-files))
        (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
-       (and 
+       (and
         (or
-         (setq org-xob-today (gethash org-xob-today-string 
+         (setq org-xob-today (gethash org-xob-today-string
                                       org-xob--title-id))
          (setq org-xob-today (org-xob--capture "ad")))
         (save-window-excursion
@@ -333,7 +333,7 @@
             (insert "") t))
         (unless (member org-xob--agenda-file org-agenda-files)
           (push (concat org-xob-dir org-xob--agenda-file) org-agenda-files))))
-      (prog1 
+      (prog1
         (setq org-xob-on-p t)
         (message "XOB: started."))
     (message "XOB: Unable to (re)start.")))
@@ -343,7 +343,7 @@
   "Stop xob system: save all state and close active buffers."
   (interactive)
   (if org-xob-on-p
-      (progn 
+      (progn
         (org-xob-save-state)
         (with-current-buffer org-xob-today-buffer
           (save-buffer)
@@ -443,12 +443,12 @@ If called with optional ID argument, then remove the node with that ID."
 (defun org-xob-toggle-sideline ()
   "Toggles display of the sideline window."
   (interactive)
-  (save-excursion 
-    (if org-xob--sideline-window 
-        (progn 
+  (save-excursion
+    (if org-xob--sideline-window
+        (progn
           (delete-window org-xob--sideline-window)
           (setq org-xob--sideline-window nil))
-      (setq org-xob--sideline-window 
+      (setq org-xob--sideline-window
             (split-window-right)))))
 
 ;;;###autoload
@@ -501,7 +501,7 @@ This can be applied to heading at point or used in a mapping."
    (call-interactively #'delete-region))
   (goto-char (- (point) 1)))
 
-;; TEST 
+;; TEST
 ;;;###autoload
 (defun org-xob-to-summary ()
   "Show KB node summary. This is defined as the first paragraph if it exists."
@@ -516,7 +516,7 @@ This can be applied to heading at point or used in a mapping."
                         (org-element-property :contents-begin p)
                         (org-element-property :contents-end p))))))))
 
-;; TEST 
+;; TEST
 ;;;###autoload
 (defun org-xob-to-node-tree ()
   "Show only subheadings of KB node."
@@ -525,14 +525,14 @@ This can be applied to heading at point or used in a mapping."
    #'(lambda () (let ((str))
                   (org-map-tree
                    (lambda ()
-                     (setq str (concat str 
+                     (setq str (concat str
                                        (buffer-substring
                                         (line-beginning-position)
                                         (line-end-position)
                                         "\n")))))
                   str))))
 
-;; TEST 
+;; TEST
 ;;;###autoload
 (defun org-xob-to-section ()
   "Show the top section of KB node, no subheadings."
@@ -563,15 +563,15 @@ If ID is given, then convert todo with that ID."
   (interactive)
   (save-excursion
     (save-window-excursion
-      (if ID 
+      (if ID
           (org-id-goto ID))
       (if (org-entry-is-done-p)
-          (progn 
+          (progn
             (org-todo 'none)
             (org-schedule '(4))
             (org-deadline '(4))
             (if (goto-char (org-log-beginning))
-                (progn 
+                (progn
                   (forward-line -1)
                   (org-mark-element)
                   (kill-region (point) (mark))
@@ -579,7 +579,7 @@ If ID is given, then convert todo with that ID."
             (org-entry-put (point) "TYPE" "a.log"))
         (message: "XOB: entry is not done.")))))
 ;;;; Backend
-;;;;; Buffer Functions 
+;;;;; Buffer Functions
 
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
@@ -593,11 +593,10 @@ If ID is given, then convert todo with that ID."
         (org-narrow-to-subtree)))
     (switch-to-buffer short-title)
     (setq-local ID ID title title org-xob-short-title short-title))
-  (setq-local log-entry (org-xob--insert-link-header ID title org-xob-today))
-  (setq-local org-xob--context-buffer
-              (get-buffer-create (concat  "*context-" title)))
-  (setq-local org-xob--sideline-window nil)
-  (setq-local org-xob--source-backlinks org-xob--source-backlinks
+  (setq-local log-entry (org-xob--insert-link-header ID title org-xob-today)
+              org-xob--context-buffer (get-buffer-create (concat  "*context-" title))
+              org-xob--sideline-window nil
+              org-xob--source-backlinks org-xob--source-backlinks
               org-xob--source-forlinks org-xob--source-forlinks)
   (add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
   (org-xob-minor-mode 1)
@@ -611,9 +610,9 @@ If ID is given, then convert todo with that ID."
 local variables for the edit buffer and the back and for links source objects."
   (with-current-buffer org-xob--context-buffer
     (org-mode)
-    (setq-local org-xob--edit-buffer edit-buffer)
-    (setq-local org-xob--source-backlinks backlinks)
-    (setq-local org-xob--source-forlinks forlinks)))
+    (setq-local org-xob--edit-buffer edit-buffer
+                org-xob--source-backlinks backlinks
+                org-xob--source-forlinks forlinks)))
 
 (defun org-xob--kill-context-buffer-hook ()
   "Kill the context buffer when closing the node edit buffer. Made local variable."
@@ -650,10 +649,10 @@ If an ID argument is supplied, then check the heading associated with it."
 then refresh it. source items are shown as org headings.
 source is a plist that describes the content source."
   (interactive)
-  (save-window-excursion 
+  (save-window-excursion
     (with-current-buffer org-xob--context-buffer
       (if (member source org-xob--node-soures)
-          (progn 
+          (progn
             (unless (org-xob--goto-heading (plist-get source :PID))
               (goto-char (point-max)) ;; respecting content below is this needed?
               (org-insert-heading (4) 'invisible-ok 'TOP)
@@ -691,8 +690,8 @@ todo - possibly refresh item contents if changes were made.
   "Appends a single entry to the end of the source subtree.
 Assumes point is on the source heading."
   (let ((title (gethash ID org-xob--id-title)))
-    (if title 
-        (save-excursion 
+    (if title
+        (save-excursion
           (org-insert-subheading '(4))
           (org-edit-headline title)
           (org-entry-put (point) "PID" ID)
@@ -707,7 +706,7 @@ the node content as a string.
 When called with point on the given context item, only that item will be
 updated. If called on a context source heading, then the update is applied
 to all source items."
-  (let ((func '(lambda () (progn 
+  (let ((func '(lambda () (progn
                              (org-xob-clear-heading)
                              (org-end-of-meta-data)
                              (insert
@@ -729,14 +728,14 @@ Otherwise apply to source at point."
   (save-excursion
     (if ID
         (org-id-goto ID))
-    (org-with-wide-buffer 
-     (if (org-xob--is-source-p) 
+    (org-with-wide-buffer
+     (if (org-xob--is-source-p)
          (progn
            (org-narrow-to-subtree)
            (outline-show-all)
            (outline-next-heading)
            (while
-               (progn 
+               (progn
                  (funcall func)
                  (outline-get-next-sibling))))
        (message "not a xob source.")))))
@@ -784,7 +783,7 @@ Deepcheck only works on heading at point, any ID argument is ignored."
                                                (setq ID (org-xob--capture title)))
                                              (list ID title))))))
 
-;; leaving commented as refs for now 
+;; leaving commented as refs for now
 (defun org-xob--new-node (&optional heading)
   "Both a hook function and for general node creation. If orgmode 'heading' is given,
 then convert it into a new node in place. Otherwise it is assumed to be called
@@ -816,11 +815,11 @@ as a capture hook function."
     org-xob--last-captured))
 
 (defun org-xob--link-hook-fn ()
-  "If a link is a xob node, then reopen node in xob edit mode." 
+  "If a link is a xob node, then reopen node in xob edit mode."
   (let ((link (org-element-context))
         ID)
     (if (equal "ID" (org-element-property :type link))
-        (progn 
+        (progn
           (setq ID (org-element-property :path link))
           (if (gethash ID org-xob--id-title)
               (org-xob--edit-node ID)))
@@ -830,7 +829,7 @@ as a capture hook function."
 (defun org-xob--goto-buffer-heading (ID)
   "Go to heading in current buffer with ID. Does not require org-id."
   (let ((m (point)))
-    (org-with-wide-buffer 
+    (org-with-wide-buffer
      (goto-char (point-min))
      (if (re-search-forward ID nil t)
          (org-back-to-heading 'invisible-ok)
@@ -844,7 +843,7 @@ as a capture hook function."
 subheading with an org link to the node with ID and title.
 Returns mark for the link subheader."
   (save-excursion
-    (save-window-excursion 
+    (save-window-excursion
       (with-current-buffer org-xob-today-buffer)
       (let (place)
         (org-id-goto target)
@@ -927,7 +926,7 @@ Maybe useful for syncing."
        (let* ((x (org-collect-keywords '("PROPERTY")))
               (current (if (member "xob-current-file t" x) t nil)))
          (if (member "xob t" x)
-             (cond 
+             (cond
               ((member "xob-log t" x)
                (push  filename org-xob--log-files)
                (if current (setq org-xob--log-file filename)))
@@ -949,8 +948,8 @@ Maybe useful for syncing."
       (dolist (kb-file-name org-xob--KB-files)
         (with-current-buffer (find-file kb-file-name)
           (goto-char (point-min))
-          (while 
-              (progn 
+          (while
+              (progn
                 (if (org-xob--is-node-p "" 'DEEPCHECK)
                     (funcall func))
                 (outline-next-heading))))))))
@@ -976,7 +975,7 @@ Maybe useful for syncing."
 (defun org-xob--load-object (file symbol)
   "load saved object."
   (when (boundp symbol)
-    (condition-case nil 
+    (condition-case nil
         (with-temp-buffer
           (insert-file-contents (concat org-xob-dir file))
           (goto-char (point-min))
@@ -986,7 +985,7 @@ Maybe useful for syncing."
 (defun org-xob--new-KB-file ()
   "Create new KB file for next node in the brain. Returns the filename."
   (interactive)
-  (let* ((filename (concat 
+  (let* ((filename (concat
                    org-xob--KB-filename-prefix
                    (format "%03d" org-xob--kb-file-counter)
                    ".org"))
@@ -1018,20 +1017,20 @@ Maybe useful for syncing."
   (clrhash org-xob--title-id)
   (message "XOB: cleared KB file list & hash tables.")
   ;; rebuild kbfiles: goto dir, for each file: has name prefix, .org suffix -> add
-  (and 
+  (and
    (mapc
     (lambda (filename)
       ;; disable, allow for any filename
       ;; (if (string-prefix-p org-xob--KB-filename-prefix filename))
       (add-to-list 'org-xob--KB-files (concat org-xob-dir filename)))
     (directory-files org-xob-dir nil "\.org$" t))
-   (message "XOB: re-registered all KB files."))	
-  (and 
+   (message "XOB: re-registered all KB files."))
+  (and
    (org-id-update-id-locations)
    (message "XOB: updated org-id hashtable."))
   (message "XOB: traversing all KB files...")
   (let (ID title)
-    (org-xob-visit-nodes 
+    (org-xob-visit-nodes
      #'(lambda ()
          (setq ID (org-id-get (point)))
          (setq title (nth 4 (org-heading-components)))
@@ -1055,9 +1054,9 @@ Maybe useful for syncing."
     (insert "--------------\n")
     (insert (concat "title-id-table entries:\t\t\t"
                     (number-to-string (hash-table-count org-xob--title-id)) "\n"))
-    (insert (concat "id-title-table entries:\t\t\t"                       
+    (insert (concat "id-title-table entries:\t\t\t"
                     (number-to-string (hash-table-count org-xob--id-node)) "\n"))
-    (insert (concat "org-id entries:\t\t\t\t\t\t\t"                               
+    (insert (concat "org-id entries:\t\t\t\t\t\t\t"
                     (number-to-string (hash-table-count org-id-locations)) "\n"))
     (insert (concat "KB files count:\t\t\t\t\t\t\t"
                     (number-to-string (length org-xob--KB-files)) "\n"))
