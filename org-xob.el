@@ -555,8 +555,30 @@ This can be applied to heading at point or used in a mapping."
                   (org-end-of-meta-data 1)
                   (buffer-substring (point) (mark))))))
 
+;;;;; Activity Commands
+;;;###autoload
+(defun org-xob-log-done (&optional ID)
+  "Convert a complete TODO into a log entry for future reference.
+If ID is given, then convert todo with that ID."
+  (interactive)
+  (save-excursion
+    (save-window-excursion
+      (if ID 
+          (org-id-goto ID))
+      (if (org-entry-is-done-p)
+          (progn 
+            (org-todo 'none)
+            (org-schedule '(4))
+            (org-deadline '(4))
+            (if (goto-char (org-log-beginning))
+                (progn 
+                  (forward-line -1)
+                  (org-mark-element)
+                  (kill-region (point) (mark))
+                  (org-xob-)))
+            (org-entry-put (point) "TYPE" "a.log"))
+        (message: "XOB: entry is not done.")))))
 ;;;; Backend
-
 ;;;;; Buffer Functions 
 
 (defun org-xob--edit-node (ID title)

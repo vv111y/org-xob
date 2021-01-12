@@ -2087,3 +2087,46 @@ source is a plist that describes the content source."
                       nil)
 
 (org-collect-keywords '("XOB_FILE" "XOB_AGENDA"))
+
+;;; new xob files func
+
+(defun org-xob--new-KB-file ()
+  "Create new KB file for next node in the brain. Returns the filename."
+  (interactive)
+  (let* ((filename (concat 
+
+                    ;;
+                    org-xob--KB-filename-prefix
+
+                    ;;
+                    (format "%03d" org-xob--kb-file-counter)
+                    ".org"))
+         (fullname (concat org-xob-dir filename)))
+    (with-temp-file fullname
+      (goto-char (point-min))
+
+      ;;
+      (insert org-xob--xob-header)
+      (insert org-xob--current-header))
+    ;;
+    (push filename org-xob--KB-files)
+    ;;
+    (setq org-xob--kb-file-counter (+ 1 org-xob--kb-file-counter))
+    (save-excursion
+      ;;
+      (with-current-buffer (find-file-literally org-xob--KB-file)
+        (goto-char (point-min))
+        (re-search-forward "CURRENT")
+        (kill-whole-line 1)
+        (save-buffer)))
+    ;;
+    (setq org-xob--KB-file filename)
+    (save-excursion
+      (find-file-noselect fullname))
+    filename))
+
+;;; dklfj
+
+;; nope (org-element-set-element (org-element-at-point) '(nil . nil))
+(org-element-set-contents (org-element-at-point) nil)
+(org-schedule '(4))
