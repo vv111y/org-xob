@@ -597,8 +597,8 @@ If ID is given, then convert todo with that ID."
   (setq-local org-xob--context-buffer
               (get-buffer-create (concat  "*context-" title)))
   (setq-local org-xob--sideline-window nil)
-  (setq-local org-xob--source-backlinks)
-  (setq-local org-xob--source-forlinks)
+  (setq-local org-xob--source-backlinks org-xob--source-backlinks
+              org-xob--source-forlinks org-xob--source-forlinks)
   (add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
   (org-xob-minor-mode 1)
   (org-xob--make-context-buffer org-xob-short-title

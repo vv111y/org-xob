@@ -1,0 +1,36 @@
+#+STARTUP: logreschedule
+#+PROPERTY: logdrawer
+
+* Mauris ac felis vel velit tristique imperdiet.   
+:LOGBOOK:
+- Note taken on [2021-01-08 Fri 07:34] \\
+  someting
+CLOCK: [2021-01-08 Fri 07:33]--[2021-01-08 Fri 07:33] =>  0:00
+- State "[C]"        from "[X]"        [2021-01-08 Fri 07:14]
+- State "[X]"        from "[?]"        [2021-01-08 Fri 07:14]
+- State "[-]"        from "[.]"        [2021-01-08 Fri 07:14]
+- State "[.]"        from              [2021-01-08 Fri 07:14]
+- State "[C]"        from "[X]"        [2021-01-08 Fri 07:12]
+- State "[X]"        from "[?]"        [2021-01-08 Fri 07:12]
+- State "[-]"        from "[.]"        [2021-01-08 Fri 07:12]
+- State "[.]"        from              [2021-01-08 Fri 07:12]
+- State "[C]"        from "[X]"        [2021-01-08 Fri 07:11]
+- State "[X]"        from "[?]"        [2021-01-08 Fri 07:11]
+- State "[?]"        from "[-]"        [2021-01-08 Fri 07:11]
+- State "[-]"        from "[.]"        [2021-01-08 Fri 07:11]
+- State "[C]"        from "[X]"        [2021-01-08 Fri 07:11]
+- State "[X]"        from "[?]"        [2021-01-08 Fri 07:11]
+- State "[?]"        from "[-]"        [2021-01-08 Fri 07:11]
+- State "[-]"        from "[.]"        [2021-01-08 Fri 07:11]
+- State "[C]"        from "[X]"        [2021-01-08 Fri 07:11]
+- State "[X]"        from "[?]"        [2021-01-08 Fri 07:11]
+- State "[?]"        from "[-]"        [2021-01-08 Fri 07:11]
+- State "[-]"        from "[.]"        [2021-01-08 Fri 07:11]
+CLOCK: [2021-01-08 Fri 06:44]--[2021-01-08 Fri 06:44] =>  0:00
+:END:
+* Aliquam posuere.    
+** Phasellus purus.
+* more
+** some
+*** yes
+*** 
