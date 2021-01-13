@@ -198,14 +198,12 @@
          "* %(eval org-xob--last-title) \n:PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n:END:\n:BACKLINKS:\n:END:\n"
          :xob-node t
          :ntype "n.n"
-         :func (lambda () t)
          :immediate-finish t
          :empty-lines-after 1)
 
         ("ad" "today" entry (file+datetree ,(concat org-xob-dir org-xob--log-file))
          "* %u\n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
          :xob-node t
-         :func (lambda () t)
          :immediate-finish t
          :ntype "a.day"
          )
@@ -828,12 +826,12 @@ as a capture hook function."
             type node)
         (if heading
             (setq type "n.n")
-          (setq type (org-capture-get :ntype))
-          ;; (funcall (org-capture-get :func))
-          (if (org-capture-get :todo) (org-todo)))
+          (setq type (org-capture-get :ntype)))
+        (if (org-capture-get :todo) (org-todo))
+        (org-entry-put (point) "xob" "t")
         ;; (org-entry-put (point) "CREATED" timestamp)
         ;; (org-entry-put (point) "MODIFIED" timestamp)
-        ;; (org-entry-put (point) "TYPE" type)
+        (org-entry-put (point) "TYPE" type)
         (puthash ID title org-xob--id-title)
         (puthash title ID org-xob--title-id)
         (setq org-xob--last-captured ID))))
@@ -841,7 +839,7 @@ as a capture hook function."
 (defun org-xob--capture (title)
   (let* ((org-capture-templates org-xob--templates)
          ID)
-    (if (member title org-xob--auto-types)
+    (if (member title org-xob--auto-templates)
         (org-capture nil title)
       (progn
         (setq org-xob--last-title title)
