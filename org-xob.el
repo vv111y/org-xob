@@ -434,15 +434,25 @@ If called with optional ID argument, then remove the node with that ID."
      org-xob--KB-files)))
 
 ;;;###autoload
-(defun org-xob-add-labels ()
+(defun org-xob-add-node-labels ()
   "Select labels to apply to node at point, or at optional node specified by ID."
   (interactive)
   (helm :buffer "xob labels"
         :sources (helm-build-sync-source "xob-labels"
-                   :candidates org-xob-labels 
+                   :candidates org-xob-labels
                    :action (lambda (c)
                              (org-entry-put (point) "LABELS"
                                             (string-join (helm-marked-candidates) " "))))))
+
+;;;###autoload
+(defun org-xob-change-node-type ()
+  "Change the type for node at point, or at optional node specified by ID."
+  (interactive)
+  (helm :buffer "xob types"
+        :sources (helm-build-sync-source "xob-types"
+                   :candidates org-xob--node-types
+                   :action (lambda (c)
+                             (org-entry-put (point) "TYPE" c)))))
 
 ;;;;; Sideline Commands
 ;;;###autoload
