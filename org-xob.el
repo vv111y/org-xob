@@ -388,13 +388,11 @@
     (org-super-links--insert-link (org-id-find ID 'MARKERP))
     (org-xob--source-refresh 'forlinks)))
 
-;; TODO
-;; for each exo-link in body, visit node and remove backlink
-;; for each exo-link in backlinks, visite node and kill link, leave link text
 ;;;###autoload
 (defun org-xob-remove-node (&optional ID)
   "Removes node at point from xob system, but does not delete the node itself.
 Removes node from the hash tables, and any backlinks in other nodes referencing it.
+But ignore any links that reference it. Override xob property.
 If called with optional ID argument, then remove the node with that ID."
   (interactive)
   (unless org-xob-on-p (org-xob-start))
@@ -407,16 +405,20 @@ If called with optional ID argument, then remove the node with that ID."
              (forelinks (org-xob--node-get-links "forelinks"))
              link-element)
         (dolist (el forelinks)
-          (org-id-goto el)
-          (save-restriction
-            (org-narrow-to-subtree)
-            (setq link-element (org-super-links--find-link ID))
-            (if link-element
-                (org-super-links--delete-link link-element))))
+          (save-excursion
+            (org-id-goto el)
+            (save-restriction
+              (org-narrow-to-subtree)
+              (outline-show-all)
+              (setq link-element (org-super-links--find-link ID))
+              (if link-element
+                  (org-super-links--delete-link link-element)))))
         (remhash ID org-xob--id-title)
         (remhash title org-xob--title-id)
-        (org-entry-put (point) "ID" "")
-        (org-id-update-id-locations (list (buffer-file-name)) 'silent)))))
+        (org-entry-put (point) "TYPE" "")
+        (org-entry-put (point) "xob" "")
+        ;; (org-id-update-id-locations (list (buffer-file-name)) 'silent)
+        (org-xob--save-state)))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
@@ -779,6 +781,7 @@ Deepcheck only works on heading at point, any ID argument is ignored."
     (if DEEPCHECK
         (if (and
              (org-at-heading-p)
+             (equal "t" (org-entry-get (point) "xob"))
              (setq temp (org-entry-get (point) "ID"))
              (eq 0 (org-uuidgen-p temp))
              (setq type (org-entry-get (point) "TYPE"))
@@ -805,7 +808,6 @@ Deepcheck only works on heading at point, any ID argument is ignored."
                                                (setq ID (org-xob--capture title)))
                                              (list ID title))))))
 
-;; leaving commented as refs for now
 (defun org-xob--new-node (&optional heading)
   "Both a hook function and for general node creation. If orgmode 'heading' is given,
 then convert it into a new node in place. Otherwise it is assumed to be called
