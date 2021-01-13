@@ -184,11 +184,14 @@
 (defvar org-xob--archive-header "#+PROPERTY: xob-archive t\n")
 (defvar org-xob--current-header "#+PROPERTY: xob-current-file t\n")
 
-;;;;; capture variables
+;;;;; node/capture variables
 
-(defvar org-xob--auto-templates '("ad" "as" "al" "all" "alit" "alt" "lp" "nt" "na" "nw" "tf" "tp"))
+;; TODO change to defvar when done
+(setq org-xob-labels '("one" "two" "cat" "dog"))
 
 (defvar org-xob--node-types '("a.day" "a.project" "a.session" "a.log" "a.log.life" "a.log.tools" "a.log.project" "a.todo" "n.n" "n.topic" "n.bib.article" "n.bib.web" "t.free" "t.project"))
+
+(defvar org-xob--auto-templates '("ad" "as" "al" "all" "alit" "alt" "lp" "nt" "na" "nw" "tf" "tp"))
 
 (defvar org-xob--templates
   `(("nn" "new node" entry (file ,(concat org-xob-dir org-xob--KB-file))
@@ -427,6 +430,17 @@ If called with optional ID argument, then remove the node with that ID."
     (org-xob--save-object
      (alist-get 'org-xob--KB-files org-xob--objects)
      org-xob--KB-files)))
+
+;;;###autoload
+(defun org-xob-add-labels ()
+  "Select labels to apply to node at point, or at optional node specified by ID."
+  (interactive)
+  (helm :buffer "xob labels"
+        :sources (helm-build-sync-source "xob-labels"
+                   :candidates org-xob-labels 
+                   :action (lambda (c)
+                             (org-entry-put (point) "LABELS"
+                                            (string-join (helm-marked-candidates) " "))))))
 
 ;;;;; Sideline Commands
 ;;;###autoload

@@ -1,4 +1,4 @@
-#+STARTUP: logreschedule
+#+STARTUP: logreschedule logdone logrepeat logrefile logredeadline 
 #+PROPERTY: logdrawer
 
 * Mauris ac felis vel velit tristique imperdiet.   
@@ -29,8 +29,33 @@ CLOCK: [2021-01-08 Fri 07:33]--[2021-01-08 Fri 07:33] =>  0:00
 CLOCK: [2021-01-08 Fri 06:44]--[2021-01-08 Fri 06:44] =>  0:00
 :END:
 * Aliquam posuere.    
+:LOGBOOK:
+- Rescheduled from "[2021-01-13 Wed]" on [2021-01-13 Wed 03:39]
+:END:
 ** Phasellus purus.
 * more
 ** some
 *** yes
-*** 
+:PROPERTIES:
+:LABELS:   one cat
+:END:
+#+begin_src elisp :results silent
+  (org-entry-put (point) "LABELS" "one two cat dog")
+  (org-entry-put (point) "header-args" ":results silent")
+#+end_src
+
+#+begin_src elisp
+  (list (split-string (org-entry-get (point) "LABELS")))
+#+end_src
+
+#+RESULTS:
+| one | two | cat | dog |
+
+#+begin_src elisp
+(helm :buffer "mmb"
+      :sources (helm-build-sync-source "mmb"
+                 :candidates '(a b c d e f)
+                 :action (lambda (c) (org-entry-put (point) "LABELS" (string-join (helm-marked-candidates) " ")))))
+#+end_src
+
+#+RESULTS:

@@ -2134,3 +2134,25 @@ source is a plist that describes the content source."
 (when-let* ((b nil)
            (c (insert "cee")))
   (print "body"))
+
+;;; select multiple candidates
+    :PROPERTIES:
+    :LABELS: b e f
+    :END:
+(split-string "one two cat dog")
+
+(mapcar (lambda (x) (concat x)) '("one" "two" "cat" "dog"))
+(string-join '("one" "two" "cat" "dog") " ")
+
+;; (require 'icicles)
+;; (completing-read "D:" (split-string "one two cat dog"))
+
+(helm :buffer "mmb"
+      :sources (helm-build-sync-source "mmb"
+                 :candidates '(a b c d e f)
+                 :action (lambda (c) (helm-marked-candidates))))
+
+
+(list (split-string (org-entry-get (point) "LABELS")))
+(cl-flet ((func #'(lambda (x) (print x))))
+  (func "what?"))
