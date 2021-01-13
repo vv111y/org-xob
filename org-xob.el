@@ -714,8 +714,7 @@ the node content as a string.
 When called with point on the given context item, only that item will be
 updated. If called on a context source heading, then the update is applied
 to all source items."
-  ;; TODO cl-flet instead?
-  (let ((func '(lambda () (progn
+  (cl-flet ((func #'(lambda () (progn
                              (org-xob-clear-heading)
                              (org-end-of-meta-data)
                              (insert
