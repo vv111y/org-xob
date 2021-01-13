@@ -714,6 +714,7 @@ the node content as a string.
 When called with point on the given context item, only that item will be
 updated. If called on a context source heading, then the update is applied
 to all source items."
+  ;; TODO cl-flet instead?
   (let ((func '(lambda () (progn
                              (org-xob-clear-heading)
                              (org-end-of-meta-data)
@@ -1045,12 +1046,12 @@ Maybe useful for syncing."
          (puthash ID title org-xob--id-title)
          (puthash title ID org-xob--title-id))))
   (message "XOB: finished rebuilding xob hashtables.")
-  (org-xob-stats)
+  (org-xob-info)
   (org-xob--save-state)
   (message "XOB: saved xob state."))
 
 ;;;###autoload
-(defun org-xob-stats ()
+(defun org-xob-info ()
   "Give basic information about the xob system."
   (interactive)
   ;; popup window
