@@ -181,10 +181,10 @@
 (defvar org-xob--KB-file nil
   "The currently active KB file to store previous versions of nodes.")
 
-(defvar org-xob--log-file "xob-logfile.org"
+(defvar org-xob--log-file nil
   "The current log file where day nodes and general activity is recorded.")
 
-(defvar org-xob--agenda-file "xob-agendafile.org"
+(defvar org-xob--agenda-file nil
   "The current xob agenda file where all activity nodes other than day nodes go.")
 
 ;; file header strings
