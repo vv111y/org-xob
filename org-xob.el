@@ -342,8 +342,8 @@
              (setq org-xob-today (org-xob--capture "ad")))
             (save-window-excursion
               (save-excursion
-                (setq org-xob-today-buffer
-                      (find-file (concat org-xob-dir org-xob--log-file)))))
+                (org-id-goto org-xob-today)
+                (setq org-xob-today-buffer (current-buffer))))
             (message "XOB: Todays log entry opened.")))
       (prog1
           (setq org-xob-on-p t)
