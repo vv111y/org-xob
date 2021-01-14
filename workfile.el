@@ -2214,84 +2214,41 @@ only the description"
     (insert text)))
 
 ;;; new start
-(defun org-xob-start ()
-  "Start the xob system: load state or initialize new. Open new day node."
-  (interactive)
-  (if (and
-       (if org-xob-on-p (progn (message "XOB: already started.") nil) t)
-       (and
-        (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
-        (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
-        (message "XOB: hooks enabled."))
-       (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
-         (prog1 (message "XOB: directory not found, creating.")
-           (make-directory org-xob-dir t)))
-
-       ;; tables
-       ;; TODO info: number of nodes
-       (cl-loop for (k . v) in org-xob--tables 
-                do (if (file-exists-p (concat org-xob-dir v))
-                       (prog1 (message "XOB: found %s" v)
-                         (org-xob--load-object v k))
-                     (progn
-                       (message "XOB: hashtable %s missing, initializing new %s" v k)
-                       (set k (make-hash-table
-                               :test 'equal
-                               :size org-xob--table-size))))
-                finally return t)
-
-       (org-xob--register-files)
-
-       ;; TODO howto pack/unpack related vars 
-       ;; (filepointer fileprefix filelist filecounter)
-       ;; TODO 
-       ;; if any current missing, create OR are prior?
-       ;; info: #files of each type
-
-       (cl-loop for file in '(org-xob--KB-file org-xob--agenda-file org-xob--log-file) 
-                do (unless file 
-                     (message "XOB: current file %s missing, initializing new %s" file)
-                     (cond
-                      ((equal "org-xob--KB-file" (symbol-name file))
-                       (org-xob--new-file 'file)
-                       
-                       (set k (org-xob--new-KB-file)))
-                      ((equal "org-xob--KB-files" (symbol-name k))
-                       (set k nil))))
-                finally return t)
-       ;; del agenda
-       (and
-        (if (file-exists-p (concat org-xob-dir org-xob--agenda-file))
-            (message "XOB: found xob agenda file.")
-          (message "XOB: xob agenda file missing, initializing new.")
-        ;; reg agenda files
-        (unless (member org-xob--agenda-file org-agenda-files)
-          (push (concat org-xob-dir org-xob--agenda-file) org-agenda-files))))
-
-       ;; org-id add
-       (setq org-id-extra-files org-xob--KB-files)
-       ;; today
-       (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
-       (and
-        (or
-         (setq org-xob-today (gethash org-xob-today-string
-                                      org-xob--title-id))
-         (setq org-xob-today (org-xob--capture "ad")))
-        (save-window-excursion
-          (setq org-xob-today-buffer
-                (find-file (concat org-xob-dir org-xob--log-file))))
-        (message "XOB: Todays log entry opened.")))
-      (prog1
-          (setq org-xob-on-p t)
-        (message "XOB: started."))
-    (message "XOB: Unable to (re)start.")))
-
 ;; (find-file "file.org")
-(setq zm "filename")
+;; (setq zm "filename")
+
 (defun zzm (arg)
-  (eq arg 'zm)
+  (message "symbolQ1: %s" (symbol-name arg))
+  (message "symbol1: %s" symbol1)
+  (message "symbol2Q: %s" 'arg)
+  (message "symbol2: %s" symbol2)
+  (message "symbol3: %s" symbol3)
   )
-(zzm 'zm)
+
+(let ((symbol1 "hi")
+      (symbol2 "there"))
+  (cl-loop for z
+           in '(symbol1 symbol2)
+           do (zzm 'z)))
+
+(defun zzm (a b c)
+  (message "symbol1: %s" a)
+  (message "symbolQn: %s" (symbol-name a))
+  (message "symbolQv: %s" (symbol-value a))
+  (message "symbo21: %s" b)
+  (message "symbo2Qn: %s" (symbol-name b))
+  (message "symbo2Qv: %s" (symbol-value b))
+  (message "symbo31: %s" c)
+  (message "symbo3Qn: %s" (symbol-name c))
+  (message "symbo3Qv: %s" (symbol-value c))
+  nil
+  )
+
+(let ((symbol1 "hi")
+      (symbol2 "there")
+      (symbol3 "well"))
+  (cl-mapcar #'zzm '(symbol1) '(symbol2) '(symbol3))) 
+;; (zzm a b c)
 
 (cond
  ;; redo eq
@@ -2309,3 +2266,6 @@ only the description"
  ((eq 'archive filetype ) (insert org-xob--archive-header))
  ;; org-xob--archive-files
  )
+
+(cl-loop for (x y z) in '((x1 y1 z1) (x2 y2 z2) (x3 y3 z3))
+         do (message "%s %s %s" x y z))
