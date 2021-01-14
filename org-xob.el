@@ -313,12 +313,12 @@
                                :size org-xob--table-size))))
                 finally return t)
        (org-xob--register-files)
-       (cl-mapcar #'(lambda (file prefix filelist filecounter)
+       (cl-mapcar #'(lambda (file prefix filelist)
                       (if (find-file-noselect (concat org-xob-dir file)) ;; TODO need value?
                           (message "XOB: found file for %s" file)
                         (message "XOB: current file for %s missing, initializing new." 'file)
                         ;; TODO check if args evaluates to symbols
-                        (org-xob--new-file file prefix filelist filecounter)))
+                        (org-xob--new-file file prefix filelist)))
                   '(org-xob--KB-file
                     org-xob--agenda-file
                     org-xob--log-file
@@ -330,12 +330,8 @@
                   '(org-xob--KB-files
                     org-xob--agenda-files
                     org-xob--log-files
-                    org-xob--archive-files)
-                  '(org-xob--kb-file-counter
-                    org-xob--agenda-file-counter
-                    org-xob--log-file-counter
-                    org-xob--archive-file-counter))
-       ;; TODO should it just be current log file? 
+                    org-xob--archive-files))
+       ;; TODO should it just be current log file?
        (setq org-id-extra-files (append org-xob--KB-files
                                          org-xob--agenda-files
                                          org-xob--log-files))
@@ -354,6 +350,7 @@
         (message "XOB: started.")
         (org-xob-info))
     (message "XOB: Unable to (re)start.")))
+
 ;;;###autoload
 (defun org-xob-stop ()
   "Stop xob system: save all state and close active buffers."
@@ -1094,13 +1091,12 @@ Maybe useful for syncing."
    (directory-files org-xob-dir nil "\.org$" t)))
 
 ;; TODO for new file mang
-(defun org-xob--new-file (filepointer fileprefix filelist filecounter)
-  "creates a new file, pushes it to it's appropriate list,
-increases the file counter and sets it as current. Buffer remains open.
-Returns the filename."
+(defun org-xob--new-file (filepointer fileprefix filelist)
+  "creates a new file, pushes it to it's appropriate list and sets it as current.
+Buffer remains open. Returns the filename."
   (let* ((filename (concat
                     fileprefix
-                    (format "%03d" filecounter)
+                    (format "%03d" (+ 1 (length filelist)))
                     ".org")))
     (find-file (concat org-xob-dir filename)
       (goto-char (point-min))
@@ -1108,7 +1104,6 @@ Returns the filename."
       (insert org-xob--current-header)
       (save-buffer))
     (push filename filelist)
-    (setq filecounter (+ 1 filecounter))
     (if filepointer (org-xob--uncurrent-file filepointer))
     (setq filepointer filename)
     filename))
