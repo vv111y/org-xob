@@ -320,3 +320,108 @@ that will overwrite current source tree item."
 
 (setq vvm '(1 2 3 4))
 (member 5 vvm)
+;;; remove node option
+;; thos option removes both for and backlinks, 
+(defun org-xob-remove-node (&optional ID)
+  "Removes node at point from xob system, but does not delete the node itself.
+Removes node from the hash tables, and any backlinks and forlinks in other nodes
+referencing it. If called with optional ID argument, then remove the node with that ID."
+  (interactive)
+  (unless org-xob-on-p (org-xob-start))
+  (save-window-excursion
+    (save-excursion
+      (if ID (org-id-goto ID))
+      (let* ((ID (org-id-get (point)))
+             (title (gethash ID org-xob--id-title))
+             (backlinks (org-xob--node-get-links "backlinks"))
+             (forelinks (org-xob--node-get-links "forelinks"))
+             link-element)
+        (dolist (linktype '(forelinks backlinks))
+          (dolist (el linktype)
+            (org-id-goto el)
+            (save-restriction
+              (org-narrow-to-subtree)
+              (outline-show-all)
+              (setq link-element (org-super-links--find-link ID))
+              (if link-element
+                  (cond ((eq linktype 'forelinks)
+                         (org-super-links--delete-link link-element))
+                        ((eq linktype 'backlinks)
+                         (let* ((elem (org-element-context))
+                                (beg (org-element-property :contents-begin elem))
+                                (end  (org-element-property :contents-end elem))
+                                (link (org-element-property :path elem))
+                                text
+                                (link-begin (org-element-property :begin elem))
+                                (link-end (org-element-property :end elem))
+                                )
+                           (if (and beg end)
+                               (setq text (concat (buffer-substring-no-properties beg end)
+                                                  " "))
+                             (setq text (concat link " ")))
+                           (delete-region link-begin link-end)
+                           (insert text))))))))
+        (remhash ID org-xob--id-title)
+        (remhash title org-xob--title-id)
+        (org-entry-put (point) "ID" "")
+        (org-id-update-id-locations (list (buffer-file-name)) 'silent)
+        (org-xob--save-state)))))
+;;; xob-start
+(defun org-xob-start ()
+  "Start the xob system: load state or initialize new. Open new day node."
+  (interactive)
+  (if (and
+       (if org-xob-on-p (progn (message "XOB: already started.") nil) t)
+       (and
+        (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
+        (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+        (message "XOB: hooks enabled."))
+       (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
+         (prog1 (message "XOB: directory not found, creating.")
+           (make-directory org-xob-dir t)))
+       (cl-loop for (k . v) in org-xob--objects
+                do (if (file-exists-p (concat org-xob-dir v))
+                       (prog1 (message "XOB: found %s" v)
+                         (org-xob--load-object v k))
+                     (progn
+                       (message "XOB: file %s missing, initializing new %s" v k)
+                       (cond
+                        ((equal "org-xob--KB-file" (symbol-name k))
+                         (set k (org-xob--new-KB-file)))
+                        ((equal "org-xob--KB-files" (symbol-name k))
+                         (set k nil))
+                        ((or (equal "org-xob--title-id" (symbol-name k))
+                             (equal "org-xob--id-title" (symbol-name k)))
+                         (set k (make-hash-table
+                                 :test 'equal
+                                 :size org-xob--table-size))))))
+                finally return t)
+       (if (file-exists-p (concat org-xob-dir org-xob--log-file))
+           (message "XOB: found log file.")
+         (with-temp-file (concat org-xob-dir org-xob--log-file)
+           (message "XOB: log file missing, initializing new.")
+           (insert "") t))
+       (setq org-id-extra-files org-xob--KB-files)
+       (setq org-xob--kb-file-counter (length org-xob--KB-files))
+       (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
+       (and
+        (or
+         (setq org-xob-today (gethash org-xob-today-string
+                                      org-xob--title-id))
+         (setq org-xob-today (org-xob--capture "ad")))
+        (save-window-excursion
+          (setq org-xob-today-buffer
+                (find-file (concat org-xob-dir org-xob--log-file))))
+        (message "XOB: Todays log entry opened."))
+       (and
+        (if (file-exists-p (concat org-xob-dir org-xob--agenda-file))
+            (message "XOB: found xob agenda file.")
+          (with-temp-file (concat org-xob-dir org-xob--agenda-file)
+            (message "XOB: xob agenda file missing, initializing new.")
+            (insert "") t))
+        (unless (member org-xob--agenda-file org-agenda-files)
+          (push (concat org-xob-dir org-xob--agenda-file) org-agenda-files))))
+      (prog1
+        (setq org-xob-on-p t)
+        (message "XOB: started."))
+    (message "XOB: Unable to (re)start.")))

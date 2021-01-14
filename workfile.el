@@ -1,5 +1,11 @@
 ;;; workfile.el --- a summary
 ;;; elisp 
+
+;;;; flet 
+(list (split-string (org-entry-get (point) "LABELS")))
+(cl-flet ((func #'(lambda (x) (print x))))
+  (func "what?"))
+
 ;;;; binding trials
 (defun vv/afn ()
   (message "I see `c', its value is: %s" c))
@@ -1402,9 +1408,11 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;;;;; capture scraps
 (setq org-xob--KB-file "KB-file-000.org")
 (org-xob--capture "ad")
-(org-xob--capture "f")
-(org-xob--capture "d")
-(org-xob--capture "r")
+(org-xob--capture "nn")
+(org-xob--capture "ap")
+(org-xob--capture "as")
+(org-xob--capture "tf")
+(org-xob--capture "tp")
 (org-todo)
 (cadr org-todo-keywords)
 
@@ -1882,7 +1890,7 @@ source is a plist that describes the content source."
     (org-mode)
     ))
 
-;;; crusht: templates and edit buffer stuff
+;;; templates and edit buffer stuff
 
 (setq org-xob-path "xob/")
 (org-xob--save-state)
@@ -2152,7 +2160,152 @@ source is a plist that describes the content source."
                  :candidates '(a b c d e f)
                  :action (lambda (c) (helm-marked-candidates))))
 
+;;; remove link, leave text option 
+https://emacs.stackexchange.com/questions/10707/in-org-mode-how-to-remove-a-link
+(defun org-link-delete-link ()
+  "Remove the link part of an org-mode link at point and keep
+only the description"
+  (interactive)
+  (let ((elem (org-element-context)))
+    (if (eq (car elem) 'link)
+        (let* ((content-begin (org-element-property :contents-begin elem))
+               (content-end  (org-element-property :contents-end elem))
+               (link-begin (org-element-property :begin elem))
+               (link-end (org-element-property :end elem)))
+          (if (and content-begin content-end)
+              (let ((content (buffer-substring-no-properties content-begin content-end)))
+                (delete-region link-begin link-end)
+                (insert content)))))))
 
-(list (split-string (org-entry-get (point) "LABELS")))
-(cl-flet ((func #'(lambda (x) (print x))))
-  (func "what?"))
+(let ((bl '(a b c d))
+      (fl '(1 3 4 5)))
+  (dolist (lt '(bl fl))
+    (if (eq lt 'bl)
+        (print "backlinks"))
+    (if (eq lt 'fl)
+        (print "forlinks"))))
+(defun vl ()
+  (interactive)
+  (let* ((txt (org-element-contents (org-element-at-point))))
+    (org-mark-element)
+    (delete-region (point) (mark))
+    (insert txt)))
+
+(org-element-contents (org-element-context))
+(car (org-element-contents (org-element-at-point)))
+
+(cdr (org-element-at-point))
+
+(defun vl ()
+  (interactive)
+  (let* ((elem (org-element-context))
+         (beg (org-element-property :contents-begin elem))
+         (end  (org-element-property :contents-end elem))
+         (link (org-element-property :path elem))
+         text
+         (link-begin (org-element-property :begin elem))
+         (link-end (org-element-property :end elem))
+         )
+    (if (and beg end)
+        (setq text (concat (buffer-substring-no-properties beg end)
+                           " "))
+      (setq text (concat link " ")))
+    (delete-region link-begin link-end)
+    (insert text)))
+
+;;; new start
+(defun org-xob-start ()
+  "Start the xob system: load state or initialize new. Open new day node."
+  (interactive)
+  (if (and
+       (if org-xob-on-p (progn (message "XOB: already started.") nil) t)
+       (and
+        (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
+        (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+        (message "XOB: hooks enabled."))
+       (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
+         (prog1 (message "XOB: directory not found, creating.")
+           (make-directory org-xob-dir t)))
+
+       ;; tables
+       ;; TODO info: number of nodes
+       (cl-loop for (k . v) in org-xob--tables 
+                do (if (file-exists-p (concat org-xob-dir v))
+                       (prog1 (message "XOB: found %s" v)
+                         (org-xob--load-object v k))
+                     (progn
+                       (message "XOB: hashtable %s missing, initializing new %s" v k)
+                       (set k (make-hash-table
+                               :test 'equal
+                               :size org-xob--table-size))))
+                finally return t)
+
+       (org-xob--register-files)
+
+       ;; TODO howto pack/unpack related vars 
+       ;; (filepointer fileprefix filelist filecounter)
+       ;; TODO 
+       ;; if any current missing, create OR are prior?
+       ;; info: #files of each type
+
+       (cl-loop for file in '(org-xob--KB-file org-xob--agenda-file org-xob--log-file) 
+                do (unless file 
+                     (message "XOB: current file %s missing, initializing new %s" file)
+                     (cond
+                      ((equal "org-xob--KB-file" (symbol-name file))
+                       (org-xob--new-file 'file)
+                       
+                       (set k (org-xob--new-KB-file)))
+                      ((equal "org-xob--KB-files" (symbol-name k))
+                       (set k nil))))
+                finally return t)
+       ;; del agenda
+       (and
+        (if (file-exists-p (concat org-xob-dir org-xob--agenda-file))
+            (message "XOB: found xob agenda file.")
+          (message "XOB: xob agenda file missing, initializing new.")
+        ;; reg agenda files
+        (unless (member org-xob--agenda-file org-agenda-files)
+          (push (concat org-xob-dir org-xob--agenda-file) org-agenda-files))))
+
+       ;; org-id add
+       (setq org-id-extra-files org-xob--KB-files)
+       ;; today
+       (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
+       (and
+        (or
+         (setq org-xob-today (gethash org-xob-today-string
+                                      org-xob--title-id))
+         (setq org-xob-today (org-xob--capture "ad")))
+        (save-window-excursion
+          (setq org-xob-today-buffer
+                (find-file (concat org-xob-dir org-xob--log-file))))
+        (message "XOB: Todays log entry opened.")))
+      (prog1
+          (setq org-xob-on-p t)
+        (message "XOB: started."))
+    (message "XOB: Unable to (re)start.")))
+
+;; (find-file "file.org")
+(setq zm "filename")
+(defun zzm (arg)
+  (eq arg 'zm)
+  )
+(zzm 'zm)
+
+(cond
+ ;; redo eq
+ ((eq 'KB filetype)
+  (push filename org-xob--KB-files)
+  (setq org-xob--kb-file-counter (+ 1 org-xob--kb-file-counter))
+  (if org-xob--KB-file (org-xob--uncurrent-file org-xob--KB-file))
+  (setq org-xob--KB-file filename)
+  filename)
+ ;; TODO same as above
+ ((eq 'log filetype ) (insert org-xob--log-header))
+ ;; org-xob--log-file
+ ((eq 'agenda filetype ) (insert org-xob--agenda-header))
+ ;; org-xob--agenda-file
+ ((eq 'archive filetype ) (insert org-xob--archive-header))
+ ;; org-xob--archive-files
+ )

@@ -1,5 +1,6 @@
 #+STARTUP: logreschedule logdone logrepeat logrefile logredeadline 
 #+PROPERTY: logdrawer
+#+PROPERTY: xob t 
 
 * Mauris ac felis vel velit tristique imperdiet.   
 :LOGBOOK:
@@ -59,3 +60,24 @@ CLOCK: [2021-01-08 Fri 06:44]--[2021-01-08 Fri 06:44] =>  0:00
 #+end_src
 
 #+RESULTS:
+*** df
+:PROPERTIES:
+:xob:      t
+:END:
+
+(equal "t" (org-entry-get (point) "xob"))
+(org-entry-get (point) "xob")
+
+[[https://twitter.com]]
+
+
+#+begin_src elisp
+(cdr (org-element-at-point))
+#+end_src
+
+(org-element-contents (org-element-at-point))
+
+(org-element-context)
+
+(org-element-at-point)
+  (paragraph (:begin 2316 :end 2439 :contents-begin 2316 :contents-end 2438 :post-blank 1 :post-affiliated 2316 :parent nil))
