@@ -1009,13 +1009,15 @@ Maybe useful for syncing."
     (save-excursion
       (dolist (kb-file-name org-xob--KB-files)
         (with-current-buffer (find-file kb-file-name)
-          (goto-char (point-min))
-          (while
-              (progn
-                (if (org-xob--is-node-p "" 'DEEPCHECK)
-                    (funcall func))
-                (outline-next-heading))))))))
+          (org-with-wide-buffer
+           (goto-char (point-min))
+           (while
+               (progn
+                 (if (org-xob--is-node-p "" 'DEEPCHECK)
+                     (funcall func))
+                 (outline-next-heading)))))))))
 
+;; TODO for new file mang
 (defun org-xob--save-state ()
   "Save exobrain state."
   (interactive)
