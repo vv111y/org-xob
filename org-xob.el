@@ -952,36 +952,56 @@ Maybe useful for syncing."
 
 
 ;;;;; xob Management
-(defun org-xob--register-files ()
-  "Scan through the xob directory, properly identify and register various xob files."
-  (setq org-xob--KB-files nil
-        org-xob--agenda-files nil
-        org-xob--log-files nil
-        org-xob--archive-files nil
-        org-xob--KB-file nil
-        org-xob--agenda-file nil
-        org-xob--log-file nil)
-  (mapc
-   (lambda (filename)
-     (with-temp-buffer
-       (insert-file-contents-literally filename nil 0 256 nil)
-       (let* ((x (org-collect-keywords '("PROPERTY")))
-              (current (if (member "xob-current-file t" x) t nil)))
-         (if (member "xob t" x)
-             (cond
-              ((member "xob-log t" x)
-               (push  filename org-xob--log-files)
-               (if current (setq org-xob--log-file filename)))
-              ((member "xob-agenda t" x)
-               (push  filename org-xob--agenda-files)
-               (if  current (setq org-xob--agedna-file filename)))
-              ((member "xob-archive t" x)
-               (push  filename org-xob--archive-files)
-               (if current (message "XOB: error, file %s has both archive and current-file flags set." filename)))
-              (t
-               (push filename org-xob--KB-files)
-               (if current (setq org-xob--KB-file filename))))))))
-   (directory-files org-xob-dir nil "\.org$" t)))
+
+;;;###autoload
+(defun org-xob-info ()
+  "Give basic information about the xob system."
+  (interactive)
+  ;; popup window
+  (display-buffer-use-some-window (get-buffer-create "XOB Stats")
+                                  '(display-buffer-below-selected))
+  (with-current-buffer "XOB Stats"
+    (erase-buffer)
+    (insert "XOB Statistics\n")
+    (insert "--------------\n")
+    (insert (concat "title-id-table entries:\t\t\t"
+                    (number-to-string (hash-table-count org-xob--title-id)) "\n"))
+    (insert (concat "id-title-table entries:\t\t\t"
+                    (number-to-string (hash-table-count org-xob--id-node)) "\n"))
+    (insert (concat "org-id entries:\t\t\t\t\t\t\t"
+                    (number-to-string (hash-table-count org-id-locations)) "\n"))
+    (insert (concat "KB files count:\t\t\t\t\t\t\t"
+                    (number-to-string (length org-xob--KB-files)) "\n"))
+    (insert (concat "current-KB-file:\t\t\t\t\t\t" org-xob--KB-file "\n"))))
+
+;;;###autoload
+(defun org-xob-rebuild ()
+  "Remakes xob data structures, traverse all nodes in all KB files in the xob directory."
+  (interactive)
+  ;; empty current structs, keep current kb file, logfile, agendafile
+  (setq org-xob--KB-files nil)
+  (clrhash org-xob--id-title)
+  (clrhash org-xob--title-id)
+  (message "XOB: cleared KB file list & hash tables.")
+  ;; rebuild kbfiles: goto dir, for each file: has name prefix, .org suffix -> add
+  (and
+   (org-xob--register-files)
+   (message "XOB: re-registered all KB files."))
+  (and
+   (org-id-update-id-locations)
+   (message "XOB: updated org-id hashtable."))
+  (message "XOB: traversing all KB files...")
+  (let (ID title)
+    (org-xob-visit-nodes
+     #'(lambda ()
+         (setq ID (org-id-get (point)))
+         (setq title (nth 4 (org-heading-components)))
+         (puthash ID title org-xob--id-title)
+         (puthash title ID org-xob--title-id))))
+  (message "XOB: finished rebuilding xob hashtables.")
+  (org-xob-info)
+  (org-xob--save-state)
+  (message "XOB: saved xob state."))
 
 (defun org-xob-visit-nodes (func)
   "Iterate over all KB nodes in all files. Apply function func to each node at point."
