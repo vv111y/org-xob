@@ -302,6 +302,12 @@
        (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
          (prog1 (message "XOB: directory not found, creating.")
            (make-directory org-xob-dir t)))
+       ;; TODO s
+       ;; register files
+       ;; if any current missing, create OR are prior?
+       ;; info: #files of each type
+       ;; open hashtables
+       ;; info: number of nodes
        (cl-loop for (k . v) in org-xob--objects
                 do (if (file-exists-p (concat org-xob-dir v))
                        (prog1 (message "XOB: found %s" v)
@@ -319,12 +325,14 @@
                                  :test 'equal
                                  :size org-xob--table-size))))))
                 finally return t)
+       ;; del
        (if (file-exists-p (concat org-xob-dir org-xob--log-file))
            (message "XOB: found log file.")
          (with-temp-file (concat org-xob-dir org-xob--log-file)
            (message "XOB: log file missing, initializing new.")
            (insert "") t))
        (setq org-id-extra-files org-xob--KB-files)
+       ;; do this in reg file
        (setq org-xob--kb-file-counter (length org-xob--KB-files))
        (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
        (and
@@ -336,12 +344,15 @@
           (setq org-xob-today-buffer
                 (find-file (concat org-xob-dir org-xob--log-file))))
         (message "XOB: Todays log entry opened."))
+
+       ;; del
        (and
         (if (file-exists-p (concat org-xob-dir org-xob--agenda-file))
             (message "XOB: found xob agenda file.")
           (with-temp-file (concat org-xob-dir org-xob--agenda-file)
             (message "XOB: xob agenda file missing, initializing new.")
             (insert "") t))
+        ;; reg agenda files
         (unless (member org-xob--agenda-file org-agenda-files)
           (push (concat org-xob-dir org-xob--agenda-file) org-agenda-files))))
       (prog1
@@ -1026,6 +1037,7 @@ Maybe useful for syncing."
   (cl-loop for (k . v) in org-xob--objects
            do (org-xob--save-object (concat org-xob-dir v) k)))
 
+;; TODO for new file mang
 (defun org-xob--load-state ()
   "Load exobrain state."
   (cl-loop for (k . v) in org-xob--objects
@@ -1046,85 +1058,65 @@ Maybe useful for syncing."
           (set symbol (read (current-buffer))))
       (error (message "Error loading file %s" file)))))
 
-(defun org-xob--new-KB-file ()
-  "Create new KB file for next node in the brain. Returns the filename."
-  (interactive)
+;; --- file management ---
+(defun org-xob--register-files ()
+  "Scan through the xob directory, properly identify and register various xob files."
+  (setq org-xob--KB-files nil
+        org-xob--agenda-files nil
+        org-xob--log-files nil
+        org-xob--archive-files nil
+        org-xob--KB-file nil
+        org-xob--agenda-file nil
+        org-xob--log-file nil)
+  (mapc
+   (lambda (filename)
+     (with-temp-buffer
+       (insert-file-contents-literally filename nil 0 256 nil)
+       (let* ((x (org-collect-keywords '("PROPERTY")))
+              (current (if (member "xob-current-file t" x) t nil)))
+         (if (member "xob t" x)
+             (cond
+              ((member "xob-log t" x)
+               (push  filename org-xob--log-files)
+               (if current (setq org-xob--log-file filename)))
+              ((member "xob-agenda t" x)
+               (push  filename org-xob--agenda-files)
+               (if  current (setq org-xob--agedna-file filename)))
+              ((member "xob-archive t" x)
+               (push  filename org-xob--archive-files)
+               (if current (message "XOB: error, file %s has both archive and current-file flags set." filename)))
+              (t
+               (push filename org-xob--KB-files)
+               (if current (setq org-xob--KB-file filename))))))))
+   (directory-files org-xob-dir nil "\.org$" t)))
+
+;; TODO for new file mang
+(defun org-xob--new-file (filepointer fileprefix filelist filecounter)
+  "creates a new file of filetype, pushes it to it's appropriate list,
+increases the file counter and sets it as current. Buffer remains open.
+Returns the filename."
   (let* ((filename (concat
-                   org-xob--KB-filename-prefix
-                   (format "%03d" org-xob--kb-file-counter)
-                   ".org"))
-         (fullname (concat org-xob-dir filename)))
-    (with-temp-file fullname
+                    fileprefix
+                    (format "%03d" filecounter)
+                    ".org")))
+    (find-file (concat org-xob-dir filename)
       (goto-char (point-min))
       (insert org-xob--xob-header)
-      (insert org-xob--current-header))
-    (push filename org-xob--KB-files)
-    (setq org-xob--kb-file-counter (+ 1 org-xob--kb-file-counter))
-    (save-excursion
-      (with-current-buffer (find-file-literally org-xob--KB-file)
-        (goto-char (point-min))
-        (re-search-forward "CURRENT")
-        (kill-whole-line 1)
-        (save-buffer)))
-    (setq org-xob--KB-file filename)
-    (save-excursion
-      (find-file-noselect fullname))
+      (insert org-xob--current-header)
+      (save-buffer))
+    (push filename filelist)
+    (setq filecounter (+ 1 filecounter))
+    (if filepointer (org-xob--uncurrent-file filepointer))
+    (setq filepointer filename)
     filename))
 
-;;;###autoload
-(defun org-xob-rebuild ()
-  "Remakes xob data structures, traverse all nodes in all KB files in the xob directory."
-  (interactive)
-  ;; empty current structs, keep current kb file, logfile, agendafile
-  (setq org-xob--KB-files nil)
-  (clrhash org-xob--id-title)
-  (clrhash org-xob--title-id)
-  (message "XOB: cleared KB file list & hash tables.")
-  ;; rebuild kbfiles: goto dir, for each file: has name prefix, .org suffix -> add
-  (and
-   (mapc
-    (lambda (filename)
-      ;; disable, allow for any filename
-      ;; (if (string-prefix-p org-xob--KB-filename-prefix filename))
-      (add-to-list 'org-xob--KB-files (concat org-xob-dir filename)))
-    (directory-files org-xob-dir nil "\.org$" t))
-   (message "XOB: re-registered all KB files."))
-  (and
-   (org-id-update-id-locations)
-   (message "XOB: updated org-id hashtable."))
-  (message "XOB: traversing all KB files...")
-  (let (ID title)
-    (org-xob-visit-nodes
-     #'(lambda ()
-         (setq ID (org-id-get (point)))
-         (setq title (nth 4 (org-heading-components)))
-         (puthash ID title org-xob--id-title)
-         (puthash title ID org-xob--title-id))))
-  (message "XOB: finished rebuilding xob hashtables.")
-  (org-xob-info)
-  (org-xob--save-state)
-  (message "XOB: saved xob state."))
-
-;;;###autoload
-(defun org-xob-info ()
-  "Give basic information about the xob system."
-  (interactive)
-  ;; popup window
-  (display-buffer-use-some-window (get-buffer-create "XOB Stats")
-                                  '(display-buffer-below-selected))
-  (with-current-buffer "XOB Stats"
-    (erase-buffer)
-    (insert "XOB Statistics\n")
-    (insert "--------------\n")
-    (insert (concat "title-id-table entries:\t\t\t"
-                    (number-to-string (hash-table-count org-xob--title-id)) "\n"))
-    (insert (concat "id-title-table entries:\t\t\t"
-                    (number-to-string (hash-table-count org-xob--id-node)) "\n"))
-    (insert (concat "org-id entries:\t\t\t\t\t\t\t"
-                    (number-to-string (hash-table-count org-id-locations)) "\n"))
-    (insert (concat "KB files count:\t\t\t\t\t\t\t"
-                    (number-to-string (length org-xob--KB-files)) "\n"))
-    (insert (concat "current-KB-file:\t\t\t\t\t\t" org-xob--KB-file "\n"))))
+(defun org-xob--uncurrent-file (file)
+  (save-excursion
+    (with-current-buffer (find-file-literally file)
+      (goto-char (point-min))
+      (re-search-forward "CURRENT")
+      (kill-whole-line 1)
+      (save-buffer))))
 
 ;;; End
 
