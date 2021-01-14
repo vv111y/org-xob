@@ -148,6 +148,7 @@
 ;; TODO remove when done
 ;; (setq org-xob-dir "~/xob/")
 ;; (setq org-xob--KB-files nil)
+(setq org-xob-dir "/Users/Will/DevWorkSpace/MyTools/Emacs/zettle/org-exobrain/xob/")
 
 (defvar org-xob-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
