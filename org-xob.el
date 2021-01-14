@@ -116,10 +116,9 @@
 (defvar org-xob-today nil
   "The current day node.")
 
-(defvar org-xob--objects '((org-xob--title-id . "title-id-table")
-                                (org-xob--id-title . "id-node-table")
-                                (org-xob--KB-files . "KB-files")
-                                (org-xob--KB-file . "current-KB-file")))
+;; TODO for new file mang
+(defvar org-xob--tables '((org-xob--title-id . "title-id-table")
+                                (org-xob--id-title . "id-node-table")))
 
 ;;;;; knowledge base sources
 
@@ -156,6 +155,15 @@
 (defvar org-xob--KB-filename-prefix "KB-file-"
   "suffix for KB filenames. A simple filecount value is appended for a new name")
 
+(defvar org-xob--log-filename-prefix "log-file-"
+  "suffix for log filenames. A simple filecount value is appended for a new name")
+
+(defvar org-xob--agenda-filename-prefix "agenda-file-"
+  "suffix for agenda filenames. A simple filecount value is appended for a new name")
+
+(defvar org-xob--archive-filename-prefix "archive-file-"
+  "suffix for archive filenames. A simple filecount value is appended for a new name")
+
 ;; lists of the xob files
 (defvar org-xob--KB-files nil
   "List of all knowledge base files.")
@@ -169,7 +177,7 @@
 (defvar org-xob--archive-files nil
   "List of all xob archive files.")
 
-;; the currently active file
+;; the currently active files
 (defvar org-xob--KB-file nil
   "The currently active KB file to store previous versions of nodes.")
 
@@ -179,6 +187,7 @@
 (defvar org-xob--agenda-file "xob-agendafile.org"
   "The current xob agenda file where all activity nodes other than day nodes go.")
 
+;; file header strings
 (defvar org-xob--xob-header "#+PROPERTY: xob t\n")
 (defvar org-xob--log-header "#+PROPERTY: xob-log t\n")
 (defvar org-xob--agenda-header "#+PROPERTY: xob-agenda t\n")
