@@ -335,6 +335,8 @@
        (setq org-id-extra-files (append org-xob--KB-files
                                          org-xob--agenda-files
                                          org-xob--log-files))
+       (push org-agenda-files (append org-xob--agenda-files
+                                      org-xob--log-files))
        (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
        (and (or
              (setq org-xob-today (gethash org-xob-today-string
