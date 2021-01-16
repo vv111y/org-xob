@@ -844,7 +844,7 @@ Deepcheck only works on heading at point, any ID argument is ignored."
   "Both a hook function and for general node creation. If orgmode 'heading' is given,
 then convert it into a new node in place. Otherwise it is assumed to be called
 as a capture hook function."
-  (if (org-capture-get :xob-node)
+  (if (or (org-capture-get :xob-node) heading)
       (let ((ID (org-id-get-create))
             (title (nth 4 (org-heading-components)))
             type node)

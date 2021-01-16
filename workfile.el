@@ -2269,3 +2269,49 @@ only the description"
 
 (cl-loop for (x y z) in '((x1 y1 z1) (x2 y2 z2) (x3 y3 z3))
          do (message "%s %s %s" x y z))
+
+(if (not (zerop (length file)))
+    (print "yep"))
+
+(equal (concat org-xob-dir org-xob--KB-file)
+    org-xob-dir)
+
+(bvm)
+(defun bvm ()
+  (cl-mapcar #'(lambda (file prefix filelist)
+                 (let ((filename (concat org-xob-dir (symbol-value file))))
+                   (if (and (file-exists-p filename)
+                            (not (equal filename org-xob-dir)))
+                       (progn (find-file-noselect filename)
+                              (message "XOB: found file for %s" filename))
+                     (message "XOB: current file for %s missing, initializing new." 'file)
+                     ;; TODO check if args evaluates to symbols
+                     (org-xob--new-file file prefix filelist))))
+             '(org-xob--KB-file
+               org-xob--agenda-file
+               org-xob--log-file
+               org-xob--archive-file)
+             '(org-xob--KB-filename-prefix
+               org-xob--agenda-filename-prefix
+               org-xob--log-filename-prefix
+               org-xob--archive-filename-prefix)
+             '(org-xob--KB-files
+               org-xob--agenda-files
+               org-xob--log-files
+               org-xob--archive-files)))
+
+(setq veeem "(setq veer `(\"nn\" ,(+ 5 4)))")
+(with-temp-buffer
+  (insert veeem)
+  (eval-buffer))
+
+(with-temp-buffer
+  (insert-file-contents "xob-templates")
+  ;; (goto-char (point-min))
+  ;; (read (current-buffer))
+  ;; (emacs-lisp-mode)
+  (eval-buffer)
+  )
+(load-file )
+(org-xob--register-files)
+org-xob--templates
