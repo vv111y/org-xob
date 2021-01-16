@@ -284,77 +284,33 @@
 ;;;; Commands
 ;;;;; Main Commands
 ;;;###autoload
-(defun org-xob-start ()
-  "Start the xob system: load state or initialize new. Open new day node."
-  (interactive)
-  (if (and
-       (if org-xob-on-p (progn (message "XOB: already started.") nil) t)
-       (and
-        (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
-        (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
-        (message "XOB: hooks enabled."))
-       (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
-         (prog1 (message "XOB: directory not found, creating.")
-           (make-directory org-xob-dir t)))
-       (cl-mapcar #'(lambda (table filename)
-                      (if (file-exists-p (concat org-xob-dir filename))
-                          (prog1 (message "XOB: found %s" filename)
-                            (org-xob--load-object filename table))
-                        (progn
-                          (message "XOB: hashtable %s missing, initializing new %s" filename table)
-                          (set table (make-hash-table
-                                  :test 'equal
-                                  :size org-xob--table-size)))))
-                  '(org-xob--title-id org-xob--id-title)
-                  '("title-id-table" "id-title-table"))
-       (org-xob--register-files)
-       (cl-mapcar #'(lambda (file prefix filelist)
-                      (let ((filename (concat org-xob-dir (symbol-value file))))
-                        (if (and (file-exists-p filename)
-                                 (not (equal filename org-xob-dir)))
-                            (progn (find-file-noselect filename)
-                                   (message "XOB: found file for %s" filename))
-                          (message "XOB: current file for %s missing, initializing new." file)
-                          ;; TODO check if args evaluates to symbols
-                          (org-xob--new-file file prefix filelist))))
-                  '(org-xob--KB-file
-                    org-xob--agenda-file
-                    org-xob--log-file
-                    org-xob--archive-file)
-                  '(org-xob--KB-filename-prefix
-                    org-xob--agenda-filename-prefix
-                    org-xob--log-filename-prefix
-                    org-xob--archive-filename-prefix)
-                  '(org-xob--KB-files
-                    org-xob--agenda-files
-                    org-xob--log-files
-                    org-xob--archive-files))
-       ;; TODO should it just be current log file?
-       (setq org-id-extra-files (append org-xob--KB-files
-                                        org-xob--agenda-files
-                                        org-xob--log-files))
-       (setq org-agenda-files (append org-agenda-files
-                                      org-xob--agenda-files
-                                      org-xob--log-files))
-       (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
-       (and (or
-             (setq org-xob-today (gethash org-xob-today-string
-                                          org-xob--title-id))
-             (setq org-xob-today (org-xob--capture "ad")))
-            (save-window-excursion
-              (save-excursion
-                (org-id-goto org-xob-today)
-                (setq org-xob-today-buffer (current-buffer))))
-            (message "XOB: Todays log entry opened.")))
-      (prog1
+(defun org-xob-start (&optional arg)
+  "Start the xob system: load state or initialize new. Open new day node.
+Calling with C-u will force a restart."
+  (interactive "P")
+  (let ((org-xob-on-p (if (equal arg '(4)) nil)))
+    (if (and
+         (if org-xob-on-p (progn (message "XOB: already started.") nil) t)
+         (and
+          (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
+          (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+          (message "XOB: hooks enabled."))
+         (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
+           (prog1 (message "XOB: directory not found, creating.")
+             (make-directory org-xob-dir t)))
+         (org-xob--load-state)
+         (org-xob--register-files)
+         (org-xob--process-files)
+         (org-xob--open-today))
+        (progn
           (setq org-xob-on-p t)
-        (message "XOB: started.")
-        (org-xob-info))
-    (message "XOB: Unable to (re)start.")))
+          (message "XOB: started.")
+          (org-xob-info))
+      (message "XOB: Unable to (re)start."))))
 
 ;;;###autoload
 (defun org-xob-stop ()
-  "Stop xob system: save all state and close active buffers."
+  "Stop xob system: save all state and cleanup."
   (interactive)
   (if org-xob-on-p
       (progn
@@ -796,6 +752,19 @@ Otherwise apply to source at point."
        (message "not a xob source.")))))
 
 ;;;;; Activity
+(defun org-xob--open-today ()
+  "Open today node for logging."
+  (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
+  (and (or
+        (setq org-xob-today (gethash org-xob-today-string
+                                     org-xob--title-id))
+        (setq org-xob-today (org-xob--capture "ad")))
+       (save-window-excursion
+         (save-excursion
+           (org-id-goto org-xob-today)
+           (setq org-xob-today-buffer (current-buffer))))
+       (message "XOB: Todays log entry opened.")))
+
 ;;;;;; Clocking
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
@@ -1082,14 +1051,7 @@ Maybe useful for syncing."
 ;; --- file management ---
 (defun org-xob--register-files ()
   "Scan through the xob directory, properly identify and register various xob files."
-  (setq org-xob--KB-files nil
-        org-xob--agenda-files nil
-        org-xob--log-files nil
-        org-xob--archive-files nil
-        org-xob--KB-file nil 
-        org-xob--agenda-file nil 
-        org-xob--log-file nil 
-        org-xob--archive-file nil)
+  (org-xob--clear-file-variables)
   (mapc
    (lambda (filename)
      (with-temp-buffer
@@ -1113,6 +1075,37 @@ Maybe useful for syncing."
    (directory-files org-xob-dir 'full "\.org$" t))
   t)
 
+(defun org-xob--process-files ()
+  "Called after files have been regisetered. Properly setup various file variables.
+If necessary create new files."
+  (cl-mapcar #'(lambda (file prefix filelist)
+                 (let ((filename (concat org-xob-dir (symbol-value file))))
+                   (if (and (file-exists-p filename)
+                            (not (equal filename org-xob-dir)))
+                       (progn (find-file-noselect filename)
+                              (message "XOB: found file for %s" filename))
+                     (message "XOB: current file for %s missing, initializing new." file)
+                     (org-xob--new-file file prefix filelist))))
+             '(org-xob--KB-file
+               org-xob--agenda-file
+               org-xob--log-file
+               org-xob--archive-file)
+             '(org-xob--KB-filename-prefix
+               org-xob--agenda-filename-prefix
+               org-xob--log-filename-prefix
+               org-xob--archive-filename-prefix)
+             '(org-xob--KB-files
+               org-xob--agenda-files
+               org-xob--log-files
+               org-xob--archive-files))
+  (setq org-id-extra-files (append org-xob--KB-files
+                                   org-xob--agenda-files
+                                   org-xob--log-files))
+  (setq org-agenda-files (append org-agenda-files
+                                 org-xob--agenda-files
+                                 org-xob--log-files))
+  t)
+
 (defun org-xob--new-file (filepointer fileprefix filelist)
   "creates a new file, pushes it to it's appropriate list and sets it as current.
 Buffer remains open. Returns the filename."
@@ -1131,6 +1124,17 @@ Buffer remains open. Returns the filename."
     (if (eval filepointer) (org-xob--uncurrent-file filepointer))
     (set filepointer filename)
     filename))
+
+(defun org-xob--clear-file-variables ()
+  "All file associated variables set to nil."
+  (setq org-xob--KB-files nil
+        org-xob--agenda-files nil
+        org-xob--log-files nil
+        org-xob--archive-files nil
+        org-xob--KB-file nil 
+        org-xob--agenda-file nil 
+        org-xob--log-file nil 
+        org-xob--archive-file nil))
 
 (defun org-xob--uncurrent-file (file)
   (save-excursion
