@@ -1039,20 +1039,30 @@ Maybe useful for syncing."
                      (funcall func))
                  (outline-next-heading)))))))))
 
-;; TODO for new file mang
 (defun org-xob--save-state ()
-  "Save exobrain state."
-  (interactive)
+  "Save exobrain state. For current version this means the lookup hashtables only."
   (unless (file-directory-p org-xob-dir)
       (make-directory org-xob-dir))
-  (cl-loop for (k . v) in org-xob--objects
-           do (org-xob--save-object (concat org-xob-dir v) k)))
+  (cl-mapcar #'(lambda (table filename)
+                 (if (file-exists-p (concat org-xob-dir filename)))
+                 (prog1 (message "XOB: found %s" filename))
+                 (org-xob--save-object (concat org-xob-dir filename) table))
+             '(org-xob--title-id org-xob--id-title)
+             '("title-id-table" "id-title-table")))
 
-;; TODO for new file mang
 (defun org-xob--load-state ()
-  "Load exobrain state."
-  (cl-loop for (k . v) in org-xob--objects
-           do (org-xob--load-object (concat org-xob-dir v) k)))
+  "Load exobrain state. For current version this means the lookup hashtables only."
+  (cl-mapcar #'(lambda (table filename)
+                 (if (file-exists-p (concat org-xob-dir filename))
+                     (prog1 (message "XOB: found %s" filename)
+                       (org-xob--load-object filename table))
+                   (progn
+                     (message "XOB: hashtable %s missing, initializing new %s" filename table)
+                     (set table (make-hash-table
+                                 :test 'equal
+                                 :size org-xob--table-size)))))
+             '(org-xob--title-id org-xob--id-title)
+             '("title-id-table" "id-title-table")))
 
 (defun org-xob--save-object (file data)
   "save emacs object. "
