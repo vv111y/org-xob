@@ -319,9 +319,19 @@ Calling with C-u will force a restart."
           (save-buffer)
           (kill-buffer))
         (setq org-xob-today nil)
+        (setq org-id-extra-files
+              (set-difference org-id-extra-files
+                              (append org-xob--KB-files
+                                      org-xob--agenda-files
+                                      org-xob--log-files)))
+        (setq org-agenda-files
+              (set-difference org-agenda-files
+                              (append org-agenda-files
+                                      org-xob--agenda-files
+                                      org-xob--log-files)))
+        (org-xob--clear-file-variables)
         (remove-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (remove-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
-        (setq org-id-extra-files nil)
         (setq org-xob-on-p nil))))
 
 ;;;###autoload

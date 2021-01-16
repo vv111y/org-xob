@@ -2057,12 +2057,8 @@ source is a plist that describes the content source."
 
 (setq org-xob-on-p nil)
 (org-xob--load-object "id-node-table" 'org-xob--id-title)
-(universal-argument) 
-(defun helm-M-x--notify-prefix-arg ()
-  ;; Notify a prefix-arg set AFTER calling M-x.
-  (when prefix-arg
-    (with-helm-window
-      (helm-display-mode-line (helm-get-current-source) 'force))))
+
+;;; more
 (pop org-agenda-files)
 (insert (concat "\npath: " org-xob-path "\n"))
 
@@ -2276,35 +2272,12 @@ only the description"
 (equal (concat org-xob-dir org-xob--KB-file)
     org-xob-dir)
 
-(bvm)
-(defun bvm ()
-  (cl-mapcar #'(lambda (file prefix filelist)
-                 (let ((filename (concat org-xob-dir (symbol-value file))))
-                   (if (and (file-exists-p filename)
-                            (not (equal filename org-xob-dir)))
-                       (progn (find-file-noselect filename)
-                              (message "XOB: found file for %s" filename))
-                     (message "XOB: current file for %s missing, initializing new." 'file)
-                     ;; TODO check if args evaluates to symbols
-                     (org-xob--new-file file prefix filelist))))
-             '(org-xob--KB-file
-               org-xob--agenda-file
-               org-xob--log-file
-               org-xob--archive-file)
-             '(org-xob--KB-filename-prefix
-               org-xob--agenda-filename-prefix
-               org-xob--log-filename-prefix
-               org-xob--archive-filename-prefix)
-             '(org-xob--KB-files
-               org-xob--agenda-files
-               org-xob--log-files
-               org-xob--archive-files)))
-
 (setq veeem "(setq veer `(\"nn\" ,(+ 5 4)))")
 (with-temp-buffer
   (insert veeem)
   (eval-buffer))
 
+;;; templates in file
 (with-temp-buffer
   (insert-file-contents "xob-templates")
   ;; (goto-char (point-min))
@@ -2315,3 +2288,19 @@ only the description"
 (load-file )
 (org-xob--register-files)
 org-xob--templates
+
+;;; C-u 
+(defun prearg (&optional arg)
+  (interactive "P")
+  ;; (print arg)
+  (if (equal arg '(4))
+      (print "arrrg")
+    (print "regular"))
+  )
+;;; remove list from list
+(setq al '(a b c d e f g)
+      bl '(d e f))
+
+(mapcar #'(lambda (el) (remove el al))
+        bl)
+(set-difference al bl)
