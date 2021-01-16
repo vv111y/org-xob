@@ -980,7 +980,7 @@ Maybe useful for syncing."
     (insert (concat "title-id-table entries:\t\t\t"
                     (number-to-string (hash-table-count org-xob--title-id)) "\n"))
     (insert (concat "id-title-table entries:\t\t\t"
-                    (number-to-string (hash-table-count org-xob--id-node)) "\n"))
+                    (number-to-string (hash-table-count org-xob--id-title)) "\n"))
     (insert (concat "org-id entries:\t\t\t\t\t\t\t"
                     (number-to-string (hash-table-count org-id-locations)) "\n"))
     (insert (concat "KB files count:\t\t\t\t\t\t\t"
