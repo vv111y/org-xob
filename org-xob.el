@@ -111,14 +111,8 @@
 
 (defvar org-xob--id-title nil)
 
-;;;;; state
-
 (defvar org-xob-today nil
   "The current day node.")
-
-;; TODO for new file mang
-(defvar org-xob--tables '((org-xob--title-id . "title-id-table")
-                                (org-xob--id-title . "id-node-table")))
 
 ;;;;; knowledge base sources
 
@@ -302,23 +296,27 @@
        (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
          (prog1 (message "XOB: directory not found, creating.")
            (make-directory org-xob-dir t)))
-       (cl-loop for (k v) in org-xob--tables
-                do (if (file-exists-p (concat org-xob-dir v))
-                       (prog1 (message "XOB: found %s" v)
-                         (org-xob--load-object v k))
-                     (progn
-                       (message "XOB: hashtable %s missing, initializing new %s" v k)
-                       (set k (make-hash-table
-                               :test 'equal
-                               :size org-xob--table-size))))
-                finally return t)
+       (cl-mapcar #'(lambda (table filename)
+                      (if (file-exists-p (concat org-xob-dir filename))
+                          (prog1 (message "XOB: found %s" filename)
+                            (org-xob--load-object filename table))
+                        (progn
+                          (message "XOB: hashtable %s missing, initializing new %s" filename table)
+                          (set table (make-hash-table
+                                  :test 'equal
+                                  :size org-xob--table-size)))))
+                  '(org-xob--title-id org-xob--id-title)
+                  '("title-id-table" "id-title-table"))
        (org-xob--register-files)
        (cl-mapcar #'(lambda (file prefix filelist)
-                      (if (find-file-noselect (concat org-xob-dir file)) ;; TODO need value?
-                          (message "XOB: found file for %s" file)
-                        (message "XOB: current file for %s missing, initializing new." 'file)
-                        ;; TODO check if args evaluates to symbols
-                        (org-xob--new-file file prefix filelist)))
+                      (let ((filename (concat org-xob-dir (symbol-value file))))
+                        (if (and (file-exists-p filename)
+                                 (not (equal filename org-xob-dir)))
+                            (progn (find-file-noselect filename)
+                                   (message "XOB: found file for %s" filename))
+                          (message "XOB: current file for %s missing, initializing new." file)
+                          ;; TODO check if args evaluates to symbols
+                          (org-xob--new-file file prefix filelist))))
                   '(org-xob--KB-file
                     org-xob--agenda-file
                     org-xob--log-file
@@ -333,9 +331,10 @@
                     org-xob--archive-files))
        ;; TODO should it just be current log file?
        (setq org-id-extra-files (append org-xob--KB-files
-                                         org-xob--agenda-files
-                                         org-xob--log-files))
-       (push org-agenda-files (append org-xob--agenda-files
+                                        org-xob--agenda-files
+                                        org-xob--log-files))
+       (setq org-agenda-files (append org-agenda-files
+                                      org-xob--agenda-files
                                       org-xob--log-files))
        (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
        (and (or
@@ -1067,9 +1066,10 @@ Maybe useful for syncing."
         org-xob--agenda-files nil
         org-xob--log-files nil
         org-xob--archive-files nil
-        org-xob--KB-file nil
-        org-xob--agenda-file nil
-        org-xob--log-file nil)
+        org-xob--KB-file nil 
+        org-xob--agenda-file nil 
+        org-xob--log-file nil 
+        org-xob--archive-file nil)
   (mapc
    (lambda (filename)
      (with-temp-buffer
@@ -1090,24 +1090,26 @@ Maybe useful for syncing."
               (t
                (push filename org-xob--KB-files)
                (if current (setq org-xob--KB-file filename))))))))
-   (directory-files org-xob-dir nil "\.org$" t)))
+   (directory-files org-xob-dir 'full "\.org$" t))
+  t)
 
-;; TODO for new file mang
 (defun org-xob--new-file (filepointer fileprefix filelist)
   "creates a new file, pushes it to it's appropriate list and sets it as current.
 Buffer remains open. Returns the filename."
   (let* ((filename (concat
-                    fileprefix
-                    (format "%03d" (+ 1 (length filelist)))
+                    (symbol-value fileprefix)
+                    (format "%03d" (+ 1 (length (eval filelist))))
                     ".org")))
-    (find-file (concat org-xob-dir filename)
-      (goto-char (point-min))
-      (insert org-xob--xob-header)
-      (insert org-xob--current-header)
-      (save-buffer))
-    (push filename filelist)
-    (if filepointer (org-xob--uncurrent-file filepointer))
-    (setq filepointer filename)
+    (save-window-excursion
+      (save-excursion
+        (find-file (concat org-xob-dir filename))
+        (goto-char (point-min))
+        (insert org-xob--xob-header)
+        (insert org-xob--current-header)
+        (save-buffer)))
+    (add-to-list filelist filename)
+    (if (eval filepointer) (org-xob--uncurrent-file filepointer))
+    (set filepointer filename)
     filename))
 
 (defun org-xob--uncurrent-file (file)
