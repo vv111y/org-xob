@@ -2304,3 +2304,5 @@ org-xob--templates
 (mapcar #'(lambda (el) (remove el al))
         bl)
 (set-difference al bl)
+
+(org-xob--eval-capture-templates)
