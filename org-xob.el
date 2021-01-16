@@ -433,16 +433,22 @@ If called with optional ID argument, then remove the node with that ID."
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
-  "Convenience function to convert current content into xob KB nodes."
+  "Convenience function to convert current subtree into a xob KB node."
   (interactive)
   (unless (org-xob--is-node-p)
     (org-xob--new-node (point))
     (let ((filename (buffer-file-name)))
       (unless (member filename org-xob--KB-files)
+        (save-excursion
+          (goto-char (point-min))
+          (insert org-xob--xob-header))
+        (save-buffer)
         (push filename org-xob--KB-files)))
-    (org-xob--save-object
-     (alist-get 'org-xob--KB-files org-xob--objects)
-     org-xob--KB-files)))
+    ;; old way, obsolete
+    ;; (org-xob--save-object
+    ;;  (alist-get 'org-xob--KB-files org-xob--objects)
+    ;;  org-xob--KB-files)
+    ))
 
 ;;;###autoload
 (defun org-xob-add-node-labels ()
@@ -487,13 +493,6 @@ If called with optional ID argument, then remove the node with that ID."
           (setq org-xob--sideline-window nil))
       (setq org-xob--sideline-window
             (split-window-right)))))
-
-;;;###autoload
-(defun org-xob-toggle-context ()
-  "Toggles display of the contextual side window."
-  (interactive)
-  ;; (display-buffer-same-window org-xob--context-buffer nil)))))
-  )
 
 ;;;;; KB Context Commands
 
