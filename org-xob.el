@@ -315,7 +315,7 @@ Calling with C-u will force a restart."
   (interactive)
   (if org-xob-on-p
       (progn
-        (org-xob-save-state)
+        (org-xob--save-state)
         (with-current-buffer org-xob-today-buffer
           (save-buffer)
           (kill-buffer))
@@ -1073,14 +1073,13 @@ Maybe useful for syncing."
   (unless (file-directory-p org-xob-dir)
       (make-directory org-xob-dir))
   (cl-mapcar #'(lambda (table filename)
-                 (if (file-exists-p (concat org-xob-dir filename)))
-                 (prog1 (message "XOB: found %s" filename))
                  (org-xob--save-object (concat org-xob-dir filename) table))
              '(org-xob--title-id org-xob--id-title)
              '("title-id-table" "id-title-table")))
 
 (defun org-xob--load-state ()
-  "Load exobrain state. For current version this means the lookup hashtables only."
+  "Load exobrain state. For current version this means the lookup hashtables only.
+If there are no saved tables, then create new empty ones."
   (cl-mapcar #'(lambda (table filename)
                  (if (file-exists-p (concat org-xob-dir filename))
                      (prog1 (message "XOB: found %s" filename)
