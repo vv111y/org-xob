@@ -623,6 +623,17 @@ If ID is given, then convert todo with that ID."
         ;; TODO move to a KB file?
         )
         (message: "XOB: todo entry is not done."))))
+
+(defun org-xob-todo-at-point ()
+  "create a todo entry for node at point. Todo is filed in current inbox."
+  (interactive)
+  (org-super-links-store-link)
+  (save-excursion
+    (org-id-goto (org-xob--capture "tf"))
+    (org-end-of-meta-data)
+    (insert "Re:\n")
+    (org-super-links--insert-link)))
+
 ;;;; Backend
 ;;;;; Buffer Functions
 
