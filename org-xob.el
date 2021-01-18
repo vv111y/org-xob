@@ -246,15 +246,25 @@
 
 ;;;;; Keymaps
 
-;; This technique makes it easier and less verbose to define keymaps.
-
 (defvar org-xob-map
   ;; This makes it easy and much less verbose to define keys
   (let ((map (make-sparse-keymap "org-xob-map"))
         (maps (list
                ;; Mappings go here, e.g.:
-               ;; C-tab free
-               "C-RET" #'(lambda () (message "Override!"))
+               ;; "C-RET" #'(lambda () (message "Override!"))
+               )))
+    (cl-loop for (key fn) on maps by #'cddr
+             do (progn
+                  (when (stringp key)
+                    (setq key (kbd key)))
+                  (define-key map key fn)))
+    map))
+
+(defvar org-xob-context-mode-map
+  ;; This makes it easy and much less verbose to define keys
+  (let ((map (make-sparse-keymap "org-xob-context-mode-map"))
+        (maps (list
+               ;; "C-RET" #'(lambda () (message "Override!"))
                )))
     (cl-loop for (key fn) on maps by #'cddr
              do (progn
@@ -266,9 +276,20 @@
 ;;;; Minor Mode & Macros
 
 ;;;###autoload
-(define-minor-mode org-xob-minor-mode
+(define-minor-mode org-xob-mode
   "Org-Exobrain Minor Mode. For this release it is only used in the context buffer."
   :lighter " xob"
+  :keymap  (let ((map (make-sparse-keymap))) map)
+  :group 'org-xob
+  :require 'org-xob
+  (progn
+    (unless org-xob-on-p (org-xob-start))
+    ))
+
+;;;###autoload
+(define-minor-mode org-xob-context-mode
+  "Org-Exobrain Minor Mode. For this release it is only used in the context buffer."
+  :lighter " xobc"
   :keymap  (let ((map (make-sparse-keymap))) map)
   :group 'org-xob
   :require 'org-xob
@@ -627,7 +648,7 @@ If ID is given, then convert todo with that ID."
                 org-xob--source-backlinks org-xob--source-backlinks
                 org-xob--source-forlinks org-xob--source-forlinks)
     (add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
-    (org-xob-minor-mode 1)
+    (org-xob-mode 1)
     (org-xob--make-context-buffer org-xob-short-title
                                   (current-buffer)
                                   org-xob--source-backlinks
@@ -638,6 +659,7 @@ If ID is given, then convert todo with that ID."
 local variables for the edit buffer and the back and for links source objects."
   (with-current-buffer org-xob--context-buffer
     (org-mode)
+    (org-xob-context-mode 1)
     (setq-local org-xob--edit-buffer edit-buffer
                 org-xob--source-backlinks backlinks
                 org-xob--source-forlinks forlinks)))
