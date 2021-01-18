@@ -69,7 +69,6 @@
 ;;; Code:
 
 ;;;; Requirements
-;;;; Requirements
 (require 'org)
 (require 'org-element)
 (require 'org-id)
@@ -1249,7 +1248,7 @@ Buffer remains open. Returns the filename."
 
 (defun org-xob--uncurrent-file (file)
   (save-excursion
-    (with-current-buffer (find-file-literally (eval file))
+    (with-current-buffer (find-file (eval file))
       (goto-char (point-min))
       (re-search-forward "CURRENT")
       (kill-whole-line 1)
