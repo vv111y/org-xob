@@ -647,6 +647,22 @@ local variables for the edit buffer and the back and for links source objects."
   (with-current-buffer org-xob--context-buffer
     (kill-buffer)))
 
+(defun org-xob--update-modified-time ()
+  "Hook to update the modified timestamp of all nodes that are being edited when saving.
+ID should be buffer local in a xob edit buffer."
+  (save-window-excursion
+    (save-excursion
+      (dolist (buf org-xob--edit-buffers)
+        (with-current-buffer buf 
+          (goto-char (point-min))
+          (re-search-forward ID)
+          (org-back-to-heading t)
+          (let ((mdate (org-entry-get (point) "MODIFIED")))
+            (if mdate
+                (org-entry-put (point) "MODIFIED"
+                               (concat "[" (format-time-string "%F %a %R") "]"))))))
+      nil)))
+
 ;;;;; Contexts Functions
 
 (defun org-xob--node-get-link-entries (source)
