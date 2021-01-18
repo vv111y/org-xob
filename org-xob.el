@@ -606,26 +606,32 @@ If ID is given, then convert todo with that ID."
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
   (let ((short-title (truncate-string-to-width title 20)))
-    (if (get-buffer short-title)
-        (kill-buffer short-title))
+    ;; (if (get-buffer short-title)
+    ;;     (kill-buffer short-title))
     (save-excursion
       (save-window-excursion
         (org-id-goto ID)
-        (clone-indirect-buffer-other-window short-title t)
-        (org-narrow-to-subtree)))
+        (unless org-xob--edit-buffers
+          (setq-local org-xob--edit-buffers nil))
+        (add-hook 'write-contents-functions #'org-xob--update-modified-time nil t)
+        (add-to-list 'org-xob-edit-buffers (clone-indirect-buffer short-title t))
+        (re-search-forward ID)
+        (org-back-to-heading t)
+        (org-narrow-to-subtree)
+        ))
     (switch-to-buffer short-title)
-    (setq-local ID ID title title org-xob-short-title short-title))
-  (setq-local log-entry (org-xob--insert-link-header ID title org-xob-today)
-              org-xob--context-buffer (get-buffer-create (concat  "*context-" title))
-              org-xob--sideline-window nil
-              org-xob--source-backlinks org-xob--source-backlinks
-              org-xob--source-forlinks org-xob--source-forlinks)
-  (add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
-  (org-xob-minor-mode 1)
-  (org-xob--make-context-buffer org-xob-short-title
-                                (current-buffer)
-                                org-xob--source-backlinks
-                                org-xob--source-forlinks))
+    (setq-local ID ID title title org-xob-short-title short-title
+                log-entry (org-xob--insert-link-header ID title org-xob-today)
+                org-xob--context-buffer (get-buffer-create (concat  "*context-" title))
+                org-xob--sideline-window nil
+                org-xob--source-backlinks org-xob--source-backlinks
+                org-xob--source-forlinks org-xob--source-forlinks)
+    (add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
+    (org-xob-minor-mode 1)
+    (org-xob--make-context-buffer org-xob-short-title
+                                  (current-buffer)
+                                  org-xob--source-backlinks
+                                  org-xob--source-forlinks)))
 
 (defun org-xob--make-context-buffer (title edit-buffer backlinks forlinks)
   "Create context buffer, leave it empty by default. set title and buffer
