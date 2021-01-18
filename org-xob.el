@@ -1136,24 +1136,25 @@ If there are no saved tables, then create new empty ones."
   (org-xob--clear-file-variables)
   (mapc
    (lambda (filename)
-     (with-temp-buffer
-       (insert-file-contents-literally filename nil 0 256 nil)
-       (let* ((x (org-collect-keywords '("PROPERTY")))
-              (current (if (member "xob-current-file t" x) t nil)))
-         (if (member "xob t" x)
-             (cond
-              ((member "xob-log t" x)
-               (push  filename org-xob--log-files)
-               (if current (setq org-xob--log-file filename)))
-              ((member "xob-agenda t" x)
-               (push  filename org-xob--agenda-files)
-               (if  current (setq org-xob--agedna-file filename)))
-              ((member "xob-archive t" x)
-               (push  filename org-xob--archive-files)
-               (if current (message "XOB: error, file %s has both archive and current-file flags set." filename)))
-              (t
-               (push filename org-xob--KB-files)
-               (if current (setq org-xob--KB-file filename))))))))
+     (unless (string-match-p "#" filename) 
+       (with-temp-buffer
+         (insert-file-contents-literally filename nil 0 1024 nil)
+         (let* ((x (car (org-collect-keywords '("PROPERTY"))))
+                (current (if (member "xob-current-file t" x) t nil)))
+           (if (member "xob t" x)
+               (cond
+                ((member "xob-log t" x)
+                 (push  filename org-xob--log-files)
+                 (if current (setq org-xob--log-file filename)))
+                ((member "xob-agenda t" x)
+                 (push  filename org-xob--agenda-files)
+                 (if  current (setq org-xob--agedna-file filename)))
+                ((member "xob-archive t" x)
+                 (push  filename org-xob--archive-files)
+                 (if current (message "XOB: error, file %s has both archive and current-file flags set." filename)))
+                (t
+                 (push filename org-xob--KB-files)
+                 (if current (setq org-xob--KB-file filename)))))))))
    (directory-files org-xob-dir 'full "\.org$" t))
   t)
 
@@ -1220,7 +1221,7 @@ Buffer remains open. Returns the filename."
 
 (defun org-xob--uncurrent-file (file)
   (save-excursion
-    (with-current-buffer (find-file-literally file)
+    (with-current-buffer (find-file-literally (eval file))
       (goto-char (point-min))
       (re-search-forward "CURRENT")
       (kill-whole-line 1)
