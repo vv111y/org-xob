@@ -69,11 +69,12 @@
 ;;; Code:
 
 ;;;; Requirements
-
+;;;; Requirements
 (require 'org)
 (require 'org-element)
 (require 'org-id)
 (require 'org-ql)
+(require 'cl)
 (require 'cl-lib)
 (require 'org-super-links)
 
@@ -272,9 +273,8 @@
   :group 'org-xob
   :require 'org-xob
   (progn
-    (unless org-xob-on-p
-      (org-xob-start))
-    (if org-xob-minor-mode t t)))
+    (unless org-xob-on-p (org-xob-start))
+    ))
 
 (defmacro with-org-xob-on (&rest body)
   (unless org-xob-on-p
