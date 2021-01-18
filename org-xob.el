@@ -308,26 +308,27 @@
   "Start the xob system: load state or initialize new. Open new day node.
 Calling with C-u will force a restart."
   (interactive "P")
-  (let ((org-xob-on-p (if (equal arg '(4)) nil)))
-    (if (and
-         (if org-xob-on-p (progn (message "XOB: already started.") nil) t)
-         (and
-          (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
-          (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
-          (message "XOB: hooks enabled."))
-         (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
-           (prog1 (message "XOB: directory not found, creating.")
-             (make-directory org-xob-dir t)))
-         (org-xob--load-state)
-         (org-xob--register-files)
-         (org-xob--process-files)
-         (org-xob--eval-capture-templates)
-         (org-xob--open-today))
-        (progn
-          (setq org-xob-on-p t)
-          (message "XOB: started.")
-          (org-xob-info))
-      (message "XOB: Unable to (re)start."))))
+  (if (equal arg '(4))
+      (setq org-xob-on-p nil))
+  (if (and
+       (if org-xob-on-p (progn (message "XOB: already started.") nil) t)
+       (and
+        (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
+        (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+        (message "XOB: hooks enabled."))
+       (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
+         (prog1 (message "XOB: directory not found, creating.")
+           (make-directory org-xob-dir t)))
+       (org-xob--load-state)
+       (org-xob--register-files)
+       (org-xob--process-files)
+       (org-xob--eval-capture-templates)
+       (org-xob--open-today))
+      (progn
+        (setq org-xob-on-p t)
+        (message "XOB: started.")
+        (org-xob-info))
+    (message "XOB: Unable to (re)start.")))
 
 ;;;###autoload
 (defun org-xob-stop ()
