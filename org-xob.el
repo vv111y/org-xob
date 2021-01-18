@@ -141,7 +141,7 @@
 ;; TODO remove when done
 ;; (setq org-xob-dir "~/xob/")
 ;; (setq org-xob--KB-files nil)
-(setq org-xob-dir "/Users/Will/DevWorkSpace/MyTools/Emacs/zettle/org-exobrain/xob/")
+(setq org-xob-dir "/Users/Will/DevWorkSpace/MyTools/Emacs/zettle/org-xob/xob/")
 
 (defvar org-xob-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
@@ -1058,18 +1058,22 @@ Maybe useful for syncing."
                     (number-to-string (hash-table-count org-xob--id-title)) "\n"))
     (insert (concat "org-id entries:\t\t\t\t\t\t\t"
                     (number-to-string (hash-table-count org-id-locations)) "\n"))
+    (insert "\n")
     (insert (concat "KB files count:\t\t\t\t\t\t\t"
                     (number-to-string (length org-xob--KB-files)) "\n"))
-    (insert (concat "current-KB-file:\t\t\t\t\t\t" org-xob--KB-file "\n"))
-    (insert (concat "Agenda files count:\t\t\t\t\t\t\t"
+    (insert (concat "Agenda files count:\t\t\t\t\t"
                     (number-to-string (length org-xob--agenda-files)) "\n"))
-    (insert (concat "current-KB-file:\t\t\t\t\t\t" org-xob--agenda-file "\n"))
     (insert (concat "Log files count:\t\t\t\t\t\t\t"
                     (number-to-string (length org-xob--log-files)) "\n"))
-    (insert (concat "current-KB-file:\t\t\t\t\t\t" org-xob--log-file "\n"))
-    (insert (concat "Archive files count:\t\t\t\t\t\t\t"
+    (insert (concat "Archive files count:\t\t\t\t\t"
                     (number-to-string (length org-xob--archive-files)) "\n"))
-    (insert (concat "current-KB-file:\t\t\t\t\t\t" org-xob--archive-file "\n"))))
+    (insert "\n")
+    (insert (concat "current KB file:\t\t\t\t\t\t\t" org-xob--KB-file "\n"))
+    (insert (concat "current agenda file:\t\t\t\t\t" org-xob--agenda-file "\n"))
+    (insert (concat "current log file:\t\t\t\t\t\t" org-xob--log-file "\n"))
+    (insert (concat "current archive file:\t\t\t\t" org-xob--archive-file "\n"))
+
+    ))
 
 ;;;###autoload
 (defun org-xob-rebuild ()
