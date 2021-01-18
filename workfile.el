@@ -2306,3 +2306,100 @@ org-xob--templates
 (set-difference al bl)
 
 (org-xob--eval-capture-templates)
+;;; change mod date on save
+
+
+
+(concat "[" (format-time-string "%F %a") "]")
+(concat "[" (format-time-string "%F %a %I:%M %p") "]")
+(org-read-date t nil "" nil nil nil 'inactive)
+
+(let (place)
+  (org-map-entries #'(lambda () (when (equal (nth 4 (org-heading-components))
+                                             "new note")
+                                  (place (point)))) nil 'buffer))
+
+(baatest "one" "two" "three")
+(defun baatest (a b c)
+  (print (list a b c)))
+
+(setq zam (org-xob--insert-link-header
+           '"20828000-4FD7-45CD-889C-4D701105FCBF"
+           '"new note"
+           '"2943724E-F26D-4141-A6E3-FA6CCCDDADBA"))
+
+(string-match-p (regexp-quote needle) haystack)
+
+(goto-char zam)
+(let ((buf  (marker-buffer zam)))
+  (switch-to-buffer buf)(goto-char zam))
+
+(defun bootest (aID atitle atarget)
+  (save-excursion
+    (save-window-excursion
+      (with-current-buffer org-xob-today-buffer
+        (let (place)
+          (org-id-goto atarget)
+          (while (or (not eobp)
+                     (not place))
+            (if (string-match-p (regexp-quote aID) (nth 4 (org-heading-components)))
+                (setq place (point)))
+            (outline-next-heading))
+          (unless place
+            (org-insert-subheading '(4))
+            (org-insert-link nil aID atitle))
+          (point-marker))))))
+
+(org-insert-link org-store-link-plist)
+
+(setq org-id-link-to-org-use-id 'use-existing)
+
+(defun vvsave ()
+  (print "this works")
+  nil)
+
+(remove-hook 'write-contents-functions #'(lambda ()
+                                        (progn
+                                          (print "saving me")
+                                          nil)) t)
+
+;; (add-hook 'write-contents-functions 'org-xob--update-modified-time)
+
+(defun org-xob--update-modified-time ()
+  ;; (save-window-excursion
+  ;;   (save-excursion))
+  ;; (with-current-buffer )
+  ;; (insert "bob\n")
+  (org-back-to-heading t)
+  ;; (org-id-goto ID)
+  (let ((mdate (org-entry-get (point) "MODIFIED")))
+    (if mdate
+        (org-entry-put (point) "MODIFIED"
+                       (concat "[" (format-time-string "%F %a %R") "]"))))
+  nil)
+
+(rx-to-string
+ (rx
+  (and (not "#")
+       ".org")
+
+  ))
+
+;; "[^#]\\.org$"
+;; "\\(?:\\[\\^#]\\\\\\.org\\)"
+
+;; (f-entries org-xob-dir)
+
+(mapcar (lambda (fname)
+          (progn
+            (unless (string-match-p "#" fname)
+              fname)))
+        (directory-files org-xob-dir 'full "\.org$" t))
+
+(dolist (fname (directory-files org-xob-dir 'full "[^.][^#]\.org$" t))
+  (if (string-match-p "#" fname)
+      (message "badname %s" fname)
+    (message "good %s" fname)))
+;;; clone
+(setq ba
+      (clone-indirect-buffer "bay" t))
