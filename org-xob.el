@@ -599,14 +599,13 @@ If ID is given, then convert todo with that ID."
         buf)
     (if (setq buf (get-buffer short-title))
         (switch-to-buffer buf)
-      (save-excursion
-        (save-window-excursion
+      (save-window-excursion
+        (org-with-wide-buffer
           (org-id-goto ID)
           (unless (boundp 'org-xob--edit-buffers)
             (setq-local org-xob--edit-buffers nil))
           (add-hook 'write-contents-functions #'org-xob--update-modified-time nil t)
           (save-excursion
-            ;; (setq buf (clone-indirect-buffer short-title t)))
             (setq buf (clone-indirect-buffer short-title t)))
           (add-to-list 'org-xob--edit-buffers buf)))
       (switch-to-buffer short-title)
@@ -625,7 +624,7 @@ If ID is given, then convert todo with that ID."
       (plist-put org-xob--source-forlinks :PID ID)
       ;; (push org-xob--source-backlinks org-xob--node-sources)
       ;; (push org-xob--source-forlinks org-xob--node-sources)
-      (add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
+      (add-hook 'kill-buffer-hook #'org-xob--cleanup-buffers-hook nil :local)
       (org-xob-mode 1)
       (org-xob--make-context-buffer org-xob-short-title
                                     (current-buffer)
@@ -645,13 +644,19 @@ local variables for the edit buffer and the back and for links source objects."
                 ;; TODO copy, not shared ??
                 org-xob--node-sources sources
                 org-xob--source-backlinks backlinks
-                org-xob--source-forlinks forlinks)
-    ))
+                org-xob--source-forlinks forlinks)))
 
-(defun org-xob--kill-context-buffer-hook ()
-  "Kill the context buffer when closing the node edit buffer. Made local variable."
+(defun org-xob--cleanup-buffers-hook ()
+  "Cleanup when closing a node edit buffer. Close sideline window if open, delete
+context buffer, and remove edit buffer from list of open indirect buffers.
+Buffer local to edit buffer."
+  (if (window-live-p org-xob--sideline-window)
+      (delete-window org-xob--sideline-window))
   (with-current-buffer org-xob--context-buffer
-    (kill-buffer)))
+    (kill-buffer))
+  (delete (current-buffer) (buffer-local-value
+                            org-xob--edit-buffers
+                            (buffer-base-buffer (current-buffer)))))
 
 (defun org-xob--update-modified-time ()
   "Hook to update the modified timestamp of all nodes that are being edited when saving.
@@ -659,14 +664,15 @@ ID should be buffer local in a xob edit buffer."
   (save-window-excursion
     (save-excursion
       (dolist (buf org-xob--edit-buffers)
-        (with-current-buffer buf 
-          (goto-char (point-min))
-          (re-search-forward ID)
-          (org-back-to-heading t)
-          (let ((mdate (org-entry-get (point) "MODIFIED")))
-            (if mdate
-                (org-entry-put (point) "MODIFIED"
-                               (concat "[" (format-time-string "%F %a %R") "]"))))))
+        (if (buffer-live-p buf)
+            (with-current-buffer buf 
+              (goto-char (point-min))
+              (re-search-forward ID)
+              (org-back-to-heading t)
+              (let ((mdate (org-entry-get (point) "MODIFIED")))
+                (if mdate
+                    (org-entry-put (point) "MODIFIED"
+                                   (concat "[" (format-time-string "%F %a %R") "]")))))))
       nil)))
 
 ;;;;; Contexts Functions
