@@ -738,31 +738,31 @@ with org-xob--id-goto to return to this heading. Returns ID regardless."
     (puthash ID mbuf org-xob--id-locations)
     ID))
 
-    (defun org-xob--id-goto (ID)
-      "Search buffers for org heading with ID and place point there.
+(defun org-xob--id-goto (ID)
+  "Search buffers for org heading with ID and place point there.
 Return true if found, nil otherwise."
-      (let ((mm))
-        (save-excursion
-          (save-restriction
-            (setq mm (catch 'found 
-                       (dolist (buf (buffer-list))
-                         (with-current-buffer buf
-                           ;; TODO finer than org
-                           (if (eq major-mode 'org-mode)
-                               (progn
-                                 (org-with-wide-buffer 
-                                  (goto-char (point-min))
-                                  (when (re-search-forward ID nil t)
-                                    (progn 
-                                      (org-back-to-heading 'invisible-ok)
-                                      (throw 'found (point-marker)))))))))))))
-        (if (and (marker-buffer mm)
-                 (car mm))
-            (progn 
-              (switch-to-buffer (marker-buffer mm))
-              (goto-char mm)
-              t)
-          nil)))))
+  (let ((mm))
+    (save-excursion
+      (save-restriction
+        (setq mm (catch 'found 
+                   (dolist (buf (buffer-list))
+                     (with-current-buffer buf
+                       ;; TODO finer than org
+                       (if (eq major-mode 'org-mode)
+                           (progn
+                             (org-with-wide-buffer 
+                              (goto-char (point-min))
+                              (when (re-search-forward ID nil t)
+                                (progn 
+                                  (org-back-to-heading 'invisible-ok)
+                                  (throw 'found (point-marker)))))))))))))
+    (if (and (marker-buffer mm)
+             (car mm))
+        (progn 
+          (switch-to-buffer (marker-buffer mm))
+          (goto-char mm)
+          t)
+      nil)))
 
 (defun org-xob--source-refresh (source)
   "Remake source tree. Check if items need to be added or removed.
