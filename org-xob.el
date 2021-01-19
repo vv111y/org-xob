@@ -102,6 +102,9 @@
 
 (defvar org-xob-on-p nil)
 
+(defvar org-xob-today nil
+  "The current day node.")
+
 ;;;;; hash tables
 
 (defvar org-xob--table-size 1000000
@@ -111,8 +114,10 @@
 
 (defvar org-xob--id-title nil)
 
-(defvar org-xob-today nil
-  "The current day node.")
+(defvar org-xob--id-locations (make-hash-table :test 'equal)
+  "hashtable to store heading ID and buffer pairs. Speeds up finding
+xob meta headings. Point is not kept as headings are allowed to be moved
+within their buffers.")
 
 ;;;;; knowledge base sources
 
@@ -703,7 +708,7 @@ source is a plist that describes the content source."
               (goto-char (point-max)) ;; respecting content below is this needed?
               (org-insert-heading (4) 'invisible-ok 'TOP)
               (org-edit-headline (plist-get source :title))
-              (plist-put source :ID (org-xob--id-create (point)))  ;; TODO replace
+              (plist-put source :ID (org-xob--id-create (point)))
               (dolist (el (plist-get source :tags))
                 (org-toggle-tag el 'ON))
               (org-toggle-tag (plist-get source :name) 'ON)
@@ -714,9 +719,6 @@ source is a plist that describes the content source."
             (org-xob-refresh-source source))
         (message "XOB: not a valid context source.")))))
 
-(setq org-xob--id-locations (make-hash-table :test 'equal))
-
-;; LATER can use my own id hashtable with markers
 (defun org-xob--id-create (&optional POM)
   "Create a UUID formatted ID. With optional POM, create an ID property at 
 POM if it is an org heading. org-id will not work with buffers that are
@@ -741,28 +743,20 @@ with org-xob--id-goto to return to this heading. Returns ID regardless."
 (defun org-xob--id-goto (ID)
   "Search buffers for org heading with ID and place point there.
 Return true if found, nil otherwise."
-  (let ((mm))
-    (save-excursion
-      (save-restriction
-        (setq mm (catch 'found 
-                   (dolist (buf (buffer-list))
-                     (with-current-buffer buf
-                       ;; TODO finer than org
-                       (if (eq major-mode 'org-mode)
-                           (progn
-                             (org-with-wide-buffer 
-                              (goto-char (point-min))
-                              (when (re-search-forward ID nil t)
-                                (progn 
-                                  (org-back-to-heading 'invisible-ok)
-                                  (throw 'found (point-marker)))))))))))))
-    (if (and (marker-buffer mm)
-             (car mm))
-        (progn 
-          (switch-to-buffer (marker-buffer mm))
-          (goto-char mm)
-          t)
-      nil)))
+  (let ((buf (gethash ID org-xob--id-locations))
+        (place nil))
+    (if (bufferp buf)
+        (with-current-buffer buf
+          (org-with-wide-buffer
+           (goto-char (point-min))
+           (if (re-search-forward ID nil 'noerror nil)
+               (progn 
+                 (org-back-to-heading)
+                 (setq place (point)))))))
+    (if place (progn
+                (set-buffer buf)
+                (goto-char place))
+      (message "XOB: cannot find buffer associated with heading %s." ID))))
 
 (defun org-xob--source-refresh (source)
   "Remake source tree. Check if items need to be added or removed.
@@ -824,7 +818,7 @@ If the optional ID of a xob source is given, then apply func to that source.
 Otherwise apply to source at point."
   (save-excursion
     (if ID
-        (org-id-goto ID))  ;; TODO replace
+        (org-xob--id-goto ID))
     (org-with-wide-buffer
      (if (org-xob--is-source-p)
          (progn
