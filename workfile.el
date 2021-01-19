@@ -2401,5 +2401,114 @@ org-xob--templates
       (message "badname %s" fname)
     (message "good %s" fname)))
 ;;; clone
-(setq ba
-      (clone-indirect-buffer "bay" t))
+(let (ba)
+  (progn 
+    (save-window-excursion
+      (save-excursion
+        (progn 
+          ;; (org-id-goto "B135DD31-38AD-4357-B3D1-34CA7E61AD89")
+          (org-id-goto "40B39DFF-0741-4920-A8B7-4BC1E5D9C9C4")
+          (setq bem
+                (clone-indirect-buffer "bem" t)
+                ))
+        ;; (message bem)
+        )
+      )
+    (switch-to-buffer bem)
+    (org-narrow-to-subtree)
+    )
+  )
+
+
+;;; popup temp window/buffer
+
+(momentary-string-display "hello world" (point))
+
+
+(defun org-xob-info ()
+  "temp inline display of: Give basic information about the xob system."
+  (interactive)
+    ;; (message-box
+     ;; (momentary-string-display
+  (display-message-or-buffer
+   (concat
+    "XOB State\n"
+    "---------\n"
+    "title-id-table entries:\t\t\t"
+    (number-to-string (hash-table-count org-xob--title-id)) "\n"
+    "id-title-table entries:\t\t\t"
+    (number-to-string (hash-table-count org-xob--id-title)) "\n"
+    "org-id entries:\t\t\t\t\t\t\t"
+    (number-to-string (hash-table-count org-id-locations)) "\n"
+    "\n"
+    "KB files count:\t\t\t\t\t\t\t"
+    (number-to-string (length org-xob--KB-files)) "\n"
+    "Agenda files count:\t\t\t\t\t"
+    (number-to-string (length org-xob--agenda-files)) "\n"
+    "Log files count:\t\t\t\t\t\t\t"
+    (number-to-string (length org-xob--log-files)) "\n"
+    "Archive files count:\t\t\t\t\t"
+    (number-to-string (length org-xob--archive-files)) "\n"
+    "\n"
+    "current KB file:\t\t\t\t\t\t\t" org-xob--KB-file "\n"
+    "current agenda file:\t\t\t\t\t" org-xob--agenda-file "\n"
+    "current log file:\t\t\t\t\t\t" org-xob--log-file "\n"
+    "current archive file:\t\t\t\t" org-xob--archive-file "\n")
+   ;; (point) ;; use this for either message-box or momentary-string-display
+   ))
+
+
+  (popwin:popup-buffer "*Messages*" :noselect t :stick nil )
+
+(defun org-xob-info ()
+  "Give basic information about the xob system."
+  (interactive)
+  ;; (with-output-to-temp-buffer "XOB Stats"
+  (with-help-window "XOB Stats"
+    (princ "XOB State\n")
+    (princ "---------\n")
+    (princ (concat "title-id-table entries:\t\t\t"
+                    (number-to-string (hash-table-count org-xob--title-id)) "\n"))
+    (princ (concat "id-title-table entries:\t\t\t"
+                    (number-to-string (hash-table-count org-xob--id-title)) "\n"))
+    (princ (concat "org-id entries:\t\t\t\t\t\t\t"
+                    (number-to-string (hash-table-count org-id-locations)) "\n"))
+    (princ "\n")
+    (princ (concat "KB files count:\t\t\t\t\t\t\t"
+                    (number-to-string (length org-xob--KB-files)) "\n"))
+    (princ (concat "Agenda files count:\t\t\t\t\t"
+                    (number-to-string (length org-xob--agenda-files)) "\n"))
+    (princ (concat "Log files count:\t\t\t\t\t\t\t"
+                    (number-to-string (length org-xob--log-files)) "\n"))
+    (princ (concat "Archive files count:\t\t\t\t\t"
+                    (number-to-string (length org-xob--archive-files)) "\n"))
+    (princ "\n")
+    (princ (concat "current KB file:\t\t\t\t\t\t\t" org-xob--KB-file "\n"))
+    (princ (concat "current agenda file:\t\t\t\t\t" org-xob--agenda-file "\n"))
+    (princ (concat "current log file:\t\t\t\t\t\t" org-xob--log-file "\n"))
+    (princ (concat "current archive file:\t\t\t\t" org-xob--archive-file "\n"))))
+
+;;; build source fix
+(defun org-xob--source-build (source)
+  (interactive)
+  (save-window-excursion
+    (with-current-buffer org-xob--context-buffer
+      (progn
+        (goto-char (point-min))
+        ;; (unless (re-search-forward (plist-get source :ID)))
+        (goto-char (point-max))
+        (org-insert-heading '(4) 'invisible-ok 'TOP)
+        (org-edit-headline (plist-get source :title))
+        (plist-put source :ID (org-id-get-create))
+        (dolist (el (plist-get source :tags))
+          (org-toggle-tag el 'ON))
+        (org-toggle-tag (plist-get source :name) 'ON)
+        (funcall (plist-get source :func) source)
+        (cons source 'org-xob--node-sources)
+        (org-xob-refresh-source source))
+      )))
+
+(setq vam (get-buffer-create "testbuffer"))
+
+(org-id-get-create)
+(setq mm (point-marker))

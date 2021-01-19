@@ -1214,13 +1214,15 @@ If there are no saved tables, then create new empty ones."
   "Called after files have been regisetered. Properly setup various file variables.
 If necessary create new files."
   (cl-mapcar #'(lambda (file prefix filelist)
-                 (let ((filename (concat org-xob-dir (symbol-value file))))
-                   (if (and (file-exists-p filename)
-                            (not (equal filename org-xob-dir)))
-                       (progn (find-file-noselect filename)
-                              (message "XOB: found file for %s" filename))
-                     (message "XOB: current file for %s missing, initializing new." file)
-                     (org-xob--new-file file prefix filelist))))
+                 (save-window-excursion
+                   (save-excursion
+                     (let ((filename (concat org-xob-dir (symbol-value file))))
+                       (if (and (file-exists-p filename)
+                                (not (equal filename org-xob-dir)))
+                           (progn (find-file-noselect filename)
+                                  (message "XOB: found file for %s" filename))
+                         (message "XOB: current file for %s missing, initializing new." file)
+                         (org-xob--new-file file prefix filelist))))))
              '(org-xob--KB-file
                org-xob--agenda-file
                org-xob--log-file
