@@ -708,7 +708,7 @@ source is a plist that describes the content source."
   (interactive)
   (save-window-excursion
     (with-current-buffer org-xob--context-buffer
-      (if (member source org-xob--node-sources)
+      (unless (member source org-xob--node-sources)
           (progn
             (unless (org-xob--id-goto (plist-get source :PID))
               (goto-char (point-max)) ;; respecting content below is this needed?
