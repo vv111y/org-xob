@@ -1075,35 +1075,30 @@ Maybe useful for syncing."
 (defun org-xob-info ()
   "Give basic information about the xob system."
   (interactive)
-  ;; popup window
-  (display-buffer-use-some-window (get-buffer-create "XOB Stats")
-                                  '(display-buffer-below-selected))
-  (with-current-buffer "XOB Stats"
-    (erase-buffer)
-    (insert "XOB State\n")
-    (insert "---------\n")
-    (insert (concat "title-id-table entries:\t\t\t"
-                    (number-to-string (hash-table-count org-xob--title-id)) "\n"))
-    (insert (concat "id-title-table entries:\t\t\t"
-                    (number-to-string (hash-table-count org-xob--id-title)) "\n"))
-    (insert (concat "org-id entries:\t\t\t\t\t\t\t"
-                    (number-to-string (hash-table-count org-id-locations)) "\n"))
-    (insert "\n")
-    (insert (concat "KB files count:\t\t\t\t\t\t\t"
-                    (number-to-string (length org-xob--KB-files)) "\n"))
-    (insert (concat "Agenda files count:\t\t\t\t\t"
-                    (number-to-string (length org-xob--agenda-files)) "\n"))
-    (insert (concat "Log files count:\t\t\t\t\t\t\t"
-                    (number-to-string (length org-xob--log-files)) "\n"))
-    (insert (concat "Archive files count:\t\t\t\t\t"
-                    (number-to-string (length org-xob--archive-files)) "\n"))
-    (insert "\n")
-    (insert (concat "current KB file:\t\t\t\t\t\t\t" org-xob--KB-file "\n"))
-    (insert (concat "current agenda file:\t\t\t\t\t" org-xob--agenda-file "\n"))
-    (insert (concat "current log file:\t\t\t\t\t\t" org-xob--log-file "\n"))
-    (insert (concat "current archive file:\t\t\t\t" org-xob--archive-file "\n"))
-
-    ))
+  (display-message-or-buffer
+   (concat
+    "XOB State\n"
+    "---------\n"
+    "title-id-table entries:\t\t\t"
+    (number-to-string (hash-table-count org-xob--title-id)) "\n"
+    "id-title-table entries:\t\t\t"
+    (number-to-string (hash-table-count org-xob--id-title)) "\n"
+    "org-id entries:\t\t\t\t\t\t\t"
+    (number-to-string (hash-table-count org-id-locations)) "\n"
+    "\n"
+    "KB files count:\t\t\t\t\t\t\t"
+    (number-to-string (length org-xob--KB-files)) "\n"
+    "Agenda files count:\t\t\t\t\t"
+    (number-to-string (length org-xob--agenda-files)) "\n"
+    "Log files count:\t\t\t\t\t\t\t"
+    (number-to-string (length org-xob--log-files)) "\n"
+    "Archive files count:\t\t\t\t\t"
+    (number-to-string (length org-xob--archive-files)) "\n"
+    "\n"
+    "current KB file:\t\t\t\t\t\t\t" org-xob--KB-file "\n"
+    "current agenda file:\t\t\t\t\t" org-xob--agenda-file "\n"
+    "current log file:\t\t\t\t\t\t" org-xob--log-file "\n"
+    "current archive file:\t\t\t\t" org-xob--archive-file "\n")))
 
 ;;;###autoload
 (defun org-xob-rebuild ()
