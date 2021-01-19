@@ -673,6 +673,7 @@ respective node IDs. Two kinds of links are distinguished: backlinks and forlink
 where the backlinks are in a BACKLINKS drawer."
   (save-window-excursion
     (save-excursion
+      ;; TODO this should work? 
       (org-id-goto (plist-get source :PID))
       (plist-put source :items
                  (org-xob--node-get-links (plist-get source :name))))))
@@ -696,13 +697,13 @@ source is a plist that describes the content source."
   (interactive)
   (save-window-excursion
     (with-current-buffer org-xob--context-buffer
-      (if (member source org-xob--node-soures)
+      (if (member source org-xob--node-sources)
           (progn
-            (unless (org-xob--goto-heading (plist-get source :PID))
+            (unless (org-xob--id-goto (plist-get source :PID))
               (goto-char (point-max)) ;; respecting content below is this needed?
               (org-insert-heading (4) 'invisible-ok 'TOP)
               (org-edit-headline (plist-get source :title))
-              (plist-put source :ID (org-id-get-create))
+              (plist-put source :ID (org-xob--id-create (point)))  ;; TODO replace
               (dolist (el (plist-get source :tags))
                 (org-toggle-tag el 'ON))
               (org-toggle-tag (plist-get source :name) 'ON)
@@ -712,6 +713,56 @@ source is a plist that describes the content source."
               (cons source 'org-xob--node-sources))
             (org-xob-refresh-source source))
         (message "XOB: not a valid context source.")))))
+
+(setq org-xob--id-locations (make-hash-table :test 'equal))
+
+;; LATER can use my own id hashtable with markers
+(defun org-xob--id-create (&optional POM)
+  "Create a UUID formatted ID. With optional POM, create an ID property at 
+POM if it is an org heading. org-id will not work with buffers that are
+not visiting a file. This function is meant for such a case. Use in conjunction
+with org-xob--id-goto to return to this heading. Returns ID regardless."
+  (let ((ID (uuidgen nil))
+        (POM (if POM POM (point-marker)))
+        (mbuf (if (and POM (markerp POM))
+                  (marker-buffer POM)
+                (current-buffer))))
+    (save-window-excursion
+      (save-excursion
+        (with-current-buffer mbuf
+          (goto-char (marker-position POM))
+          (if (org-at-heading-p)
+              (org-entry-put (point) "ID" ID)
+            (message "POM is not an org heading. No ID created."))
+          )))
+    (puthash ID mbuf org-xob--id-locations)
+    ID))
+
+    (defun org-xob--id-goto (ID)
+      "Search buffers for org heading with ID and place point there.
+Return true if found, nil otherwise."
+      (let ((mm))
+        (save-excursion
+          (save-restriction
+            (setq mm (catch 'found 
+                       (dolist (buf (buffer-list))
+                         (with-current-buffer buf
+                           ;; TODO finer than org
+                           (if (eq major-mode 'org-mode)
+                               (progn
+                                 (org-with-wide-buffer 
+                                  (goto-char (point-min))
+                                  (when (re-search-forward ID nil t)
+                                    (progn 
+                                      (org-back-to-heading 'invisible-ok)
+                                      (throw 'found (point-marker)))))))))))))
+        (if (and (marker-buffer mm)
+                 (car mm))
+            (progn 
+              (switch-to-buffer (marker-buffer mm))
+              (goto-char mm)
+              t)
+          nil)))))
 
 (defun org-xob--source-refresh (source)
   "Remake source tree. Check if items need to be added or removed.
@@ -740,7 +791,8 @@ Assumes point is on the source heading."
           (org-insert-subheading '(4))
           (org-edit-headline title)
           (org-entry-put (point) "PID" ID)
-          (org-id-get-create 'FORCE)) ;; needed?
+          ;; (org-id-get-create 'FORCE)
+          ) 
       (message "not a valid knowledge base ID: %s" ID))))
 
 (defun org-xob--kb-copy-paste (payload)
@@ -772,7 +824,7 @@ If the optional ID of a xob source is given, then apply func to that source.
 Otherwise apply to source at point."
   (save-excursion
     (if ID
-        (org-id-goto ID))
+        (org-id-goto ID))  ;; TODO replace
     (org-with-wide-buffer
      (if (org-xob--is-source-p)
          (progn
