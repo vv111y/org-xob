@@ -434,7 +434,17 @@ If called with optional ID argument, then remove the node with that ID."
           (delete-window org-xob--sideline-window)
           (setq org-xob--sideline-window nil))
       (setq org-xob--sideline-window
-            (split-window-right)))))
+            (split-window-right))
+      (select-window org-xob--sideline-window))))
+
+;;;###autoload
+(defun org-xob-show-context ()
+  "Display the context buffer in the sideline window."
+  (interactive)
+  (org-xob-show-side-buffer org-xob--context-buffer)
+  ;; (org-xob-show-backlinks)
+  ;; (org-xob-show-forlinks)
+  )
 
 ;;;;; KB Context Commands
 
@@ -591,33 +601,47 @@ If ID is given, then convert todo with that ID."
             (setq-local org-xob--edit-buffers nil))
           (add-hook 'write-contents-functions #'org-xob--update-modified-time nil t)
           (save-excursion
+            ;; (setq buf (clone-indirect-buffer short-title t)))
             (setq buf (clone-indirect-buffer short-title t)))
           (add-to-list 'org-xob--edit-buffers buf)))
-      
       (switch-to-buffer short-title)
+      (goto-char (point-min))
+      (re-search-forward ID)
+      (org-back-to-heading)
       (org-narrow-to-subtree)
       (setq-local ID ID title title org-xob-short-title short-title
                   log-entry (org-xob--insert-link-header ID title org-xob-today)
                   org-xob--context-buffer (get-buffer-create (concat  "*context-" title))
                   org-xob--sideline-window nil
+                  org-xob--node-sources nil
                   org-xob--source-backlinks org-xob--source-backlinks
                   org-xob--source-forlinks org-xob--source-forlinks)
+      (plist-put org-xob--source-backlinks :PID ID)
+      (plist-put org-xob--source-forlinks :PID ID)
+      ;; (push org-xob--source-backlinks org-xob--node-sources)
+      ;; (push org-xob--source-forlinks org-xob--node-sources)
       (add-hook 'kill-buffer-hook #'org-xob--kill-context-buffer-hook nil :local)
       (org-xob-mode 1)
       (org-xob--make-context-buffer org-xob-short-title
                                     (current-buffer)
+                                    org-xob--node-sources
                                     org-xob--source-backlinks
-                                    org-xob--source-forlinks))))
+                                    org-xob--source-forlinks)
+      (org-xob-show-backlinks)
+      (org-xob-show-forlinks))))
 
-(defun org-xob--make-context-buffer (title edit-buffer backlinks forlinks)
+(defun org-xob--make-context-buffer (title edit-buffer sources backlinks forlinks)
   "Create context buffer, leave it empty by default. set title and buffer
 local variables for the edit buffer and the back and for links source objects."
   (with-current-buffer org-xob--context-buffer
     (org-mode)
     (org-xob-context-mode 1)
     (setq-local org-xob--edit-buffer edit-buffer
+                ;; TODO copy, not shared ??
+                org-xob--node-sources sources
                 org-xob--source-backlinks backlinks
-                org-xob--source-forlinks forlinks)))
+                org-xob--source-forlinks forlinks)
+    ))
 
 (defun org-xob--kill-context-buffer-hook ()
   "Kill the context buffer when closing the node edit buffer. Made local variable."
