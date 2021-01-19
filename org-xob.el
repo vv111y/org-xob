@@ -197,52 +197,6 @@
 
 (defvar org-xob--auto-templates '("ad" "as" "al" "all" "alit" "alt" "lp" "nt" "na" "nw" "tf" "tp"))
 
-(defvar org-xob--templates
-  `(("nn" "new node" entry (file ,(concat org-xob-dir org-xob--KB-file))
-         "* %(eval org-xob--last-title) \n:PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n:END:\n:BACKLINKS:\n:END:\n"
-         :xob-node t
-         :ntype "n.n"
-         :immediate-finish t
-         :empty-lines-after 1)
-
-        ("ad" "today" entry (file+datetree ,(concat org-xob-dir org-xob--log-file))
-         "* %u\n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
-         :xob-node t
-         :immediate-finish t
-         :ntype "a.day"
-         )
-
-        ;; TODO finish agenda entries
-        ("ap" "new project" entry (file ,(concat org-xob-dir org-xob--agenda-file))
-         "* Project  \n:PROPERTIES:\n:TYPE:\t\t\ta.project\n:END:\n:BACKLINKS:\n:END:\n"
-         :xob-node t
-         :ntype "a.project"
-         :immediate-finish t
-         )
-
-        ("as" "new session" entry (file ,(concat org-xob-dir org-xob--agenda-file))
-         :xob-node t
-         :ntype "a.session"
-         :immediate-finish t
-         )
-
-        ("tf" "todo general" entry (file ,(concat org-xob-dir org-xob--agenda-file))
-         "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
-         :xob-node t
-         :todo t
-         :ntype "a.todo"
-         :immediate-finish t
-         )
-
-        ("tp" "todo project" entry (file ,(concat org-xob-dir org-xob--agenda-file))
-         "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
-         :xob-node t
-         :todo t
-         :ntype "a.todo"
-         :immediate-finish t
-         )
-        ))
-
 ;;;;; Keymaps
 
 (defvar org-xob-map
