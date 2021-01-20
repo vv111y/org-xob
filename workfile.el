@@ -2512,3 +2512,7 @@ org-xob--templates
 
 (org-id-get-create)
 (setq mm (point-marker))
+
+(setq l '(a b c d))
+(member 'c l)
+(org-xob--id-create 4)

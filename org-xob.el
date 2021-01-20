@@ -622,6 +622,8 @@ If ID is given, then convert todo with that ID."
                   org-xob--source-forlinks org-xob--source-forlinks)
       (plist-put org-xob--source-backlinks :PID ID)
       (plist-put org-xob--source-forlinks :PID ID)
+      (plist-put org-xob--source-backlinks :title org-xob-short-title)
+      (plist-put org-xob--source-forlinks :title org-xob-short-title)
       ;; (push org-xob--source-backlinks org-xob--node-sources)
       ;; (push org-xob--source-forlinks org-xob--node-sources)
       (add-hook 'kill-buffer-hook #'org-xob--cleanup-buffers-hook nil :local)
@@ -711,9 +713,10 @@ source is a plist that describes the content source."
     (with-current-buffer org-xob--context-buffer
       (unless (member source org-xob--node-sources)
           (progn
+            ;; TODO not seeing existing
             (unless (org-xob--id-goto (plist-get source :PID))
               (goto-char (point-max)) ;; respecting content below is this needed?
-              (org-insert-heading (4) 'invisible-ok 'TOP)
+              (org-insert-heading '(4) 'invisible-ok 'TOP)
               (org-edit-headline (plist-get source :title))
               (plist-put source :ID (org-xob--id-create (point)))
               (dolist (el (plist-get source :tags))
@@ -721,17 +724,22 @@ source is a plist that describes the content source."
               (org-toggle-tag (plist-get source :name) 'ON)
               ;; FIX? for kb needs the parent id , but not all sources
               ;; (plist-put source :items (funcall (plist-get source :func)))
-              (funcall (plist-get source :func) source)
+
+              ;; TODO
+              ;; (org-xob--node-get-links)
+              ;; (funcall (plist-get source :func) source)
+
               (cons source 'org-xob--node-sources))
-            (org-xob-refresh-source source))
-        (message "XOB: not a valid context source.")))))
+            (org-xob--source-refresh source))
+          ;; (message "XOB: not a valid context source.")
+          ))))
 
 (defun org-xob--id-create (&optional POM)
   "Create a UUID formatted ID. With optional POM, create an ID property at 
 POM if it is an org heading. org-id will not work with buffers that are
 not visiting a file. This function is meant for such a case. Use in conjunction
 with org-xob--id-goto to return to this heading. Returns ID regardless."
-  (let ((ID (uuidgen nil))
+  (let ((ID (uuidgen-4))
         (POM (if POM POM (point-marker)))
         (mbuf (if (and POM (markerp POM))
                   (marker-buffer POM)
@@ -739,7 +747,8 @@ with org-xob--id-goto to return to this heading. Returns ID regardless."
     (save-window-excursion
       (save-excursion
         (with-current-buffer mbuf
-          (goto-char (marker-position POM))
+          (goto-char POM)
+          ;; (goto-char (marker-position POM))
           (if (org-at-heading-p)
               (org-entry-put (point) "ID" ID)
             (message "POM is not an org heading. No ID created."))
@@ -762,8 +771,9 @@ Return true if found, nil otherwise."
                  (setq place (point)))))))
     (if place (progn
                 (set-buffer buf)
-                (goto-char place))
-      (message "XOB: cannot find buffer associated with heading %s." ID))))
+                (goto-char place)
+                t)
+      (message "XOB: cannot find buffer associated with heading %s." ID) nil)))
 
 (defun org-xob--source-refresh (source)
   "Remake source tree. Check if items need to be added or removed.
@@ -1021,7 +1031,7 @@ Returns mark for the link subheader."
 then return only links in the backlinks drawer. If linktype is 'forelinks'
 then return all other links."
   (let* ((test (if (equal linktype "backlinks")
-                   (lambda (x) (x))
+                   (lambda (x) x)
                  (if (equal linktype "forelinks")
                      (lambda (x) (not x))))))
     (save-excursion
