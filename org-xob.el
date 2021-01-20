@@ -654,9 +654,10 @@ Buffer local to edit buffer."
       (delete-window org-xob--sideline-window))
   (with-current-buffer org-xob--context-buffer
     (kill-buffer))
-  (delete (current-buffer) (buffer-local-value
-                            org-xob--edit-buffers
-                            (buffer-base-buffer (current-buffer)))))
+  (dolist (x org-xob--edit-buffers)
+    (if (not (buffer-live-p x))
+        (delete x org-xob--edit-buffers)))
+  nil)
 
 (defun org-xob--update-modified-time ()
   "Hook to update the modified timestamp of all nodes that are being edited when saving.
