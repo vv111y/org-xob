@@ -425,3 +425,51 @@ referencing it. If called with optional ID argument, then remove the node with t
         (setq org-xob-on-p t)
         (message "XOB: started."))
     (message "XOB: Unable to (re)start.")))
+;;; custom org-id
+
+(defvar org-xob--id-locations (make-hash-table :test 'equal)
+  "hashtable to store heading ID and buffer pairs. Speeds up finding
+xob meta headings. Point is not kept as headings are allowed to be moved
+within their buffers.")
+
+(defun org-xob--id-create (&optional POM)
+  "Create a UUID formatted ID. With optional POM, create an ID property at 
+POM if it is an org heading. org-id will not work with buffers that are
+not visiting a file. This function is meant for such a case. Use in conjunction
+with org-xob--id-goto to return to this heading. Returns ID regardless."
+  (let ((ID (uuidgen-4))
+        (POM (if POM POM (point-marker)))
+        (mbuf (if (and POM (markerp POM))
+                  (marker-buffer POM)
+                (current-buffer))))
+    (save-window-excursion
+      (save-excursion
+        (with-current-buffer mbuf
+          (goto-char POM)
+          ;; (goto-char (marker-position POM))
+          (if (org-at-heading-p)
+              (org-entry-put (point) "ID" ID)
+            (message "POM is not an org heading. No ID created."))
+          )))
+    (puthash ID mbuf org-xob--id-locations)
+    ID))
+
+(defun org-xob--id-goto (ID)
+  "Search buffers for org heading with ID and place point there.
+Return true if found, nil otherwise."
+  ;; todo remove every source
+  (let ((buf (gethash ID org-xob--id-locations))
+        (place nil))
+    (if (bufferp buf)
+        (with-current-buffer buf
+          (org-with-wide-buffer
+           (goto-char (point-min))
+           (if (re-search-forward ID nil 'noerror nil)
+               (progn 
+                 (org-back-to-heading)
+                 (setq place (point)))))))
+    (if place (progn
+                (set-buffer buf)
+                (goto-char place)
+                t)
+      (message "XOB: cannot find buffer associated with heading %s." ID) nil)))

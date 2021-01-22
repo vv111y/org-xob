@@ -114,11 +114,6 @@
 
 (defvar org-xob--id-title nil)
 
-(defvar org-xob--id-locations (make-hash-table :test 'equal)
-  "hashtable to store heading ID and buffer pairs. Speeds up finding
-xob meta headings. Point is not kept as headings are allowed to be moved
-within their buffers.")
-
 ;;;;; knowledge base sources
 
 (defvar org-xob--source-backlinks
@@ -127,7 +122,6 @@ within their buffers.")
           :title nil
           :ID nil
           :PID nil
-          :func org-xob--get-backlinks
           :items nil))
 
 (defvar org-xob--source-forlinks
@@ -136,7 +130,6 @@ within their buffers.")
           :title nil
           :ID nil
           :PID nil
-          :func org-xob--get-forlinks
           :items nil))
 
 ;;;;; file variables
@@ -608,45 +601,41 @@ If ID is given, then convert todo with that ID."
           (save-excursion
             (setq buf (clone-indirect-buffer short-title t)))
           (add-to-list 'org-xob--edit-buffers buf)))
-      (switch-to-buffer short-title)
+      (switch-to-buffer buf)
+      (org-xob-mode 1)
+      (add-hook 'kill-buffer-hook #'org-xob--cleanup-buffers-hook nil 'local)
       (goto-char (point-min))
       (re-search-forward ID)
       (org-back-to-heading)
       (org-narrow-to-subtree)
-      (setq-local ID ID title title org-xob-short-title short-title
+      (setq-local ID ID title title short-title short-title
                   log-entry (org-xob--insert-link-header ID title org-xob-today)
                   org-xob--context-buffer (get-buffer-create (concat  "*context-" title))
-                  org-xob--sideline-window nil
-                  org-xob--node-sources nil
-                  org-xob--source-backlinks org-xob--source-backlinks
-                  org-xob--source-forlinks org-xob--source-forlinks)
-      (plist-put org-xob--source-backlinks :PID ID)
-      (plist-put org-xob--source-forlinks :PID ID)
-      (plist-put org-xob--source-backlinks :title org-xob-short-title)
-      (plist-put org-xob--source-forlinks :title org-xob-short-title)
-      ;; (push org-xob--source-backlinks org-xob--node-sources)
-      ;; (push org-xob--source-forlinks org-xob--node-sources)
-      (add-hook 'kill-buffer-hook #'org-xob--cleanup-buffers-hook nil :local)
-      (org-xob-mode 1)
-      (org-xob--make-context-buffer org-xob-short-title
-                                    (current-buffer)
-                                    org-xob--node-sources
-                                    org-xob--source-backlinks
-                                    org-xob--source-forlinks)
-      (org-xob-show-backlinks)
-      (org-xob-show-forlinks))))
+                  org-xob--sideline-window nil)
+      (org-xob--setup-context-buffer ID
+                                     short-title
+                                     (current-buffer)))))
 
-(defun org-xob--make-context-buffer (title edit-buffer sources backlinks forlinks)
+(defun org-xob-show-side-buffer (abuffer)
+  "Show abuffer in the sideline window."
+  (if (boundp 'org-xob--sideline-window)
+      (org-xob-toggle-sideline 'ON)
+    (save-excursion
+      (select-window org-xob--sideline-window)
+      (display-buffer-same-window abuffer nil))))
+
+(defun org-xob--setup-context-buffer (ID title edit-buffer)
   "Create context buffer, leave it empty by default. set title and buffer
 local variables for the edit buffer and the back and for links source objects."
   (with-current-buffer org-xob--context-buffer
     (org-mode)
     (org-xob-context-mode 1)
-    (setq-local org-xob--edit-buffer edit-buffer
-                ;; TODO copy, not shared ??
-                org-xob--node-sources sources
-                org-xob--source-backlinks backlinks
-                org-xob--source-forlinks forlinks)))
+    (setq-local parent-ID ID
+                parent-title title
+                parent-edit-buffer edit-buffer
+                org-xob--node-sources nil
+                org-xob--source-backlinks org-xob--source-backlinks
+                org-xob--source-forlinks org-xob--source-forlinks)))
 
 (defun org-xob--cleanup-buffers-hook ()
   "Cleanup when closing a node edit buffer. Close sideline window if open, delete
@@ -680,6 +669,29 @@ ID should be buffer local in a xob edit buffer."
 
 ;;;;; Contexts Functions
 
+(defun org-xob--is-source-p (&optional ID)
+  "Check if heading at point is a valid xob source. If an ID argument is supplied,
+then check the heading associated with it."
+  (interactive)
+  (let ((temp (if ID ID
+                (org-entry-get (point) ID))))
+    (if (and temp
+             (member temp org-xob--node-sources)) t nil)))
+
+(defun org-xob--prepare-kb-source (source)
+  "fill in material for a node context source."
+  (let ((ID (org-xob--id-create))
+        (buf (if (boundp org-xob--context-buffer)
+                 org-xob--context-buffer
+               (current-buffer))))
+    (with-current-buffer buf 
+      (plist-put source :PID parent-ID)
+      (plist-put source :title parent-title)
+      (plist-put source :ID ID)
+      (add-to-list 'org-xob--node-sources ID)
+      (org-xob--node-get-link-entries source)
+      (org-xob--source-write source))))
+
 (defun org-xob--node-get-link-entries (source)
   "Populates source item list from the node. The items are represented by their
 respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
@@ -692,88 +704,51 @@ where the backlinks are in a BACKLINKS drawer."
       (plist-put source :items
                  (org-xob--node-get-links (plist-get source :name))))))
 
-;; --source tree fns--
-(defun org-xob--is-source-p (&optional ID)
-  "Check if a heading is a valid xob source.
-Called interactively it defaults to heading at point.
-If an ID argument is supplied, then check the heading associated with it."
-  (interactive)
-  (let ((temp (if ID ID
-                (org-id-get nil))))
-    (if temp
-        (if (member temp org-xob--node-sources) t nil)
-      nil)))
-
-(defun org-xob--source-build (source)
+(defun org-xob--source-write (source)
   "Open a source tree into the context buffer. If it is already there,
 then refresh it. source items are shown as org headings.
 source is a plist that describes the content source."
   (interactive)
-  (save-window-excursion
-    (with-current-buffer org-xob--context-buffer
-      (unless (member source org-xob--node-sources)
-          (progn
-            ;; TODO not seeing existing
-            (unless (org-xob--id-goto (plist-get source :PID))
-              (goto-char (point-max)) ;; respecting content below is this needed?
-              (org-insert-heading '(4) 'invisible-ok 'TOP)
-              (org-edit-headline (plist-get source :title))
-              (plist-put source :ID (org-xob--id-create (point)))
-              (dolist (el (plist-get source :tags))
-                (org-toggle-tag el 'ON))
-              (org-toggle-tag (plist-get source :name) 'ON)
-              ;; FIX? for kb needs the parent id , but not all sources
-              ;; (plist-put source :items (funcall (plist-get source :func)))
+  (save-excursion
+    (org-with-wide-buffer
+     (if (progn
+           (goto-char (point-min))
+           (re-search-forward (plist-get source :ID) nil t nil))
+         (org-back-to-heading)
+       (goto-char (point-max))
+       (org-insert-heading '(4) 'invisible-ok 'TOP)
+       (org-edit-headline (plist-get source :title))
+       (dolist (el (plist-get source :tags))
+         (org-toggle-tag el 'ON))
+       (org-toggle-tag (plist-get source :name) 'ON))
+     (org-xob--source-refresh source))))
 
-              ;; TODO
-              ;; (org-xob--node-get-links)
-              ;; (funcall (plist-get source :func) source)
-
-              (cons source 'org-xob--node-sources))
-            (org-xob--source-refresh source))
-          ;; (message "XOB: not a valid context source.")
-          ))))
-
-(defun org-xob--id-create (&optional POM)
-  "Create a UUID formatted ID. With optional POM, create an ID property at 
-POM if it is an org heading. org-id will not work with buffers that are
+(defun org-xob--id-create ()
+  "Create a UUID formatted ID. org-id will not work with buffers that are
 not visiting a file. This function is meant for such a case. Use in conjunction
-with org-xob--id-goto to return to this heading. Returns ID regardless."
-  (let ((ID (uuidgen-4))
-        (POM (if POM POM (point-marker)))
-        (mbuf (if (and POM (markerp POM))
-                  (marker-buffer POM)
-                (current-buffer))))
-    (save-window-excursion
-      (save-excursion
-        (with-current-buffer mbuf
-          (goto-char POM)
-          ;; (goto-char (marker-position POM))
-          (if (org-at-heading-p)
-              (org-entry-put (point) "ID" ID)
-            (message "POM is not an org heading. No ID created."))
-          )))
-    (puthash ID mbuf org-xob--id-locations)
-    ID))
+with org-xob--id-goto to return to this heading.
+Returns ID if successful, nil otherwise."
+  (let ((ID (uuidgen-4)))
+    (if (org-at-heading-p)
+        (progn (org-entry-put (point) "ID" ID)
+               ID)
+      nil)))
 
 (defun org-xob--id-goto (ID)
   "Search buffers for org heading with ID and place point there.
-Return true if found, nil otherwise."
-  (let ((buf (gethash ID org-xob--id-locations))
-        (place nil))
-    (if (bufferp buf)
-        (with-current-buffer buf
-          (org-with-wide-buffer
-           (goto-char (point-min))
-           (if (re-search-forward ID nil 'noerror nil)
-               (progn 
-                 (org-back-to-heading)
-                 (setq place (point)))))))
-    (if place (progn
-                (set-buffer buf)
-                (goto-char place)
-                t)
-      (message "XOB: cannot find buffer associated with heading %s." ID) nil)))
+Return point position if found, nil otherwise."
+  (if (and (boundp org-xob--context-buffer)
+           (bufferp org-xob--context-buffer))
+      (unless (equal (buffer-name) org-xob-short-title)
+        (set-buffer org-xob--context-buffer)))
+  (save-restriction
+    (widen)
+    (goto-char (point-min))
+    (if (re-search-forward ID nil 'noerror nil)
+        (progn 
+          (org-back-to-heading)
+          (point))
+      nil)))
 
 (defun org-xob--source-refresh (source)
   "Remake source tree. Check if items need to be added or removed.
@@ -835,6 +810,7 @@ If the optional ID of a xob source is given, then apply func to that source.
 Otherwise apply to source at point."
   (save-excursion
     (if ID
+        ;; TODO fail can't find buffer
         (org-xob--id-goto ID))
     (org-with-wide-buffer
      (if (org-xob--is-source-p)
