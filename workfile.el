@@ -2525,11 +2525,6 @@ org-xob--templates
 (with-current-buffer "workfile.el"
   (goto-char (point-max))
   (insert "\nwelp\n"))
-welp
-
-welp
-
-welp
 
 (defun vvsam (&optional arg)
   (print (symbolp 'arg))
@@ -2537,3 +2532,12 @@ welp
   t)
 
 (vvsam)
+;;; test macros
+
+(org-xob-with-xob-on (print "xob on"))
+
+(org-xob-with-xob-buffer (print "this is a xob buffer"))
+
+(org-xob-with-context-buffer (print "this is a context buffer"))
+
+(org-xob-with-edit-buffer (print "this is an edit buffer"))

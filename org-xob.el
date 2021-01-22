@@ -224,7 +224,7 @@
                   (define-key map key fn)))
     map))
 
-;;;; Minor Mode & Macros
+;;;; Minor Mode 
 
 ;;;###autoload
 (define-minor-mode org-xob-mode
@@ -248,19 +248,52 @@
     (unless org-xob-on-p (org-xob-start))
     ))
 
+;;;; Macros
 (defmacro org-xob-with-xob-on (&rest body)
-  `(progn (unless org-xob-on-p (org-xob-start))
-          ,@body))
+  (declare (debug (body)))
+  `(progn (if org-xob-on-p
+              ,@body
+            (message "xob is not on."))))
 
 (defmacro org-xob-with-xob-buffer (&rest body)
   (declare (debug (body)))
   `(if (or (and (boundp 'ID)
-               (org-xob--is-node-p ID))
-          (and (boundp 'parentID)
-               (org-xob--is-node-p parentID)))
-      (progn
-        ,@body)
-    (message "Not in a xob buffer.") nil))
+                (org-xob--is-node-p ID)
+                (bound-and-true-p org-xob-mode))
+           (and (boundp 'parentID)
+                (org-xob--is-node-p parentID)
+                (bound-and-true-p org-xob-context-mode)))
+       (progn
+         ,@body)
+     (message "Not in a xob buffer.") nil))
+
+(defmacro org-xob-with-context-buffer (&rest body)
+  (declare (debug (body)))
+  `(let ((buf (cond
+               ((and (boundp 'ID)
+                     (boundp 'org-xob--context-buffer)
+                     (bound-and-true-p org-xob-mode))
+                org-xob-context-buffer)
+               ((and (boundp 'parentID)
+                     (bound-and-true-p org-xob-context-mode))
+                (current-buffer))
+               (t nil))))
+     (if (buffer-live-p buf)
+         (with-current-buffer ,@body))))
+
+(defmacro org-xob-with-edit-buffer (&rest body)
+  (declare (debug (body)))
+  `(let ((buf (cond
+               ((and (boundp 'ID)
+                     (boundp 'org-xob--context-buffer)
+                     (bound-and-true-p org-xob-mode))
+                (current-buffer))
+               ((and (boundp 'parentID)
+                     (bound-and-true-p org-xob-context-mode))
+                parent-edit-buffer)
+               (t nil))))
+     (if (buffer-live-p buf)
+         (with-current-buffer ,@body))))
 
 ;;;; Commands
 ;;;;; Main Commands
@@ -760,19 +793,20 @@ Return point position if found, nil otherwise."
   "Remake source tree. Check if items need to be added or removed.
 todo - possibly refresh item contents if changes were made.
 (this requires knowing what is displayed)"
-  (let ((temp (copy-tree (plist-get source :items))))
-    (org-xob--map-source
-     (lambda ()
-       (let ((pid (org-entry-get (point) "PID")))
-         (if (member pid temp)
-             (setq temp (delete pid temp))
-           (progn
-             (org-mark-subtree)
-             (delete-region)))
-         (if temp
-             (dolist (el temp)
-               (org-xob--source-add-item el)))))
-     (plist-get source :ID))))
+  (org-xob-with-context-buffer
+   (let ((temp (copy-tree (plist-get source :items))))
+     (org-xob--map-source
+      (lambda ()
+        (let ((pid (org-entry-get (point) "PID")))
+          (if (member pid temp)
+              (setq temp (delete pid temp))
+            (progn
+              (org-mark-subtree)
+              (delete-region)))
+          (if temp
+              (dolist (el temp)
+                (org-xob--source-add-item el)))))
+      (plist-get source :ID)))))
 
 (defun org-xob--source-add-item (ID)
   "Appends a single entry to the end of the source subtree.
