@@ -2612,3 +2612,18 @@ org-xob--templates
 (with-current-buffer (current-buffer)
   (print "hi"))
 (org-xob--id-goto "5a3f45c8-ed00-4c02-aaba-3a30d9906424")
+
+(org-goto-first-child)
+(outline-has-subheading-p)
+
+
+(outline-get-next-sibling) 
+(outline-get-last-sibling)
+
+(org-insert-subheading '(4))
+
+(org-insert-heading '(4))
+
+;; (org-save-outline-visibility USE-MARKERS &rest BODY)
+;; maybe useful
+(org-save-outline-visibility) 
