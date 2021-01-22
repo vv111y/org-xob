@@ -2042,8 +2042,12 @@ source is a plist that describes the content source."
     ;; (goto-char place)
     (print place)
     ))
+
+
 (setq a 8)
-(setq-local a a)
+(setq-local a 4)
+
+
 (org-xob--log-node-edit "todo-to-log refile")
 ;; (org-find-olp '("todo-to-log refile") 'this-buffer)
 ;;; bkj
@@ -2516,3 +2520,20 @@ org-xob--templates
 (setq l '(a b c d))
 (member 'c l)
 (org-xob--id-create 4)
+
+
+(with-current-buffer "workfile.el"
+  (goto-char (point-max))
+  (insert "\nwelp\n"))
+welp
+
+welp
+
+welp
+
+(defun vvsam (&optional arg)
+  (print (symbolp 'arg))
+  (print arg)
+  t)
+
+(vvsam)

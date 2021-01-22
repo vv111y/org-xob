@@ -248,10 +248,19 @@
     (unless org-xob-on-p (org-xob-start))
     ))
 
-(defmacro with-org-xob-on (&rest body)
-  (unless org-xob-on-p
-    (org-xob-start))
-  ,@body)
+(defmacro org-xob-with-xob-on (&rest body)
+  `(progn (unless org-xob-on-p (org-xob-start))
+          ,@body))
+
+(defmacro org-xob-with-xob-buffer (&rest body)
+  (declare (debug (body)))
+  `(if (or (and (boundp 'ID)
+               (org-xob--is-node-p ID))
+          (and (boundp 'parentID)
+               (org-xob--is-node-p parentID)))
+      (progn
+        ,@body)
+    (message "Not in a xob buffer.") nil))
 
 ;;;; Commands
 ;;;;; Main Commands
@@ -306,38 +315,36 @@ Calling with C-u will force a restart."
         (org-xob--clear-file-variables)
         (remove-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (remove-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
-        (setq org-xob-on-p nil))))
+        (setq org-xob-on-p nil)
+        (message "XOB: stopped."))))
 
 ;;;###autoload
 (defun org-xob-open-day ()
   "Open todays node."
   (interactive)
-  (unless org-xob-on-p
-    (org-xob-start))
-  (condition-case nil
-      (progn
-        (org-id-goto org-xob-today)
-        (org-narrow-to-subtree))
-    (error (message "todays day node missing."))))
+  (org-xob-with-xob-on
+   (condition-case nil
+       (progn
+         (org-id-goto org-xob-today)
+         (org-narrow-to-subtree))
+     (error (message "todays day node missing.")))))
 
 ;;;###autoload
 (defun org-xob-get-node ()
   "Focus on a node for editing. If it does not exist, create it."
   (interactive)
-  (unless org-xob-on-p
-    (org-xob-start))
-  (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-    (org-xob--edit-node ID title)))
+  (org-xob-with-xob-on
+   (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+     (org-xob--edit-node ID title))))
 
 ;;;###autoload
 (defun org-xob-insert-link ()
   "Inserts a properly formatted xob node link at point."
   (interactive)
-  (unless org-xob-on-p
-    (org-xob-start))
-  (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-    (org-super-links--insert-link (org-id-find ID 'MARKERP))
-    (org-xob--source-refresh 'forlinks)))
+  (org-xob-with-xob-on
+   (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+     (org-super-links--insert-link (org-id-find ID 'MARKERP))
+     (org-xob--source-refresh 'forlinks))))
 
 ;;;###autoload
 (defun org-xob-remove-node (&optional ID)
@@ -346,94 +353,89 @@ Removes node from the hash tables, and any backlinks in other nodes referencing 
 But ignore any links that reference it. Override xob property.
 If called with optional ID argument, then remove the node with that ID."
   (interactive)
-  (unless org-xob-on-p (org-xob-start))
-  (save-window-excursion
-    (save-excursion
-      (if ID
-          (org-id-goto ID))
-      (let* ((ID (org-id-get (point)))
-             (title (gethash ID org-xob--id-title))
-             (forelinks (org-xob--node-get-links "forelinks"))
-             link-element)
-        (dolist (el forelinks)
-          (save-excursion
-            (org-id-goto el)
-            (save-restriction
-              (org-narrow-to-subtree)
-              (outline-show-all)
-              (setq link-element (org-super-links--find-link ID))
-              (if link-element
-                  (org-super-links--delete-link link-element)))))
-        (remhash ID org-xob--id-title)
-        (remhash title org-xob--title-id)
-        (org-entry-put (point) "TYPE" "")
-        (org-entry-put (point) "xob" "")
-        ;; (org-id-update-id-locations (list (buffer-file-name)) 'silent)
-        (org-xob--save-state)))))
+  (org-xob-with-xob-on
+   (save-window-excursion
+     (save-excursion
+       (if ID
+           (org-id-goto ID))
+       (let* ((ID (org-id-get (point)))
+              (title (gethash ID org-xob--id-title))
+              (forelinks (org-xob--node-get-links "forelinks"))
+              link-element)
+         (dolist (el forelinks)
+           (save-excursion
+             (org-id-goto el)
+             (save-restriction
+               (org-narrow-to-subtree)
+               (outline-show-all)
+               (setq link-element (org-super-links--find-link ID))
+               (if link-element
+                   (org-super-links--delete-link link-element)))))
+         (remhash ID org-xob--id-title)
+         (remhash title org-xob--title-id)
+         (org-entry-put (point) "TYPE" "")
+         (org-entry-put (point) "xob" "")
+         ;; (org-id-update-id-locations (list (buffer-file-name)) 'silent)
+         (org-xob--save-state))))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
   "Convenience function to convert current subtree into a xob KB node."
   (interactive)
-  (unless (org-xob--is-node-p)
-    (org-xob--new-node (point))
-    (let ((filename (buffer-file-name)))
-      (unless (member filename org-xob--KB-files)
-        (save-excursion
-          (goto-char (point-min))
-          (insert org-xob--xob-header))
-        (save-buffer)
-        (push filename org-xob--KB-files)))
-    ;; old way, obsolete
-    ;; (org-xob--save-object
-    ;;  (alist-get 'org-xob--KB-files org-xob--objects)
-    ;;  org-xob--KB-files)
-    ))
+  (org-xob-with-xob-on
+   (unless (org-xob--is-node-p)
+     (org-xob--new-node (point))
+     (let ((filename (buffer-file-name)))
+       (unless (member filename org-xob--KB-files)
+         (save-excursion
+           (goto-char (point-min))
+           (insert org-xob--xob-header))
+         (save-buffer)
+         (push filename org-xob--KB-files))))))
 
 ;;;###autoload
 (defun org-xob-add-node-labels ()
   "Select labels to apply to node at point, or at optional node specified by ID."
   (interactive)
-  (helm :buffer "xob labels"
-        :sources (helm-build-sync-source "xob-labels"
-                   :candidates org-xob-labels
-                   :action (lambda (c)
-                             (org-entry-put (point) "LABELS"
-                                            (string-join (helm-marked-candidates) " "))))))
+  (if (call-interactively org-xob--is-node-p)
+      (helm :buffer "xob labels"
+            :sources (helm-build-sync-source "xob-labels"
+                       :candidates org-xob-labels
+                       :action (lambda (c)
+                                 (org-entry-put (point) "LABELS"
+                                                (string-join (helm-marked-candidates) " ")))))
+    (message "XOB: not on a xob node.")))
 
 ;;;###autoload
 (defun org-xob-change-node-type ()
   "Change the type for node at point, or at optional node specified by ID."
   (interactive)
-  (helm :buffer "xob types"
-        :sources (helm-build-sync-source "xob-types"
-                   :candidates org-xob--node-types
-                   :action (lambda (c)
-                             (org-entry-put (point) "TYPE" c)))))
+  (if (call-interactively org-xob--is-node-p)
+      (helm :buffer "xob types"
+            :sources (helm-build-sync-source "xob-types"
+                       :candidates org-xob--node-types
+                       :action (lambda (c)
+                                 (org-entry-put (point) "TYPE" c))))))
 
 ;;;;; Sideline Commands
 ;;;###autoload
-(defun org-xob-show-side-buffer (abuffer)
-  "Show abuffer in the sideline window."
-  (interactive)
-  (unless org-xob--sideline-window
-    (org-xob-toggle-sideline))
-  (save-excursion
-    (select-window org-xob--sideline-window)
-    (display-buffer-same-window abuffer nil)))
-
 ;;;###autoload
-(defun org-xob-toggle-sideline ()
-  "Toggles display of the sideline window."
+(defun org-xob-toggle-sideline (&optional flag)
+  "Toggles display of the sideline window. If flag is 'ON then display sideline
+regardless. Likewise with flag 'OFF."
   (interactive)
-  (save-excursion
-    (if org-xob--sideline-window
-        (progn
-          (delete-window org-xob--sideline-window)
-          (setq org-xob--sideline-window nil))
-      (setq org-xob--sideline-window
-            (split-window-right))
-      (select-window org-xob--sideline-window))))
+  (org-xob-with-xob-on
+   (org-xob-with-xob-buffer
+    (if (boundp 'org-xob--sideline-window)
+        (save-excursion
+          (if org-xob--sideline-window
+              (progn
+                (delete-window org-xob--sideline-window)
+                (setq org-xob--sideline-window nil))
+            (setq org-xob--sideline-window
+                  (split-window-right))
+            (select-window org-xob--sideline-window)))
+      (message "XOB: no sideline window associated with this buffer.")))))
 
 ;;;###autoload
 (defun org-xob-show-context ()
@@ -450,20 +452,24 @@ If called with optional ID argument, then remove the node with that ID."
 (defun org-xob-show-backlinks ()
   "Add backlinks contents to the context buffer."
   (interactive)
-  (org-xob--node-get-link-entries org-xob--source-backlinks)
-  (org-xob--source-build org-xob--source-backlinks))
+  (org-xob-with-xob-buffer
+   (org-xob--prepare-kb-source org-xob--source-backlinks)
+   (org-xob-toggle-sidelinej 'on)))
 
 ;;;###autoload
 (defun org-xob-show-forlinks ()
   "Add forelinks contents to the context buffer."
   (interactive)
-  (org-xob--node-get-link-entries org-xob--source-forlinks)
-  (org-xob--source-build org-xob--source-forlinks))
+  (org-xob-with-xob-buffer
+   (org-xob--prepare-kb-source org-xob--source-forlinks)
+   (org-xob-toggle-sideline 'on)))
 
 ;;;###autoload
 (defun org-xob-ql-search ()
   "Use org-ql to search the KB. Creates a new source in the context buffer."
-  (interactive))
+  (interactive)
+  (org-xob-with-xob-buffer
+   nil))
 
 ;;;;; Context Presentation Commands
 
