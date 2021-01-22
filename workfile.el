@@ -2541,3 +2541,74 @@ org-xob--templates
 (org-xob-with-context-buffer (print "this is a context buffer"))
 
 (org-xob-with-edit-buffer (print "this is an edit buffer"))
+
+(defun org-xob-with-context-buffer ( body)
+  (let ((buf (cond
+               ((and (boundp 'ID)
+                     (boundp 'org-xob--context-buffer)
+                     (bound-and-true-p org-xob-mode))
+                org-xob--context-buffer)
+               ((and (boundp 'parentID)
+                     (bound-and-true-p org-xob-context-mode))
+                (current-buffer))
+               (t nil))))
+     (if (buffer-live-p buf)
+         (with-current-buffer buf
+             (funcall body)))))
+
+(org-xob-with-context-buffer #'(lambda () (print "made it")))
+
+(vvlobe #'(lambda () (print "made it")))
+(defun vvlobe (&rest))
+(gethash "first" org-xob--title-id)
+(let ((s "be"))
+  (if (symbolp 's) (boundp 's)))
+
+(display-message-or-buffer
+ (concat 
+  (mapcar (lambda (s)
+            (cond
+             ((and (symbolp s) (boundp s)) (eval s))
+             ((string-or-null-p s) s)
+             (t s)))
+          '("(ID): %s" ID "\n"
+            "org-xob--edit-buffers: %s" org-xob--edit-buffers  "\n"
+            "(parent-ID): %s" parent-ID  "\n"
+            "(parent-title): %s" parent-title "\n"
+            "(title): %s" title "\n"
+            "(parent-edit-buffer): %s" parent-edit-buffer "\n"
+            "(org-xob--node-sources): %s" org-xob--node-sources "\n"
+            "(org-xob--source-backlinks): %s" org-xob--source-backlinks  "\n"
+            "(org-xob--source-forlinks): %s" org-xob--source-forlinks "\n") )))
+
+(defun vvamm (s)
+  (cond
+   ((and (symbolp s) (boundp s)) (eval s))
+   ((string-or-null-p s) s)
+   (t s))
+  )
+(vvamm 'ID)
+(vvamm "ID")
+(vvamm 'iid)
+(setq iid "eyed")
+(display-message-or-buffer
+ (mapcar (lambda (s)
+           (cond
+            ((and (symbolp s) (boundp s)) (eval s))
+            ((string-or-null-p s) s)
+            (t s)))
+         '('ID ID 
+               'org-xob--edit-buffers org-xob--edit-buffers
+               'parent-ID: parent-ID
+               'parent-title: parent-title
+               'title: title 
+               'parent-edit-buffer parent-edit-buffer
+               'org-xob--node-sources org-xob--node-sources 
+               org-xob--source-backlinks
+               org-xob--source-forlinks)))
+
+(org-xob--source-write org-xob--source-backlinks)
+(org-xob--source-refresh org-xob--source-backlinks)
+(with-current-buffer (current-buffer)
+  (print "hi"))
+(org-xob--id-goto "5a3f45c8-ed00-4c02-aaba-3a30d9906424")

@@ -268,18 +268,17 @@
      (message "Not in a xob buffer.") nil))
 
 (defmacro org-xob-with-context-buffer (&rest body)
-  (declare (debug (body)))
   `(let ((buf (cond
                ((and (boundp 'ID)
                      (boundp 'org-xob--context-buffer)
                      (bound-and-true-p org-xob-mode))
-                org-xob-context-buffer)
-               ((and (boundp 'parentID)
+                org-xob--context-buffer)
+               ((and (boundp 'parent-ID)
                      (bound-and-true-p org-xob-context-mode))
                 (current-buffer))
                (t nil))))
      (if (buffer-live-p buf)
-         (with-current-buffer ,@body))))
+         (with-current-buffer buf ,@body))))
 
 (defmacro org-xob-with-edit-buffer (&rest body)
   (declare (debug (body)))
@@ -293,7 +292,7 @@
                 parent-edit-buffer)
                (t nil))))
      (if (buffer-live-p buf)
-         (with-current-buffer ,@body))))
+         (with-current-buffer buf ,@body))))
 
 ;;;; Commands
 ;;;;; Main Commands
@@ -372,12 +371,14 @@ Calling with C-u will force a restart."
 
 ;;;###autoload
 (defun org-xob-insert-link ()
-  "Inserts a properly formatted xob node link at point."
+  "Inserts a properly formatted xob node link at point. If we are in a xob buffer,
+then also update the forlinks source."
   (interactive)
   (org-xob-with-xob-on
    (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
      (org-super-links--insert-link (org-id-find ID 'MARKERP))
-     (org-xob--source-refresh 'forlinks))))
+     (org-xob-with-xob-buffer
+      (org-xob--source-refresh 'forlinks)))))
 
 ;;;###autoload
 (defun org-xob-remove-node (&optional ID)
@@ -430,25 +431,27 @@ If called with optional ID argument, then remove the node with that ID."
 (defun org-xob-add-node-labels ()
   "Select labels to apply to node at point, or at optional node specified by ID."
   (interactive)
-  (if (call-interactively org-xob--is-node-p)
-      (helm :buffer "xob labels"
-            :sources (helm-build-sync-source "xob-labels"
-                       :candidates org-xob-labels
-                       :action (lambda (c)
-                                 (org-entry-put (point) "LABELS"
-                                                (string-join (helm-marked-candidates) " ")))))
-    (message "XOB: not on a xob node.")))
+  (org-xob-with-xob-on
+   (if (call-interactively org-xob--is-node-p)
+       (helm :buffer "xob labels"
+             :sources (helm-build-sync-source "xob-labels"
+                        :candidates org-xob-labels
+                        :action (lambda (c)
+                                  (org-entry-put (point) "LABELS"
+                                                 (string-join (helm-marked-candidates) " ")))))
+     (message "XOB: not on a xob node."))))
 
 ;;;###autoload
 (defun org-xob-change-node-type ()
   "Change the type for node at point, or at optional node specified by ID."
   (interactive)
-  (if (call-interactively org-xob--is-node-p)
-      (helm :buffer "xob types"
-            :sources (helm-build-sync-source "xob-types"
-                       :candidates org-xob--node-types
-                       :action (lambda (c)
-                                 (org-entry-put (point) "TYPE" c))))))
+  (org-xob-with-xob-on
+   (if (call-interactively org-xob--is-node-p)
+       (helm :buffer "xob types"
+             :sources (helm-build-sync-source "xob-types"
+                        :candidates org-xob--node-types
+                        :action (lambda (c)
+                                  (org-entry-put (point) "TYPE" c)))))))
 
 ;;;;; Sideline Commands
 ;;;###autoload
@@ -474,10 +477,9 @@ regardless. Likewise with flag 'OFF."
 (defun org-xob-show-context ()
   "Display the context buffer in the sideline window."
   (interactive)
-  (org-xob-show-side-buffer org-xob--context-buffer)
-  ;; (org-xob-show-backlinks)
-  ;; (org-xob-show-forlinks)
-  )
+  (org-xob-with-xob-on
+   (org-xob-with-edit-buffer
+    (org-xob-show-side-buffer org-xob--context-buffer))))
 
 ;;;;; KB Context Commands
 
@@ -510,8 +512,9 @@ regardless. Likewise with flag 'OFF."
 (defun org-xob-refresh-context ()
   "Refresh all displayed sources"
   (interactive)
-  (dolist (el org-xob--node-sources)
-    (org-xob--source-refresh el)))
+  (org-xob-with-context-buffer
+   (dolist (el org-xob--node-sources)
+     (org-xob--source-refresh el))))
 
 ;;;###autoload
 (defun org-xob-clear-heading ()
@@ -713,17 +716,18 @@ ID should be buffer local in a xob edit buffer."
 then check the heading associated with it."
   (interactive)
   (let ((temp (if ID ID
-                (org-entry-get (point) ID))))
+                (org-entry-get (point) "ID"))))
     (if (and temp
              (member temp org-xob--node-sources)) t nil)))
 
 (defun org-xob--prepare-kb-source (source)
   "fill in material for a node context source."
   (let ((ID (org-xob--id-create))
-        (buf (if (boundp org-xob--context-buffer)
-                 org-xob--context-buffer
-               (current-buffer))))
-    (with-current-buffer buf 
+        ;; (buf (if (boundp org-xob--context-buffer)
+        ;;          org-xob--context-buffer
+        ;;        (current-buffer)))
+        )
+    (org-xob-with-context-buffer
       (plist-put source :PID parent-ID)
       (plist-put source :title parent-title)
       (plist-put source :ID ID)
@@ -759,7 +763,10 @@ source is a plist that describes the content source."
        (org-edit-headline (plist-get source :title))
        (dolist (el (plist-get source :tags))
          (org-toggle-tag el 'ON))
-       (org-toggle-tag (plist-get source :name) 'ON))
+       ; (org-toggle-tag (plist-get source :name) 'ON)
+       (org-entry-put (point) "ID" (plist-get source :ID))
+       (org-entry-put (point) "PID" (plist-get source :PID))
+       )
      (org-xob--source-refresh source))))
 
 (defun org-xob--id-create ()
@@ -771,12 +778,12 @@ Returns ID if successful, nil otherwise."
     (if (org-at-heading-p)
         (progn (org-entry-put (point) "ID" ID)
                ID)
-      nil)))
+      ID)))
 
 (defun org-xob--id-goto (ID)
   "Search buffers for org heading with ID and place point there.
 Return point position if found, nil otherwise."
-  (if (and (boundp org-xob--context-buffer)
+  (if (and (boundp 'org-xob--context-buffer)
            (bufferp org-xob--context-buffer))
       (unless (equal (buffer-name) org-xob-short-title)
         (set-buffer org-xob--context-buffer)))
@@ -806,7 +813,8 @@ todo - possibly refresh item contents if changes were made.
           (if temp
               (dolist (el temp)
                 (org-xob--source-add-item el)))))
-      (plist-get source :ID)))))
+      ;; (plist-get source :ID)
+      ))))
 
 (defun org-xob--source-add-item (ID)
   "Appends a single entry to the end of the source subtree.
