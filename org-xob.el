@@ -464,13 +464,15 @@ regardless. Likewise with flag 'OFF."
    (org-xob-with-xob-buffer
     (if (boundp 'org-xob--sideline-window)
         (save-excursion
-          (if org-xob--sideline-window
+          (if (and org-xob--sideline-window
+                   (not (eq flag 'ON)))
               (progn
                 (delete-window org-xob--sideline-window)
                 (setq org-xob--sideline-window nil))
-            (setq org-xob--sideline-window
-                  (split-window-right))
-            (select-window org-xob--sideline-window)))
+            (and (not (eq flag 'OFF))
+                 (setq org-xob--sideline-window
+                       (split-window-right))
+                 (select-window org-xob--sideline-window))))
       (message "XOB: no sideline window associated with this buffer.")))))
 
 ;;;###autoload
@@ -489,7 +491,7 @@ regardless. Likewise with flag 'OFF."
   (interactive)
   (org-xob-with-xob-buffer
    (org-xob--prepare-kb-source org-xob--source-backlinks)
-   (org-xob-toggle-sidelinej 'on)))
+   (org-xob-toggle-sideline 'on)))
 
 ;;;###autoload
 (defun org-xob-show-forlinks ()
