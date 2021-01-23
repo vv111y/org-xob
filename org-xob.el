@@ -528,7 +528,8 @@ This can be applied to heading at point or used in a mapping."
    (org-back-to-heading t)
    (org-mark-subtree)
    (org-end-of-meta-data 1)
-   (call-interactively #'delete-region))
+   (call-interactively #'delete-region)
+   (deactivate-mark))  ;; force?
   (goto-char (- (point) 1)))
 
 ;; TEST
@@ -558,8 +559,8 @@ This can be applied to heading at point or used in a mapping."
                      (setq str (concat str
                                        (buffer-substring
                                         (line-beginning-position)
-                                        (line-end-position)
-                                        "\n")))))
+                                        (line-end-position))
+                                       "\n"))))
                   str))))
 
 ;; TEST
@@ -761,20 +762,19 @@ then check the heading associated with it."
     (if (and temp
              (member temp org-xob--node-sources)) t nil)))
 
+;; (buf (if (boundp org-xob--context-buffer)
+;;          org-xob--context-buffer
+;;        (current-buffer)))
 (defun org-xob--prepare-kb-source (source)
   "fill in material for a node context source."
-  (let ((ID (org-xob--id-create))
-        ;; (buf (if (boundp org-xob--context-buffer)
-        ;;          org-xob--context-buffer
-        ;;        (current-buffer)))
-        )
-    (org-xob-with-context-buffer
-      (plist-put source :PID parent-ID)
-      (plist-put source :title parent-title)
-      (plist-put source :ID ID)
-      (add-to-list 'org-xob--node-sources ID)
-      (org-xob--node-get-link-entries source)
-      (org-xob--source-write source))))
+  (org-xob-with-context-buffer
+   (let ((ID (org-xob--id-create)))
+     (plist-put source :PID parent-ID)
+     (plist-put source :title parent-title)
+     (plist-put source :ID ID)
+     (add-to-list 'org-xob--node-sources ID)
+     (org-xob--node-get-link-entries source)
+     (org-xob--source-write source))))
 
 (defun org-xob--node-get-link-entries (source)
   "Populates source item list from the node. The items are represented by their
@@ -849,7 +849,7 @@ the node content as a string.
 When called with point on the given context item, only that item will be
 updated. If called on a context source heading, then the update is applied
 to all source items."
-  (cl-flet ((func #'(lambda () (progn
+  (let ((func #'(lambda () (progn
                              (org-xob-clear-heading)
                              (org-end-of-meta-data)
                              (insert
@@ -860,9 +860,10 @@ to all source items."
                                    (org-narrow-to-subtree)
                                    (outline-show-all)
                                    (funcall payload)))))))))
-    (if (org-xob--is-source-p)
-        (org-xob--map-source func)
-      (funcall func))))
+    (org-with-wide-buffer
+     (if (org-xob--is-source-p)
+         (org-xob--map-source func)
+       (funcall func)))))
 
 ;; (org-narrow-to-subtree)
 ;; (outline-show-all)
