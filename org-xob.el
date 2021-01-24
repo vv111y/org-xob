@@ -532,20 +532,20 @@ This can be applied to heading at point or used in a mapping."
    (deactivate-mark))  ;; force?
   (goto-char (- (point) 1)))
 
-;; TEST
+;; TODO find any paragraph before next heading 
 ;;;###autoload
 (defun org-xob-to-summary ()
   "Show KB node summary. This is defined as the first paragraph if it exists."
   (interactive)
   (org-xob--kb-copy-paste
    #'(lambda () (progn
-                 (org-end-of-meta-data 'full)
-                 (let ((p (org-element-at-point)))
-                   (if (equal (org-element-type p)
-                              'paragraph)
-                       (buffer-substring-no-properties
-                        (org-element-property :contents-begin p)
-                        (org-element-property :contents-end p))))))))
+                 (org-end-of-meta-data t)
+                 (let ((p (org--paragraph-at-point)))
+                   ;; (if (equal (org-element-type p)
+                   ;;            'paragraph))
+                   (buffer-substring-no-properties
+                    (org-element-property :contents-begin p)
+                    (org-element-property :contents-end p)))))))
 
 ;; TEST
 ;;;###autoload
@@ -553,15 +553,16 @@ This can be applied to heading at point or used in a mapping."
   "Show only subheadings of KB node."
   (interactive)
   (org-xob--kb-copy-paste
-   #'(lambda () (let ((str))
-                  (org-map-tree
+   #'(lambda ()
+       (let ((str (org-map-tree
                    (lambda ()
-                     (setq str (concat str
-                                       (buffer-substring
-                                        (line-beginning-position)
-                                        (line-end-position))
-                                       "\n"))))
-                  str))))
+                     (setq str
+                           (concat str
+                                   (buffer-substring-no-properties
+                                    (line-beginning-position)
+                                    (line-end-position))
+                                   "\n"))))))
+         str))))
 
 ;; TEST
 ;;;###autoload
@@ -570,7 +571,7 @@ This can be applied to heading at point or used in a mapping."
   (interactive)
   (org-xob--kb-copy-paste
    #'(lambda () (let ((beg) (end))
-                  (org-end-of-meta-data 1)
+                  (org-end-of-meta-data t)
                   (setq beg (point))
                   (outline-next-heading)
                   (setq end (- (point) 1))
@@ -583,7 +584,7 @@ This can be applied to heading at point or used in a mapping."
   (org-xob--kb-copy-paste
    #'(lambda () (progn
                   (org-mark-subtree)
-                  (org-end-of-meta-data 1)
+                  (org-end-of-meta-data t)
                   (buffer-substring (point) (mark))))))
 
 ;;;;; Activity Commands
@@ -852,14 +853,15 @@ to all source items."
   (let ((func #'(lambda () (progn
                              (org-xob-clear-heading)
                              (org-end-of-meta-data)
-                             (insert
-                              (save-excursion
-                                (org-id-goto (org-entry-get (point) "PID"))
-                                (org-with-wide-buffer
-                                 (org-save-outline-visibility t
-                                   (org-narrow-to-subtree)
-                                   (outline-show-all)
-                                   (funcall payload)))))))))
+                             (if-let ((str 
+                                       (save-excursion
+                                         (org-id-goto (org-entry-get (point) "PID"))
+                                         (org-with-wide-buffer
+                                          (org-save-outline-visibility t
+                                            (org-narrow-to-subtree)
+                                            (funcall payload))))))
+                                 (if (stringp str)
+                                     (insert str)))))))
     (org-with-wide-buffer
      (if (org-xob--is-source-p)
          (org-xob--map-source func)

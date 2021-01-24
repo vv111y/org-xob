@@ -2627,3 +2627,8 @@ org-xob--templates
 ;; (org-save-outline-visibility USE-MARKERS &rest BODY)
 ;; maybe useful
 (org-save-outline-visibility) 
+
+(org-element-contents (org-element-at-point))
+(org-element-context)
+(org--paragraph-at-point)
+(org-element-section-parser (point))
