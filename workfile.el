@@ -2632,3 +2632,18 @@ org-xob--templates
 (org-element-context)
 (org--paragraph-at-point)
 (org-element-section-parser (point))
+
+;;; empty a list
+(setq vvlst '("one" "two" "three"))
+(setq vvlst nil)
+(dolist (x vvlst)
+  (delete x vvlst))
+
+(setq vvlst (cl-remove-if (lambda (x) (stringp x)) vvlst))
+(dotimes (i 4)
+  (add-to-list 'vvlst (get-buffer-create (number-to-string i))))
+
+(dolist (x vvlst)
+  (kill-buffer x))
+
+(setq vvlst (cl-remove-if (lambda (x) (not (buffer-live-p x))) vvlst))
