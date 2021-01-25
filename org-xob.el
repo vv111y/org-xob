@@ -257,7 +257,7 @@
 
 (defmacro org-xob-with-xob-buffer (&rest body)
   (declare (debug (body)))
-  `(if (or (and (boundp 'ID)
+  `(if (or (and (boundp 'bufID)
                 (org-xob--is-node-p ID)
                 (bound-and-true-p org-xob-mode))
            (and (boundp 'parentID)
@@ -654,7 +654,7 @@ If ID is given, then convert todo with that ID."
       (re-search-forward ID)
       (org-back-to-heading)
       (org-narrow-to-subtree)
-      (setq-local ID ID title title short-title short-title
+      (setq-local bufID ID title title short-title short-title
                   log-entry (org-xob--insert-link-header ID title org-xob-today)
                   org-xob--context-buffer (get-buffer-create (concat  "*context-" title))
                   org-xob--sideline-window nil)
@@ -743,7 +743,7 @@ ID should be buffer local in a xob edit buffer."
         (if (buffer-live-p buf)
             (with-current-buffer buf 
               (goto-char (point-min))
-              (re-search-forward ID)
+              (re-search-forward bufID)
               (org-back-to-heading t)
               (let ((mdate (org-entry-get (point) "MODIFIED")))
                 (if mdate
