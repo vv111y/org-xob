@@ -1061,17 +1061,21 @@ subheading with an org link to the node with ID and title.
 Returns mark for the link subheader."
   (save-excursion
     (save-window-excursion
-      (with-current-buffer org-xob-today-buffer
-        (let ((place nil))
-          (org-id-goto target)
-          (while (not (or (eobp) place))
-            (if (string-match-p (regexp-quote ID) (nth 4 (org-heading-components)))
-                (setq place (point)))
-            (outline-next-heading))
-          (unless place
-            (org-insert-subheading '(4))
-            (org-insert-link nil ID title))
-          (point-marker))))))
+      (org-id-goto target)
+      (let ((place nil))
+        (org-map-tree
+         (lambda () (if (string-match-p (regexp-quote ID)
+                                         (nth 4 (org-heading-components)))
+                         (setq place (point)))))
+        (if place (progn 
+                    (goto-char place)
+                    (org-back-to-heading))
+          (newline)
+          (org-insert-subheading '(4))
+          (org-insert-link nil (concat "ID:" ID) title)
+          (newline)
+          (org-back-to-heading))
+        (point-marker)))))
 
 (defun org-xob--node-get-links (linktype)
   "Return list of link paths within the node at point. If linktype is 'backlinks'
