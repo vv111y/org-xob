@@ -733,10 +733,12 @@ Return point position if found, nil otherwise."
   "Cleanup when closing a node edit buffer. Close sideline window if open, delete
 context buffer, and remove edit buffer from list of open indirect buffers.
 Buffer local to edit buffer."
-  (if (window-live-p org-xob--sideline-window)
+  (if (and (boundp 'org-xob--sideline-window)
+           (window-live-p org-xob--sideline-window))
       (delete-window org-xob--sideline-window))
-  (with-current-buffer org-xob--context-buffer
-    (kill-buffer))
+  (if (boundp 'org-xob--context-buffer)
+      (with-current-buffer org-xob--context-buffer
+        (kill-buffer)))
   (let ((selfbuf (current-buffer)))
     (with-current-buffer (buffer-base-buffer)
       (setq-local org-xob--edit-buffers (cl-delete-if
