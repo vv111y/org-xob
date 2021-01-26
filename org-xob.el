@@ -321,7 +321,7 @@ Calling with C-u will force a restart."
        (setq org-xob-new-day-timer
              (run-at-time "00:00"
                           (* 24 60 60)
-                          (org-xob--open-today))))
+                          'org-xob--open-today)))
       (progn
         (setq org-xob-on-p t)
         (message "XOB: started.")
