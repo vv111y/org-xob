@@ -473,3 +473,8 @@ Return true if found, nil otherwise."
                 (goto-char place)
                 t)
       (message "XOB: cannot find buffer associated with heading %s." ID) nil)))
+
+;;; toggle window alt
+
+(select-window org-xob--sideline-window)
+(switch-to-buffer org-xob--context-buffer t t)

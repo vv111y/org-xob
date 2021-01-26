@@ -461,19 +461,20 @@ If called with optional ID argument, then remove the node with that ID."
 regardless. Likewise with flag 'OFF."
   (interactive)
   (org-xob-with-xob-on
-   (org-xob-with-xob-buffer
-    (if (boundp 'org-xob--sideline-window)
-        (save-excursion
-          (if (and org-xob--sideline-window
-                   (not (eq flag 'ON)))
-              (progn
-                (delete-window org-xob--sideline-window)
-                (setq org-xob--sideline-window nil))
+   (save-excursion
+     (org-xob-with-edit-buffer
+      (if (boundp 'org-xob--sideline-window)
+          (if org-xob--sideline-window
+              (if (not (eq flag 'ON))
+                  (progn
+                    (delete-window org-xob--sideline-window)
+                    (setq org-xob--sideline-window nil)))
             (and (not (eq flag 'OFF))
                  (setq org-xob--sideline-window
                        (split-window-right))
-                 (select-window org-xob--sideline-window))))
-      (message "XOB: no sideline window associated with this buffer.")))))
+                 (set-window-buffer org-xob--sideline-window
+                                    org-xob--context-buffer)))
+        (message "XOB: no sideline window associated with this buffer."))))))
 
 ;;;###autoload
 (defun org-xob-show-context ()
