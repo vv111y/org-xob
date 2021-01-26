@@ -258,7 +258,7 @@
 (defmacro org-xob-with-xob-buffer (&rest body)
   (declare (debug (body)))
   `(if (or (and (boundp 'bufID)
-                (org-xob--is-node-p ID)
+                (org-xob--is-node-p bufID)
                 (bound-and-true-p org-xob-mode))
            (and (boundp 'parentID)
                 (org-xob--is-node-p parentID)
@@ -649,7 +649,7 @@ If ID is given, then convert todo with that ID."
           (add-to-list 'org-xob--edit-buffers buf)))
       (switch-to-buffer buf)
       (org-xob-mode 1)
-      (add-hook 'kill-buffer-hook #'org-xob--cleanup-buffers-hook nil 'local)
+      (add-hook 'kill-buffer-hook #'org-xob--cleanup-buffers-hook -80 'local)
       (goto-char (point-min))
       (re-search-forward ID)
       (org-back-to-heading)
@@ -730,9 +730,12 @@ Buffer local to edit buffer."
       (delete-window org-xob--sideline-window))
   (with-current-buffer org-xob--context-buffer
     (kill-buffer))
-  (setq org-xob--edit-buffers (cl-remove-if
-                               (lambda (x) (not (buffer-live-p x)))
-                               org-xob--edit-buffers)) nil)
+  (let ((selfbuf (current-buffer)))
+    (with-current-buffer (buffer-base-buffer)
+      (setq-local org-xob--edit-buffers (cl-delete-if
+                                   (lambda (x) (or (not (buffer-live-p x))
+                                                   (eq selfbuf x) ))
+                                   org-xob--edit-buffers)))) nil)
 
 (defun org-xob--update-modified-time ()
   "Hook to update the modified timestamp of all nodes that are being edited when saving.

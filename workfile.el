@@ -2647,3 +2647,6 @@ org-xob--templates
   (kill-buffer x))
 
 (setq vvlst (cl-remove-if (lambda (x) (not (buffer-live-p x))) vvlst))
+(car (memq 'org-xob--edit-buffers (buffer-local-variables)))
+
+(buffer-local-va)
