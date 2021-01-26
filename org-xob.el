@@ -251,9 +251,10 @@
 ;;;; Macros
 (defmacro org-xob-with-xob-on (&rest body)
   (declare (debug (body)))
-  `(progn (if org-xob-on-p
-              ,@body
-            (message "xob is not on."))))
+  `(if org-xob-on-p
+       (progn
+         ,@body)
+     (message "xob is not on.")))
 
 (defmacro org-xob-with-xob-buffer (&rest body)
   (declare (debug (body)))
@@ -316,7 +317,11 @@ Calling with C-u will force a restart."
        (org-xob--register-files)
        (org-xob--process-files)
        (org-xob--eval-capture-templates)
-       (org-xob--open-today))
+       (org-xob--open-today)
+       (setq org-xob-new-day-timer
+             (run-at-time "00:00"
+                          (* 24 60 60)
+                          (org-xob--open-today))))
       (progn
         (setq org-xob-on-p t)
         (message "XOB: started.")
@@ -347,6 +352,7 @@ Calling with C-u will force a restart."
         (org-xob--clear-file-variables)
         (remove-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (remove-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+        (cancel-timer org-xob-new-day-timer)
         (setq org-xob-on-p nil)
         (message "XOB: stopped."))))
 
@@ -889,6 +895,7 @@ Otherwise apply to source at point."
        (message "XOB: map-source, nothing to do here.") nil))))
 
 ;;;;; Activity
+
 (defun org-xob--open-today ()
   "Open today node for logging."
   (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
