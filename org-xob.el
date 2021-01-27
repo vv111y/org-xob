@@ -642,12 +642,13 @@ If ID is given, then convert todo with that ID."
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
   (let ((short-title (truncate-string-to-width title 20))
-        buf)
+        place buf)
     (if (setq buf (get-buffer short-title))
         (switch-to-buffer buf)
       (save-window-excursion
         (org-with-wide-buffer
           (org-id-goto ID)
+          (setq place (point))
           (unless (boundp 'org-xob--edit-buffers)
             (setq-local org-xob--edit-buffers nil))
           (add-hook 'write-contents-functions #'org-xob--update-modified-time nil t)
@@ -657,9 +658,7 @@ If ID is given, then convert todo with that ID."
       (switch-to-buffer buf)
       (org-xob-mode 1)
       (add-hook 'kill-buffer-hook #'org-xob--cleanup-buffers-hook -80 'local)
-      (goto-char (point-min))
-      (re-search-forward ID)
-      (org-back-to-heading)
+      (goto-char place)
       (org-narrow-to-subtree)
       (setq-local bufID ID title title short-title short-title
                   log-entry (org-xob--insert-link-header ID title org-xob-today)
