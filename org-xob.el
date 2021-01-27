@@ -400,9 +400,9 @@ If called with optional ID argument, then remove the node with that ID."
            (org-id-goto ID))
        (let* ((ID (org-id-get (point)))
               (title (gethash ID org-xob--id-title))
-              (forelinks (org-xob--node-get-links "forelinks"))
+              (forlinks (org-xob--node-get-links "forlinks"))
               link-element)
-         (dolist (el forelinks)
+         (dolist (el forlinks)
            (save-excursion
              (org-id-goto el)
              (save-restriction
@@ -502,7 +502,7 @@ regardless. Likewise with flag 'OFF."
 
 ;;;###autoload
 (defun org-xob-show-forlinks ()
-  "Add forelinks contents to the context buffer."
+  "Add forlinks contents to the context buffer."
   (interactive)
   (org-xob-with-xob-buffer
    (org-xob--prepare-kb-source org-xob--source-forlinks)
@@ -1082,11 +1082,11 @@ Returns mark for the link subheader."
 
 (defun org-xob--node-get-links (linktype)
   "Return list of link paths within the node at point. If linktype is 'backlinks'
-then return only links in the backlinks drawer. If linktype is 'forelinks'
+then return only links in the backlinks drawer. If linktype is 'forlinks'
 then return all other links."
   (let* ((test (if (equal linktype "backlinks")
                    (lambda (x) x)
-                 (if (equal linktype "forelinks")
+                 (if (equal linktype "forlinks")
                      (lambda (x) (not x))))))
     (save-excursion
       (save-restriction
