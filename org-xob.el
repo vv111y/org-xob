@@ -438,7 +438,7 @@ If called with optional ID argument, then remove the node with that ID."
   "Select labels to apply to node at point, or at optional node specified by ID."
   (interactive)
   (org-xob-with-xob-on
-   (if (call-interactively #'org-xob--is-node-p)
+   (if (org-xob--is-node-p)
        (helm :buffer "xob labels"
              :sources (helm-build-sync-source "xob-labels"
                         :candidates org-xob-labels
@@ -452,7 +452,7 @@ If called with optional ID argument, then remove the node with that ID."
   "Change the type for node at point, or at optional node specified by ID."
   (interactive)
   (org-xob-with-xob-on
-   (if (call-interactively org-xob--is-node-p)
+   (if (org-xob--is-node-p)
        (helm :buffer "xob types"
              :sources (helm-build-sync-source "xob-types"
                         :candidates org-xob--node-types
