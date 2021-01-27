@@ -1036,12 +1036,13 @@ as a capture hook function."
 (defun org-xob--link-hook-fn ()
   "If a link is a xob node, then reopen node in xob edit mode."
   (let ((link (org-element-context))
-        ID)
+        ID title)
     (if (equal "ID" (org-element-property :type link))
         (progn
           (setq ID (org-element-property :path link))
-          (if (gethash ID org-xob--id-title)
-              (org-xob--edit-node ID)))
+          (setq title (gethash ID org-xob--id-title))
+          (if title 
+              (org-xob--edit-node ID title)))
       nil)))
 
 ;; --navigation--
