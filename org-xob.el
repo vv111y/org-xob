@@ -270,7 +270,7 @@
 
 (defmacro org-xob-with-context-buffer (&rest body)
   `(let ((buf (cond
-               ((and (boundp 'ID)
+               ((and (boundp 'bufID)
                      (boundp 'org-xob--context-buffer)
                      (bound-and-true-p org-xob-mode))
                 org-xob--context-buffer)
