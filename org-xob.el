@@ -722,6 +722,7 @@ Return point position if found, nil otherwise."
              (goto-char place))
         (and (setq place (with-current-buffer org-xob--other-buffer
                            (org-find-entry-with-id sID)))
+             (set-buffer org-xob--other-buffer)
              (goto-char place)))))
 
 (defun org-xob--cleanup-buffers-hook ()
