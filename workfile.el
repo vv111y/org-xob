@@ -2650,3 +2650,28 @@ org-xob--templates
 (car (memq 'org-xob--edit-buffers (buffer-local-variables)))
 
 (buffer-local-va)
+
+
+(re-search-forward (rx (and ":ID:"
+                            (one-or-more space)
+                            "775E91BC-8588-46EA-932E-7336740EF7CE"))
+                   nil t nil)
+(re-search-forward ":ID:" nil t nil)
+(re-search-forward (rx ":ID:") nil t nil)
+
+(org-find-entry-with-id)
+
+(outline-back-to-heading)
+(org-find-property "ID" id)
+(org-re-property)
+
+;; test id-goto
+(let (place (sID "C54BFBE9-EB9D-4F4C-9E2B-5F6FA20B3C33"))
+  (or (and (string= sID (org-entry-get (point) "ID"))
+           (org-back-to-heading)
+           (point))
+      (and (setq place (org-find-entry-with-id sID))
+           (goto-char place))
+      (and (setq place (with-current-buffer org-xob--other-buffer
+                         (org-find-entry-with-id sID)))
+           (goto-char place))))

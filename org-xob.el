@@ -714,19 +714,15 @@ Returns ID if successful, nil otherwise."
   "TODO changed: goto context buffer and then look
 Search buffers for org heading with ID and place point there.
 Return point position if found, nil otherwise."
-  (let (func (lambda (save-restriction
-                       (widen)
-                       (goto-char (point-min))
-                       (if (re-search-forward sID nil 'noerror nil)
-                           (progn 
-                             (org-back-to-heading)
-                             (point))
-                         nil)))))
-  (or (and (equal sID (org-entry-get (point) "ID"))
-           (point))
-      (funcall func)
-      (and (set-buffer (org-xob--other-buffer))
-           (funcall func))))
+  (let (place)
+    (or (and (string= sID (org-entry-get (point) "ID"))
+             (org-back-to-heading)
+             (point))
+        (and (setq place (org-find-entry-with-id sID))
+             (goto-char place))
+        (and (setq place (with-current-buffer org-xob--other-buffer
+                           (org-find-entry-with-id sID)))
+             (goto-char place)))))
 
 (defun org-xob--cleanup-buffers-hook ()
   "Cleanup when closing a node edit buffer. Close sideline window if open, delete

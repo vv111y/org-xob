@@ -474,7 +474,29 @@ Return true if found, nil otherwise."
                 t)
       (message "XOB: cannot find buffer associated with heading %s." ID) nil)))
 
+(defun org-xob--id-goto (sID)
+  "TODO changed: goto context buffer and then look
+Search buffers for org heading with ID and place point there.
+Return point position if found, nil otherwise."
+  (let (func (lambda (org-with-wide-buffer
+                      (goto-char (point-min))
+                      (if (re-search-forward (rx (and
+                                                  ":ID:"
+                                                  (one-or-more space)
+                                                  sID))
+                                             nil 'noerror nil)
+                          (progn 
+                            (org-back-to-heading)
+                            (point))
+                        nil)))))
+  (or (and sID
+           (equal sID (org-entry-get (point) "ID"))
+           (point))
+      (funcall func)
+      (and (set-buffer (org-xob--other-buffer))
+           (funcall func))))
 ;;; toggle window alt
 
 (select-window org-xob--sideline-window)
 (switch-to-buffer org-xob--context-buffer t t)
+
