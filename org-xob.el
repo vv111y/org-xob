@@ -139,7 +139,7 @@
 ;; TODO remove when done
 ;; (setq org-xob-dir "~/xob/")
 ;; (setq org-xob--KB-files nil)
-(setq org-xob-dir "/Users/Will/DevWorkSpace/MyTools/Emacs/zettle/org-xob/xob/")
+(setq org-xob-dir "~/DevWorkSpace/MyTools/Emacs/zettle/org-xob/xob/")
 
 (defvar org-xob-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
@@ -904,7 +904,7 @@ Otherwise apply to source at point."
          (save-excursion
            (org-id-goto org-xob-today)
            (setq org-xob-today-buffer (current-buffer))))
-       (message "XOB: Todays log entry opened.")))
+       (message "XOB: Todays log entry opened.") t))
 
 ;;;;;; Clocking
 (defun org-xob--auto-clock-in ())
