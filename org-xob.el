@@ -822,19 +822,19 @@ source is a plist that describes the content source."
 todo - possibly refresh item contents if changes were made.
 (this requires knowing what is displayed)"
   (org-xob-with-context-buffer
-   (org-xob--id-goto (plist-get source :ID))
-   (let ((temp (copy-tree (plist-get source :items))))
-     (org-xob--map-source
-      (lambda ()
-        (let ((pid (org-entry-get (point) "PID")))
-          (if (member pid temp)
-              (setq temp (delete pid temp))
-            (progn
-              (org-mark-subtree)
-              (delete-region))))))
-     (if temp
-         (dolist (el temp)
-           (org-xob--source-add-item el))))))
+   (if (org-xob--id-goto (plist-get source :ID))
+       (let ((temp (copy-tree (plist-get source :items))))
+         (org-xob--map-source
+          (lambda ()
+            (let ((pid (org-entry-get (point) "PID")))
+              (if (member pid temp)
+                  (setq temp (delete pid temp))
+                (progn
+                  (org-mark-subtree)
+                  (delete-region))))))
+         (if temp
+             (dolist (el temp)
+               (org-xob--source-add-item el)))))))
 
 (defun org-xob--source-add-item (ID)
   "Appends a single entry to the end of the source subtree.
