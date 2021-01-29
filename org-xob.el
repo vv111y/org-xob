@@ -695,9 +695,9 @@ local variables for the edit buffer and the back and for links source objects."
    (and (boundp 'org-xob--context-buffer)
         (bufferp org-xob--context-buffer)
         org-xob--context-buffer)
-   (and (boundp 'org-xob--edit-buffer)
-        (bufferp org-xob--edit-buffer)
-        org-xob--edit-buffer)))
+   (and (boundp 'parent-edit-buffer)
+        (bufferp parent-edit-buffer)
+        parent-edit-buffer)))
 
 (defun org-xob--id-create ()
   "Create a UUID formatted ID. org-id will not work with buffers that are
@@ -720,7 +720,7 @@ Return point position if found, nil otherwise."
              (point))
         (and (setq place (org-find-entry-with-id sID))
              (goto-char place))
-        (and (setq place (with-current-buffer org-xob--other-buffer
+        (and (setq place (with-current-buffer (org-xob--other-buffer)
                            (org-find-entry-with-id sID)))
              (set-buffer org-xob--other-buffer)
              (goto-char place)))))
