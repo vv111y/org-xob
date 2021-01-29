@@ -775,14 +775,16 @@ then check the heading associated with it."
 ;;        (current-buffer)))
 (defun org-xob--prepare-kb-source (source)
   "fill in material for a node context source."
-  (org-xob-with-context-buffer
-   (let ((ID (org-xob--id-create)))
-     (plist-put source :PID parent-ID)
-     (plist-put source :title parent-title)
-     (plist-put source :ID ID)
-     (add-to-list 'org-xob--node-sources ID)
-     (org-xob--node-get-link-entries source)
-     (org-xob--source-write source))))
+  (let (ID)
+    (unless (plist-get source :ID)
+      (setq ID (org-xob--id-create))
+      (plist-put source :PID parent-ID)
+      (plist-put source :title parent-title)
+      (plist-put source :ID ID)
+      (add-to-list 'org-xob--node-sources ID))
+    (unless (plist-get source :items)
+      (org-xob--node-get-link-entries source))
+    (org-xob--source-write source)))
 
 (defun org-xob--node-get-link-entries (source)
   "Populates source item list from the node. The items are represented by their
@@ -800,22 +802,16 @@ where the backlinks are in a BACKLINKS drawer."
   "Open a source tree into the context buffer. If it is already there,
 then refresh it. source items are shown as org headings.
 source is a plist that describes the content source."
-  (interactive)
-  (save-excursion
+  (org-xob-with-context-buffer
     (org-with-wide-buffer
-     (if (progn
-           (goto-char (point-min))
-           (re-search-forward (plist-get source :ID) nil t nil))
-         (org-back-to-heading)
+     (unless (org-xob--id-goto (plist-get source :ID))
        (goto-char (point-max))
        (org-insert-heading '(4) 'invisible-ok 'TOP)
        (org-edit-headline (plist-get source :title))
        (dolist (el (plist-get source :tags))
          (org-toggle-tag el 'ON))
-       ; (org-toggle-tag (plist-get source :name) 'ON)
        (org-entry-put (point) "ID" (plist-get source :ID))
-       (org-entry-put (point) "PID" (plist-get source :PID))
-       )
+       (org-entry-put (point) "PID" (plist-get source :PID)))
      (org-xob--source-refresh source))))
 
 (defun org-xob--source-refresh (source)
@@ -832,7 +828,7 @@ todo - possibly refresh item contents if changes were made.
                   (setq temp (delete pid temp))
                 (progn
                   (org-mark-subtree)
-                  (delete-region))))))
+                  (call-interactively 'delete-region))))))
          (if temp
              (dolist (el temp)
                (org-xob--source-add-item el)))))))
@@ -864,9 +860,12 @@ to all source items."
                                        (save-excursion
                                          (org-id-goto (org-entry-get (point) "PID"))
                                          (org-with-wide-buffer
-                                          (org-save-outline-visibility t
+                                          (org-save-outline-visibility
+                                            ;; (org-save-outline-visibility t
                                             (org-narrow-to-subtree)
-                                            (funcall payload))))))
+                                            (funcall payload)
+                                            ;; (deactivate-mark)
+                                            )))))
                                  (if (stringp str)
                                      (insert str)))))))
     (org-with-wide-buffer
@@ -882,7 +881,7 @@ to all source items."
 If the optional ID of a xob source is given, then apply func to that source.
 Otherwise apply to source at point."
   (save-excursion
-    (if ID (org-xob--id-goto ID))  ;; TODO test
+    (if ID (org-xob--id-goto ID))
     (org-with-wide-buffer
      (if (and (org-xob--is-source-p)
               (org-goto-first-child))
