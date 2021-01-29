@@ -2232,17 +2232,24 @@ only the description"
            do (zzm 'z)))
 
 (defun zzm (a b c)
-  (message "symbol1: %s" a)
-  (message "symbolQn: %s" (symbol-name a))
-  (message "symbolQv: %s" (symbol-value a))
-  (message "symbo21: %s" b)
-  (message "symbo2Qn: %s" (symbol-name b))
-  (message "symbo2Qv: %s" (symbol-value b))
-  (message "symbo31: %s" c)
-  (message "symbo3Qn: %s" (symbol-name c))
-  (message "symbo3Qv: %s" (symbol-value c))
-  nil
-  )
+  (message-or-box (concat
+                (format "symbol1: %s" a)
+                "\n"
+                (format "symbolQn: %s" (eval a))
+                "\n"
+                (format "symbolQv: %s" (symbol-value a))
+                "\n"
+                (format "symbo21: %s" b)
+                "\n"
+                (format "symbo2Qn: %s" (symbol-name b))
+                "\n"
+                (format "symbo2Qv: %s" (symbol-value b))
+                "\n"
+                (format "symbo31: %s" c)
+                "\n"
+                (format "symbo3Qn: %s" (symbol-name c))
+                "\n"
+                (format "symbo3Qv: %s" (symbol-value c)))))
 
 (let ((symbol1 "hi")
       (symbol2 "there")
@@ -2675,3 +2682,9 @@ org-xob--templates
       (and (setq place (with-current-buffer org-xob--other-buffer
                          (org-find-entry-with-id sID)))
            (goto-char place))))
+;;; string equal
+
+(equal "hit" "hi")
+(org-xob--register-files)
+(setq org-xob-today-buffer "log-file-001.org")
+(file-exists-p "xob")

@@ -1263,10 +1263,10 @@ If there are no saved tables, then create new empty ones."
                  (if current (setq org-xob--log-file filename)))
                 ((member "xob-agenda t" x)
                  (push  filename org-xob--agenda-files)
-                 (if  current (setq org-xob--agedna-file filename)))
+                 (if  current (setq org-xob--agenda-file filename)))
                 ((member "xob-archive t" x)
                  (push  filename org-xob--archive-files)
-                 (if current (message "XOB: error, file %s has both archive and current-file flags set." filename)))
+                 (if current (setq org-xob--archive-file filename)))
                 (t
                  (push filename org-xob--KB-files)
                  (if current (setq org-xob--KB-file filename)))))))))
@@ -1276,28 +1276,30 @@ If there are no saved tables, then create new empty ones."
 (defun org-xob--process-files ()
   "Called after files have been regisetered. Properly setup various file variables.
 If necessary create new files."
-  (cl-mapcar #'(lambda (file prefix filelist)
+  (cl-mapcar #'(lambda (filename prefix filelist)
                  (save-window-excursion
                    (save-excursion
-                     (let ((filename (concat org-xob-dir (symbol-value file))))
-                       (if (and (file-exists-p filename)
+                     (let ((filename (eval filename)))
+                         ;; ((filename (concat org-xob-dir (eval file))))
+                       (if (and filename
+                                (file-exists-p filename)
                                 (not (equal filename org-xob-dir)))
                            (progn (find-file-noselect filename)
                                   (message "XOB: found file for %s" filename))
-                         (message "XOB: current file for %s missing, initializing new." file)
-                         (org-xob--new-file file prefix filelist))))))
-             '(org-xob--KB-file
-               org-xob--agenda-file
+                         (message "XOB: current file for %s missing, initializing new." filename)
+                         (org-xob--new-file filename prefix filelist))))))
+             '(org-xob--agenda-file
                org-xob--log-file
-               org-xob--archive-file)
-             '(org-xob--KB-filename-prefix
-               org-xob--agenda-filename-prefix
+               org-xob--archive-file
+               org-xob--KB-file)
+             '(org-xob--agenda-filename-prefix
                org-xob--log-filename-prefix
-               org-xob--archive-filename-prefix)
-             '(org-xob--KB-files
-               org-xob--agenda-files
+               org-xob--archive-filename-prefix
+               org-xob--KB-filename-prefix)
+             '(org-xob--agenda-files
                org-xob--log-files
-               org-xob--archive-files))
+               org-xob--archive-files
+               org-xob--KB-files))
   (setq org-id-extra-files (append org-xob--KB-files
                                    org-xob--agenda-files
                                    org-xob--log-files))
@@ -1318,11 +1320,11 @@ Buffer remains open. Returns the filename."
         (find-file (concat org-xob-dir filename))
         (goto-char (point-min))
         (insert org-xob--xob-header)
-        (if (eq fileprefix org-xob--agenda-filename-prefix)
+        (if (string= fileprefix org-xob--agenda-filename-prefix)
             (insert org-xob--agenda-header))
-        (if (eq fileprefix org-xob--log-filename-prefix)
+        (if (string= fileprefix org-xob--log-filename-prefix)
             (insert org-xob--log-header))
-        (if (eq fileprefix org-xob--archive-filename-prefix)
+        (if (string= fileprefix org-xob--archive-filename-prefix)
             (insert org-xob--archive-header))
         (insert org-xob--current-header)
         (save-buffer)))
