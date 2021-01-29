@@ -1166,12 +1166,9 @@ Maybe useful for syncing."
 (defun org-xob-rebuild ()
   "Remakes xob data structures, traverse all nodes in all KB files in the xob directory."
   (interactive)
-  ;; empty current structs, keep current kb file, logfile, agendafile
-  (setq org-xob--KB-files nil)
   (clrhash org-xob--id-title)
   (clrhash org-xob--title-id)
-  (message "XOB: cleared KB file list & hash tables.")
-  ;; rebuild kbfiles: goto dir, for each file: has name prefix, .org suffix -> add
+  (message "XOB: cleared hash tables.")
   (and
    (org-xob--register-files)
    (message "XOB: re-registered all xob files."))
@@ -1179,8 +1176,12 @@ Maybe useful for syncing."
    (org-id-update-id-locations)
    (message "XOB: updated org-id hashtable."))
   (message "XOB: traversing all KB files...")
-  (let (ID title)
+  (let ((filelist (append org-xob--KB-files
+                          org-xob--agenda-files
+                          (list org-xob--log-file)))
+           ID title)
     (org-xob-visit-nodes
+     filelist
      #'(lambda ()
          (setq ID (org-id-get (point)))
          (setq title (nth 4 (org-heading-components)))
@@ -1191,12 +1192,12 @@ Maybe useful for syncing."
   (org-xob--save-state)
   (message "XOB: saved xob state."))
 
-(defun org-xob-visit-nodes (func)
+(defun org-xob-visit-nodes (filelist func)
   "Iterate over all KB nodes in all files. Apply function func to each node at point."
   (save-window-excursion
     (save-excursion
-      (dolist (kb-file-name org-xob--KB-files)
-        (with-current-buffer (find-file kb-file-name)
+      (dolist (filename filelist)
+        (with-current-buffer (find-file filename)
           (org-with-wide-buffer
            (goto-char (point-min))
            (while
