@@ -1088,12 +1088,13 @@ then return all other links."
       (save-restriction
         (org-back-to-heading t)
         (org-narrow-to-subtree)
-        (org-element-map (org-element-parse-buffer) 'link
-          (lambda (link)
-            (if (funcall test (equal (org-element-property
-                                      :drawer-name (cadr (org-element-lineage link)))
-                                     "BACKLINKS"))
-                (org-element-property :path link))))))))
+        (delete-dups
+         (org-element-map (org-element-parse-buffer) 'link
+           (lambda (link)
+             (if (funcall test (equal (org-element-property
+                                       :drawer-name (cadr (org-element-lineage link)))
+                                      "BACKLINKS"))
+                 (org-element-property :path link)))))))))
 
 ;;;;; Node Versioning
 
