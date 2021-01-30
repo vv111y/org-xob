@@ -527,17 +527,9 @@ regardless. Likewise with flag 'OFF."
 
 ;;;###autoload
 (defun org-xob-clear-heading ()
-  "Converts subtree to the headline and properties drawer only.
-This is idempotent and application to such a heading makes no change.
-This can be applied to heading at point or used in a mapping."
+  "Clears contents of context entry at point, or for whole context source."
   (interactive)
-  (org-with-wide-buffer
-   (org-back-to-heading t)
-   (org-mark-subtree)
-   (org-end-of-meta-data 1)
-   (call-interactively #'delete-region)
-   (deactivate-mark))  ;; force?
-  (goto-char (- (point) 1)))
+  (org-xob--kb-copy-paste))
 
 ;; TODO find any paragraph before next heading 
 ;;;###autoload
@@ -550,9 +542,10 @@ This can be applied to heading at point or used in a mapping."
                  (let ((p (org--paragraph-at-point)))
                    ;; (if (equal (org-element-type p)
                    ;;            'paragraph))
-                   (buffer-substring-no-properties
-                    (org-element-property :contents-begin p)
-                    (org-element-property :contents-end p)))))))
+                   (if p
+                       (buffer-substring-no-properties
+                        (org-element-property :contents-begin p)
+                        (org-element-property :contents-end p))))))))
 
 ;; TEST
 ;;;###autoload
@@ -561,15 +554,17 @@ This can be applied to heading at point or used in a mapping."
   (interactive)
   (org-xob--kb-copy-paste
    #'(lambda ()
-       (let ((str (org-map-tree
-                   (lambda ()
-                     (setq str
-                           (concat str
-                                   (buffer-substring-no-properties
-                                    (line-beginning-position)
-                                    (line-end-position))
-                                   "\n"))))))
-         str))))
+       (let (lines)
+         (org-map-tree
+          (lambda ()
+            (push (buffer-substring-no-properties
+                   (line-beginning-position)
+                   (line-end-position))
+                  lines)))
+         (setq lines (nreverse lines))
+         (pop lines)
+         (mapconcat 'identity lines "\n")))
+   #'(lambda (str) (org-paste-subtree 3 str))))
 
 ;; TEST
 ;;;###autoload
@@ -589,10 +584,18 @@ This can be applied to heading at point or used in a mapping."
   "Show the full KB node, excepting properties drawer, planning & clocking information."
   (interactive)
   (org-xob--kb-copy-paste
-   #'(lambda () (progn
-                  (org-mark-subtree)
-                  (org-end-of-meta-data t)
-                  (buffer-substring (point) (mark))))))
+   #'(lambda ()
+       (let ((org-yank-folded-subtrees nil)
+             (org-yank-adjusted-subtrees t))
+         (org-copy-subtree)
+         (with-temp-buffer
+           (org-mode)
+           (org-paste-subtree 2)
+           (goto-char (point-min))
+           (org-mark-subtree)
+           (org-end-of-meta-data t)
+           (buffer-substring (point) (mark)))))
+   #'(lambda (str) (insert str))))
 
 ;;;;; Activity Commands
 ;;;###autoload
@@ -841,37 +844,45 @@ Assumes point is on the source heading."
             (org-entry-put (point) "PID" ID)) 
         (message "no kb node found for ID: %s" ID)))))
 
-(defun org-xob--kb-copy-paste (payload)
+(defun org-xob--kb-copy-paste (&optional selector insertor)
   "Wrapper function to display new content in a context item from the
-knowledge base. Executes function payload while point is at the heading
-of the origin node in the KB. payload must be a lambda that returns
-the node content as a string.
+knowledge base. Executes function selector while point is at the heading
+of the origin node in the KB. selector must be a lambda that returns
+the the contents of interest as a string.
 When called with point on the given context item, only that item will be
 updated. If called on a context source heading, then the update is applied
 to all source items."
-  (let ((func #'(lambda () (progn
-                             (org-xob-clear-heading)
-                             (org-end-of-meta-data)
-                             (if-let ((str 
-                                       (save-excursion
-                                         (org-id-goto (org-entry-get (point) "PID"))
-                                         (org-with-wide-buffer
-                                          (org-save-outline-visibility
-                                            ;; (org-save-outline-visibility t
-                                            (org-narrow-to-subtree)
-                                            (funcall payload)
-                                            ;; (deactivate-mark)
-                                            )))))
-                                 (if (stringp str)
-                                     (insert str)))))))
-    (org-with-wide-buffer
-     (if (org-xob--is-source-p)
-         (org-xob--map-source func)
-       (funcall func)))))
+  (let ((func #'(lambda () 
+                  (let ((pid (org-entry-get (point) "PID")) str)
+                    (unless (not pid) 
+                      (save-excursion
+                        (org-back-to-heading t)
+                        (org-mark-subtree)
+                        (org-end-of-meta-data)
+                        (call-interactively #'delete-region)
+                        (deactivate-mark 'force))
+                      (if selector
+                          (progn
+                            (save-excursion
+                              (org-id-goto pid)
+                              (org-with-wide-buffer
+                               (org-save-outline-visibility
+                                   (org-narrow-to-subtree)
+                                 (setq str (funcall selector))
+                                 (deactivate-mark 'force))))
+                            (if (stringp str)
+                                (progn
+                                  (org-end-of-subtree)
+                                  (newline)
+                                  (if insertor 
+                                      (funcall insertor str)
+                                    (insert str)))))))))))
+    (save-window-excursion
+      (org-with-wide-buffer
+       (if (org-xob--is-source-p)
+           (org-xob--map-source func)
+         (funcall func))))))
 
-;; (org-narrow-to-subtree)
-;; (outline-show-all)
-;; (outline-next-heading)
 (defun org-xob--map-source (func &optional ID)
   "Apply the function func to every child-item of a xob source.
 If the optional ID of a xob source is given, then apply func to that source.

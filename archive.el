@@ -266,6 +266,14 @@ that will overwrite current source tree item."
          (org-xob--map-source func)
        (funcall func))))
 
+
+;; org-xob--map-source cut, didn't need it afterall
+;; (org-narrow-to-subtree)
+;; (outline-show-all)
+;; (outline-next-heading)
+
+
+
 (defun org-xob--save-state ()
   "Save exobrain state."
   (if (not (file-directory-p org-xob--workspace))

@@ -2712,3 +2712,29 @@ org-xob--templates
 (setq vvlines (nreverse vvlines))
 (pop vvlines)
 (mapconcat 'identity vvlines "\n")
+
+;;; evil keybindings
+(evil-define-key 'normal 'local 
+  ;; (kbd "C-S-RET") 'org-xob-clear-heading
+  ;; (kbd "s") 'org-xob-to-summary
+  ;; (kbd "S") 'org-xob-to-section
+  (kbd "t") 'org-xob-to-node-tree
+  ;; (kbd "F") 'org-xob-to-full-node
+  ;; (kbd "R") 'org-xob-refresh-context
+  )
+(define-key org-mode-map
+  (kbd "M-S-RET") nil
+  )
+
+(define-key org-mode-map
+  (kbd "<M-S-return>") 'org-xob-clear-heading
+  )
+(newline 1)
+
+
+
+
+(org-end-of-subtree)
+(org-end-of-meta-data)
+(org-end-of-meta-data t)
+(org-end-of-meta-data 1)
