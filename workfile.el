@@ -2682,9 +2682,33 @@ org-xob--templates
       (and (setq place (with-current-buffer org-xob--other-buffer
                          (org-find-entry-with-id sID)))
            (goto-char place))))
-;;; string equal
+;;; files probs 
 
 (equal "hit" "hi")
 (org-xob--register-files)
 (setq org-xob-today-buffer "log-file-001.org")
 (file-exists-p "xob")
+(defun vv-bl (&rest body)
+  (if (or (and (boundp 'bufID)
+                (org-xob--is-node-p bufID)
+                (bound-and-true-p org-xob-mode))
+           (and (boundp 'parent-ID)
+                (org-xob--is-node-p parent-ID)
+                (bound-and-true-p org-xob-context-mode)))
+       t
+     (message "Not in a xob buffer.") nil))
+
+;;; get the tree
+(setq vvlines (list) )
+(org-map-tree
+ (lambda ()
+   (push (concat 
+          (buffer-substring-no-properties
+           (line-beginning-position)
+           (line-end-position))
+          "\n"
+          )
+         vvlines)))
+(setq vvlines (nreverse vvlines))
+(pop vvlines)
+(mapconcat 'identity vvlines "\n")

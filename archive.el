@@ -500,3 +500,64 @@ Return point position if found, nil otherwise."
 (select-window org-xob--sideline-window)
 (switch-to-buffer org-xob--context-buffer t t)
 
+;;; full node hacking
+
+;; on calling end:
+;; (org-yank)
+;; (kill-new (funcall payload))
+;; (if payload
+;;     (let (str
+;;           (org-yank-folded-subtrees t)
+;;           (org-yank-adjusted-subtrees t))
+;;       (save-excursion
+;;         (org-id-goto (org-entry-get (point) "PID"))
+;;         (org-with-wide-buffer
+;;          (org-save-outline-visibility
+;;              (org-narrow-to-subtree)
+;;            (setq str (funcall payload))
+;;            (deactivate-mark 'force))))
+;;       (if (stringp str)
+;;           (insert str))
+;;       ))
+
+(defun org-xob-to-full-node ()
+  "Show the full KB node, excepting properties drawer, planning & clocking information."
+  (interactive)
+  (org-xob--kb-copy-paste
+   #'(lambda ()
+
+       (let (
+             (org-yank-folded-subtrees nil)
+             (org-yank-adjusted-subtrees t)
+             str
+             ;; (
+              ;; str
+                       ;; (progn
+                       ;;       (org-copy-subtree)
+                       ;;       ;; (org-mark-subtree)
+                       ;;       ;; (org-end-of-meta-data t)
+                       ;;       ;; (buffer-substring (point) (mark))
+                       ;;       )
+              ;; )
+             )
+                  (org-copy-subtree)
+                  ;; (org-mark-subtree)
+                  ;; (org-end-of-meta-data t)
+                  ;; (buffer-substring (point) (mark))
+                  
+                  (with-temp-buffer
+                    (org-mode)
+                    (org-yank)
+                    (goto-char (point-min))
+                    ;; (outline-next-heading)
+                    (org-demote-subtree)
+                    ;; (org-map-tree 'org-demote)
+                    (org-mark-subtree)
+                    (org-end-of-meta-data 1)
+                    (setq str
+                          (buffer-substring (point) (mark))
+                          ))
+                  str
+                  )
+       )))
+

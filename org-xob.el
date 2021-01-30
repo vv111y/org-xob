@@ -770,9 +770,6 @@ then check the heading associated with it."
     (if (and temp
              (member temp org-xob--node-sources)) t nil)))
 
-;; (buf (if (boundp org-xob--context-buffer)
-;;          org-xob--context-buffer
-;;        (current-buffer)))
 (defun org-xob--prepare-kb-source (source)
   "fill in material for a node context source."
   (let (ID)
@@ -793,7 +790,6 @@ respective node IDs. Two kinds of links are distinguished: backlinks and forlink
 where the backlinks are in a BACKLINKS drawer."
   (save-window-excursion
     (save-excursion
-      ;; TODO this should work? 
       (org-id-goto (plist-get source :PID))
       (plist-put source :items
                  (org-xob--node-get-links (plist-get source :name))))))
