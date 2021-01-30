@@ -257,12 +257,12 @@
      (message "xob is not on.")))
 
 (defmacro org-xob-with-xob-buffer (&rest body)
-  (declare (debug (body)))
+  ;; (declare (debug (body)))
   `(if (or (and (boundp 'bufID)
                 (org-xob--is-node-p bufID)
                 (bound-and-true-p org-xob-mode))
-           (and (boundp 'parentID)
-                (org-xob--is-node-p parentID)
+           (and (boundp 'parent-ID)
+                (org-xob--is-node-p parent-ID)
                 (bound-and-true-p org-xob-context-mode)))
        (progn
          ,@body)
