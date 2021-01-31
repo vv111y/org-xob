@@ -2729,11 +2729,13 @@ org-xob--templates
 (define-key org-mode-map
   (kbd "<M-S-return>") 'org-xob-clear-heading
   )
-(newline 1)
+(newline)
+
+(yank)
+(copy-region-as-kill nil nil 'REGION)
 
 
-
-
+(org-xob-region-to-node)
 (org-end-of-subtree)
 (org-end-of-meta-data)
 (org-end-of-meta-data t)

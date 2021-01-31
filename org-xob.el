@@ -376,6 +376,25 @@ Calling with C-u will force a restart."
      (org-xob--edit-node ID title))))
 
 ;;;###autoload
+(defun org-xob-region-to-node ()
+  "Move text in region to the end of the top section of a selected node."
+  (interactive)
+  (org-xob-with-xob-on
+   (if (use-region-p)
+       (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+         (copy-region-as-kill nil nil 'REGION)
+         (save-window-excursion
+           (save-excursion
+             (org-id-goto ID)
+             (if (org-goto-first-child)
+                 (progn
+                   (newline)
+                   (forward-line -1))
+               (org-end-of-subtree)
+               (newline))
+             (yank)))))))
+
+;;;###autoload
 (defun org-xob-insert-link ()
   "Inserts a properly formatted xob node link at point. If we are in a xob buffer,
 then also update the forlinks source."
