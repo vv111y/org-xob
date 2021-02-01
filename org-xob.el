@@ -685,9 +685,9 @@ If ID is given, then convert todo with that ID."
       (switch-to-buffer buf)
       (org-xob-mode 1)
       (add-hook 'kill-buffer-hook #'org-xob--cleanup-buffers-hook -80 'local)
+      (setq org-xob--open-nodes (append org-xob--open-nodes (list (cons ID ()))))
       (goto-char place)
       (org-narrow-to-subtree)
-      (setq org-xob--open-nodes (append org-xob--open-nodes (list (cons ID ()))))
       (setq-local bufID ID title title short-title short-title
                   log-entry (org-xob--insert-link-header ID title org-xob-today)
                   org-xob--context-buffer (get-buffer-create (concat  "*context-" title))
@@ -705,54 +705,7 @@ local variables for the edit buffer and the back and for links source objects."
     (setq-local parent-ID ID
                 parent-title title
                 parent-edit-buffer edit-buffer
-                org-xob--node-sources nil)
-    ;; org-xob--source-backlinks org-xob--source-backlinks
-    ;; org-xob--source-forlinks org-xob--source-forlinks
-    ))
-
-(defun org-xob-show-side-buffer (abuffer)
-  "Show abuffer in the sideline window."
-  (if (boundp 'org-xob--sideline-window)
-      (org-xob-toggle-sideline 'ON)
-    (save-excursion
-      (select-window org-xob--sideline-window)
-      (display-buffer-same-window abuffer nil))))
-
-(defun org-xob--other-buffer ()
-  "Returns the buffer object corresponding to the other xob buffer of this pair."
-  (or
-   (and (boundp 'org-xob--context-buffer)
-        (bufferp org-xob--context-buffer)
-        org-xob--context-buffer)
-   (and (boundp 'parent-edit-buffer)
-        (bufferp parent-edit-buffer)
-        parent-edit-buffer)))
-
-(defun org-xob--id-create ()
-  "Create a UUID formatted ID. org-id will not work with buffers that are
-not visiting a file. This function is meant for such a case. Use in conjunction
-with org-xob--id-goto to return to this heading.
-Returns ID if successful, nil otherwise."
-  (let ((ID (uuidgen-4)))
-    (if (org-at-heading-p)
-        (progn (org-entry-put (point) "ID" ID)
-               ID)
-      ID)))
-
-(defun org-xob--id-goto (sID)
-  "TODO changed: goto context buffer and then look
-Search buffers for org heading with ID and place point there.
-Return point position if found, nil otherwise."
-  (let (place)
-    (or (and (string= sID (org-entry-get (point) "ID"))
-             (org-back-to-heading)
-             (point))
-        (and (setq place (org-find-entry-with-id sID))
-             (goto-char place))
-        (and (setq place (with-current-buffer (org-xob--other-buffer)
-                           (org-find-entry-with-id sID)))
-             (set-buffer org-xob--other-buffer)
-             (goto-char place)))))
+                org-xob--node-sources nil)))
 
 (defun org-xob--cleanup-buffers-hook ()
   "Cleanup when closing a node edit buffer. Close sideline window if open, delete
@@ -788,6 +741,63 @@ ID should be buffer local in a xob edit buffer."
                     (org-entry-put (point) "MODIFIED"
                                    (concat "[" (format-time-string "%F %a %R") "]")))))))
       nil)))
+
+;;;;; Buffer Navigation
+
+(defun org-xob--id-create ()
+  "Create a UUID formatted ID. org-id will not work with buffers that are
+not visiting a file. This function is meant for such a case. Use in conjunction
+with org-xob--id-goto to return to this heading.
+Returns ID if successful, nil otherwise."
+  (let ((ID (uuidgen-4)))
+    (if (org-at-heading-p)
+        (progn (org-entry-put (point) "ID" ID)
+               ID)
+      ID)))
+
+(defun org-xob--id-goto (sID)
+  "TODO changed: goto context buffer and then look
+Search buffers for org heading with ID and place point there.
+Return point position if found, nil otherwise."
+  (let (place)
+    (or (and (string= sID (org-entry-get (point) "ID"))
+             (org-back-to-heading)
+             (point))
+        (and (setq place (org-find-entry-with-id sID))
+             (goto-char place))
+        (and (setq place (with-current-buffer (org-xob--other-buffer)
+                           (org-find-entry-with-id sID)))
+             (set-buffer org-xob--other-buffer)
+             (goto-char place)))))
+
+(defun org-xob-show-side-buffer (abuffer)
+  "Show abuffer in the sideline window."
+  (if (boundp 'org-xob--sideline-window)
+      (org-xob-toggle-sideline 'ON)
+    (save-excursion
+      (select-window org-xob--sideline-window)
+      (display-buffer-same-window abuffer nil))))
+
+(defun org-xob--other-buffer ()
+  "Returns the buffer object corresponding to the other xob buffer of this pair."
+  (or
+   (and (boundp 'org-xob--context-buffer)
+        (bufferp org-xob--context-buffer)
+        org-xob--context-buffer)
+   (and (boundp 'parent-edit-buffer)
+        (bufferp parent-edit-buffer)
+        parent-edit-buffer)))
+
+(defun org-xob--goto-buffer-heading (ID)
+  "Go to heading in current buffer with ID. Does not require org-id."
+  (let ((m (point)))
+    (org-with-wide-buffer
+     (goto-char (point-min))
+     (if (re-search-forward ID nil t)
+         (org-back-to-heading 'invisible-ok)
+       (progn
+         (goto-char m)
+         (message "%s not found." ID))))))
 
 ;;;;; Contexts Functions
 
@@ -1078,19 +1088,6 @@ as a capture hook function."
               (org-xob--edit-node ID title)))
       nil)))
 
-;; --navigation--
-(defun org-xob--goto-buffer-heading (ID)
-  "Go to heading in current buffer with ID. Does not require org-id."
-  (let ((m (point)))
-    (org-with-wide-buffer
-     (goto-char (point-min))
-     (if (re-search-forward ID nil t)
-         (org-back-to-heading 'invisible-ok)
-       (progn
-         (goto-char m)
-         (message "%s not found." ID))))))
-
-;; --link headers--
 (defun org-xob--insert-link-header (ID title target)
   "Checks if link subheader exist at target. If not, inserts a
 subheading with an org link to the node with ID and title.

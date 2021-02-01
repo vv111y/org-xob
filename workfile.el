@@ -2777,3 +2777,4 @@ org-xob--templates
 (car org-xob--open-nodes)
 
 (setq vvstr "bye")
+(symbol-name)

@@ -572,3 +572,7 @@ Return point position if found, nil otherwise."
 ;;;
 
 (defvar-local vvstr "hi")
+
+(unless (and (plist-get source :items)
+             (equal arg '(4)))
+  (org-xob--node-get-link-entries source))
