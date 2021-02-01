@@ -117,19 +117,21 @@
 ;;;;; knowledge base sources
 
 (defvar org-xob--source-backlinks
-  '(:name "backlinks"
+  '(:name backlinks
           :tags ("KB" "backlinks")
           :title nil
           :ID nil
           :PID nil
+          :getfn org-xob--node-get-link-entries
           :items nil))
 
 (defvar org-xob--source-forlinks
-  '(:name "forlinks"
+  '(:name forlinks
           :tags ("KB" "forlinks")
           :title nil
           :ID nil
           :PID nil
+          :getfn org-xob--node-get-link-entries
           :items nil))
 
 ;;;;; file variables
@@ -518,8 +520,7 @@ regardless. Likewise with flag 'OFF."
   (interactive)
   (org-xob-with-context-buffer
    (unless (local-variable-p 'org-xob--source-backlinks)
-     (make-local-variable 'org-xob--source-backlinks))
-   (org-xob--prepare-kb-source org-xob--source-backlinks arg)
+     (org-xob--prepare-kb-source org-xob--source-backlinks arg))
    (org-xob-toggle-sideline 'on)))
 
 ;;;###autoload
@@ -528,8 +529,7 @@ regardless. Likewise with flag 'OFF."
   (interactive)
   (org-xob-with-context-buffer
    (unless (local-variable-p 'org-xob--source-forlinks)
-     (make-local-variable 'org-xob--source-forlinks))
-   (org-xob--prepare-kb-source org-xob--source-forlinks arg)
+     (org-xob--prepare-kb-source org-xob--source-forlinks arg))
    (org-xob-toggle-sideline 'on)))
 
 ;;;###autoload
@@ -806,20 +806,15 @@ then check the heading associated with it."
 
 (defun org-xob--prepare-kb-source (source &optional arg)
   "fill in material for a node context source."
-  (let ((ID (plist-get source :ID)))
-    (unless (and ID
-                 (org-xob--is-source-p ID)
-                 (equal arg '(4)))
-      (setq ID (org-xob--id-create))
-      (plist-put source :PID parent-ID)
-      (plist-put source :title parent-title)
-      (plist-put source :ID ID)
-      (nconc (assoc parent-ID org-xob--open-nodes) (list ID)))
-      ;; (add-to-list (assoc parent-ID org-xob--open-nodes) ID))
-    (unless (and (plist-get source :items)
-                 (equal arg '(4)))
-      (org-xob--node-get-link-entries source))
-    (org-xob--source-write source)))
+  (org-xob-with-context-buffer
+   (make-local-variable (plist-get source :name))
+   (setq ID (org-xob--id-create))
+   (plist-put source :PID parent-ID)
+   (plist-put source :title parent-title)
+   (plist-put source :ID ID)
+   (nconc (assoc parent-ID org-xob--open-nodes) (list ID))
+   (funcall (plist-get source :getfn) source)
+   (org-xob--source-write source)))
 
 (defun org-xob--node-get-link-entries (source)
   "Populates source item list from the node. The items are represented by their
@@ -1122,9 +1117,9 @@ Returns mark for the link subheader."
   "Return list of link paths within the node at point. If linktype is 'backlinks'
 then return only links in the backlinks drawer. If linktype is 'forlinks'
 then return all other links."
-  (let* ((test (if (equal linktype "backlinks")
+  (let* ((test (if (eq linktype 'backlinks)
                    (lambda (x) x)
-                 (if (equal linktype "forlinks")
+                 (if (eq linktype 'forlinks)
                      (lambda (x) (not x))))))
     (save-excursion
       (save-restriction
