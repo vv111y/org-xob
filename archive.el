@@ -569,3 +569,6 @@ Return point position if found, nil otherwise."
                   )
        )))
 
+;;;
+
+(defvar-local vvstr "hi")

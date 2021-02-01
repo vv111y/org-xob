@@ -692,14 +692,6 @@ If ID is given, then convert todo with that ID."
                                      short-title
                                      (current-buffer)))))
 
-(defun org-xob-show-side-buffer (abuffer)
-  "Show abuffer in the sideline window."
-  (if (boundp 'org-xob--sideline-window)
-      (org-xob-toggle-sideline 'ON)
-    (save-excursion
-      (select-window org-xob--sideline-window)
-      (display-buffer-same-window abuffer nil))))
-
 (defun org-xob--setup-context-buffer (ID title edit-buffer)
   "Create context buffer, leave it empty by default. set title and buffer
 local variables for the edit buffer and the back and for links source objects."
@@ -709,9 +701,18 @@ local variables for the edit buffer and the back and for links source objects."
     (setq-local parent-ID ID
                 parent-title title
                 parent-edit-buffer edit-buffer
-                org-xob--node-sources nil
-                org-xob--source-backlinks org-xob--source-backlinks
-                org-xob--source-forlinks org-xob--source-forlinks)))
+                org-xob--node-sources nil)
+    ;; org-xob--source-backlinks org-xob--source-backlinks
+    ;; org-xob--source-forlinks org-xob--source-forlinks
+    ))
+
+(defun org-xob-show-side-buffer (abuffer)
+  "Show abuffer in the sideline window."
+  (if (boundp 'org-xob--sideline-window)
+      (org-xob-toggle-sideline 'ON)
+    (save-excursion
+      (select-window org-xob--sideline-window)
+      (display-buffer-same-window abuffer nil))))
 
 (defun org-xob--other-buffer ()
   "Returns the buffer object corresponding to the other xob buffer of this pair."

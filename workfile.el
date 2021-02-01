@@ -2734,9 +2734,46 @@ org-xob--templates
 (yank)
 (copy-region-as-kill nil nil 'REGION)
 
+(add-to-list (assoc parent-ID org-xob--open-nodes) ID)
+
+(setq org-xob--open-nodes nil)
+
+(push (cons "212adf62-ca06-4bba-99b1-d1ab9e018cd0" (list)) org-xob--open-nodes )
+;; (add-to-list 'org-xob--open-nodes (cons "212adf62-ca06-4bba-99b1-d1ab9e018cd0" (list)))
+
+(setf (cdr (assoc "212adf62-ca06-4bba-99b1-d1ab9e018cd0"  org-xob--open-nodes)) (cons "25f241e2-e76a-465a-9a7c-10f29e930ba1" nil))
+
+(setf (cdr (append (assoc "212adf62-ca06-4bba-99b1-d1ab9e018cd0" org-xob--open-nodes) (cons  "79b28da0-18de-4a60-aef2-ff26010eb181" nil))))
+
+(setf (assoc "212adf62-ca06-4bba-99b1-d1ab9e018cd0" org-xob--open-nodes) (cons (assoc "212adf62-ca06-4bba-99b1-d1ab9e018cd0" org-xob--open-nodes) "79b28da0-18de-4a60-aef2-ff26010eb181"))
+
+(assoc "212adf62-ca06-4bba-99b1-d1ab9e018cd0" org-xob--open-nodes)
+
+(setq als (list (cons "k" nil)))
+(cons als "1")
+(cons (assoc "k" als) "1")
+(setf (cdr (assoc "k" als)) (cons "1" nil))
+
+(let ((plc (assoc "k" als)))
+  (setf plc (append plc (list "2"))))
+(setf (assoc "k" als) (append (assoc "k" als) (list "2")))
+
+;; this works
+(nconc (assoc "k" als) "3")
+(nconc als (list "a"))
+
+(nconc (assoc "c" als) (list "3"))
+(setq als (append als (list (cons "c" ()))))
+
+(car als)
+(cdr (assoc "c" als))
 
 (org-xob-region-to-node)
 (org-end-of-subtree)
 (org-end-of-meta-data)
 (org-end-of-meta-data t)
 (org-end-of-meta-data 1)
+
+(car org-xob--open-nodes)
+
+(setq vvstr "bye")
