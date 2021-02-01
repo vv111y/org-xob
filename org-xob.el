@@ -313,6 +313,7 @@ Calling with C-u will force a restart."
        (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
          (prog1 (message "XOB: directory not found, creating.")
            (make-directory org-xob-dir t)))
+       (setq org-xob--open-nodes nil)
        (org-xob--load-state)
        (org-xob--register-files)
        (org-xob--process-files)
@@ -682,6 +683,7 @@ If ID is given, then convert todo with that ID."
       (add-hook 'kill-buffer-hook #'org-xob--cleanup-buffers-hook -80 'local)
       (goto-char place)
       (org-narrow-to-subtree)
+      (setq org-xob--open-nodes (append org-xob--open-nodes (list (cons ID ()))))
       (setq-local bufID ID title title short-title short-title
                   log-entry (org-xob--insert-link-header ID title org-xob-today)
                   org-xob--context-buffer (get-buffer-create (concat  "*context-" title))
@@ -757,6 +759,7 @@ Buffer local to edit buffer."
   (if (boundp 'org-xob--context-buffer)
       (with-current-buffer org-xob--context-buffer
         (kill-buffer)))
+  (assoc-delete-all bufID org-xob--open-nodes)
   (let ((selfbuf (current-buffer)))
     (with-current-buffer (buffer-base-buffer)
       (setq-local org-xob--edit-buffers (cl-delete-if
@@ -788,20 +791,28 @@ ID should be buffer local in a xob edit buffer."
 then check the heading associated with it."
   (interactive)
   (let ((temp (if ID ID
-                (org-entry-get (point) "ID"))))
+                (org-entry-get (point) "ID")))
+        (pid (or  (and (boundp 'bufID)
+                       bufID)
+                  (and (boundp 'parent-ID)
+                       parent-ID))))
     (if (and temp
-             (member temp org-xob--node-sources)) t nil)))
+             (member temp (assoc pid org-xob--open-nodes))) t nil)))
 
-(defun org-xob--prepare-kb-source (source)
+(defun org-xob--prepare-kb-source (source &optional arg)
   "fill in material for a node context source."
-  (let (ID)
-    (unless (plist-get source :ID)
+  (let ((ID (plist-get source :ID)))
+    (unless (and ID
+                 (org-xob--is-source-p ID)
+                 (equal arg '(4)))
       (setq ID (org-xob--id-create))
       (plist-put source :PID parent-ID)
       (plist-put source :title parent-title)
       (plist-put source :ID ID)
-      (add-to-list 'org-xob--node-sources ID))
-    (unless (plist-get source :items)
+      (nconc (assoc parent-ID org-xob--open-nodes) (list ID)))
+      ;; (add-to-list (assoc parent-ID org-xob--open-nodes) ID))
+    (unless (and (plist-get source :items)
+                 (equal arg '(4)))
       (org-xob--node-get-link-entries source))
     (org-xob--source-write source)))
 
