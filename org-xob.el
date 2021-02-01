@@ -513,19 +513,23 @@ regardless. Likewise with flag 'OFF."
 ;;;;; KB Context Commands
 
 ;;;###autoload
-(defun org-xob-show-backlinks ()
+(defun org-xob-show-backlinks (&optional arg)
   "Add backlinks contents to the context buffer."
   (interactive)
-  (org-xob-with-xob-buffer
-   (org-xob--prepare-kb-source org-xob--source-backlinks)
+  (org-xob-with-context-buffer
+   (unless (local-variable-p 'org-xob--source-backlinks)
+     (make-local-variable 'org-xob--source-backlinks))
+   (org-xob--prepare-kb-source org-xob--source-backlinks arg)
    (org-xob-toggle-sideline 'on)))
 
 ;;;###autoload
-(defun org-xob-show-forlinks ()
+(defun org-xob-show-forlinks (&optional arg)
   "Add forlinks contents to the context buffer."
   (interactive)
-  (org-xob-with-xob-buffer
-   (org-xob--prepare-kb-source org-xob--source-forlinks)
+  (org-xob-with-context-buffer
+   (unless (local-variable-p 'org-xob--source-forlinks)
+     (make-local-variable 'org-xob--source-forlinks))
+   (org-xob--prepare-kb-source org-xob--source-forlinks arg)
    (org-xob-toggle-sideline 'on)))
 
 ;;;###autoload
