@@ -116,6 +116,9 @@
 
 ;;;;; knowledge base sources
 
+(defvar org-xob-available-sources 
+  "List of context information sources that are available in the xob system.")
+
 (defvar org-xob--source-backlinks
   '(:name backlinks
           :tags ("KB" "backlinks")
@@ -1281,6 +1284,21 @@ If there are no saved tables, then create new empty ones."
           (goto-char (point-min))
           (set symbol (read (current-buffer))))
       (error (message "Error loading file %s" file)))))
+
+;; --- contextual resources ---
+
+(defun orb-xob-add-info-source (source)
+  "Add a contextual information source to xob system."
+  (interactive)
+  (and (symbolp source)
+       (plist-member source :name)
+       (plist-member source :tags)
+       (plist-member source :title)
+       (plist-member source :ID)
+       (plist-member source :PID)
+       (plist-member source :getfn)
+       (plist-member source :items)
+       (push souce org-xob-available-sources)))
 
 ;; --- file management ---
 (defun org-xob--register-files ()
