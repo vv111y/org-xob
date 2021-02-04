@@ -525,18 +525,26 @@ regardless. Likewise with flag 'OFF."
   "Add backlinks contents to the context buffer."
   (interactive)
   (org-xob-with-context-buffer
-   (unless (local-variable-p 'org-xob--source-backlinks)
-     (org-xob--prepare-kb-source org-xob--source-backlinks arg))
-   (org-xob-toggle-sideline 'on)))
+   (unless (or (eq '(4) arg)
+               ;; (local-variable-p 'forlinks)
+               (cdr-safe (assoc 'forlinks org-xob--node-sources)))
+     (setq-local backlinks (org-xob--prepare-kb-source
+                            org-xob--source-backlinks arg)))
+   (org-xob--source-write backlinks))
+  (org-xob-toggle-sideline 'on))
 
 ;;;###autoload
 (defun org-xob-show-forlinks (&optional arg)
   "Add forlinks contents to the context buffer."
   (interactive)
   (org-xob-with-context-buffer
-   (unless (local-variable-p 'org-xob--source-forlinks)
-     (org-xob--prepare-kb-source org-xob--source-forlinks arg))
-   (org-xob-toggle-sideline 'on)))
+   (unless (or (eq '(4) arg)
+               ;; (local-variable-p 'forlinks)
+               (cdr-safe (assoc 'forlinks org-xob--node-sources)))
+     (setq-local forlinks (org-xob--prepare-kb-source
+                           org-xob--source-forlinks arg)))
+   (org-xob--source-write forlinks)
+  (org-xob-toggle-sideline 'on)))
 
 ;;;###autoload
 (defun org-xob-ql-search ()
@@ -766,15 +774,16 @@ Returns ID if successful, nil otherwise."
 Search buffers for org heading with ID and place point there.
 Return point position if found, nil otherwise."
   (let (place)
-    (or (and (string= sID (org-entry-get (point) "ID"))
-             (org-back-to-heading)
-             (point))
-        (and (setq place (org-find-entry-with-id sID))
-             (goto-char place))
-        (and (setq place (with-current-buffer (org-xob--other-buffer)
-                           (org-find-entry-with-id sID)))
-             (set-buffer org-xob--other-buffer)
-             (goto-char place)))))
+    (if (org-not-nil sID)
+      (or (and (string= sID (org-entry-get (point) "ID"))
+               (org-back-to-heading)
+               (point))
+          (and (setq place (org-find-entry-with-id sID))
+               (goto-char place))
+          (and (setq place (with-current-buffer (org-xob--other-buffer)
+                             (org-find-entry-with-id sID)))
+               (set-buffer org-xob--other-buffer)
+               (goto-char place))))))
 
 (defun org-xob-show-side-buffer (abuffer)
   "Show abuffer in the sideline window."
@@ -823,25 +832,19 @@ then check the heading associated with it."
 (defun org-xob--prepare-kb-source (source &optional arg)
   "fill in material for a node context source."
   (org-xob-with-context-buffer
-   (make-local-variable (plist-get source :name))
-   (setq ID (org-xob--id-create))
-   (plist-put source :PID parent-ID)
-   (plist-put source :title parent-title)
-   (plist-put source :ID ID)
-   (nconc (assoc parent-ID org-xob--open-nodes) (list ID))
-   (funcall (plist-get source :getfn) source)
-   (org-xob--source-write source)))
-
-(defun org-xob--node-get-link-entries (source)
-  "Populates source item list from the node. The items are represented by their
-respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
-(which are all other links to xob KB nodes). Assumes org-super-links convention
-where the backlinks are in a BACKLINKS drawer."
-  (save-window-excursion
-    (save-excursion
-      (org-id-goto (plist-get source :PID))
-      (plist-put source :items
-                 (org-xob--node-get-links (plist-get source :name))))))
+   (let (ID name)
+     (if arg
+         (funcall (plist-get source :getfn) source))
+     (unless (org-xob--id-goto (plist-get source :ID))
+       (plist-put source :ID (setq ID (org-xob--id-create))))
+     (setq name (plist-get source :name))
+     (plist-put source :PID parent-ID)
+     (plist-put source :title parent-title)
+     (make-local-variable name)
+     (nconc (assoc parent-ID org-xob--open-nodes) (list ID))
+     (push (cons name ID) org-xob--node-sources)
+     (funcall (plist-get source :getfn) source)
+     source)))
 
 (defun org-xob--source-write (source)
   "Open a source tree into the context buffer. If it is already there,
@@ -890,6 +893,58 @@ Assumes point is on the source heading."
             (org-entry-put (point) "PID" ID)) 
         (message "no kb node found for ID: %s" ID)))))
 
+(defun org-xob--map-source (func &optional ID)
+  "Apply the function func to every child-item of a xob source.
+If the optional ID of a xob source is given, then apply func to that source.
+Otherwise apply to source at point."
+  (save-excursion
+    (if ID (org-xob--id-goto ID))
+    (org-with-wide-buffer
+     (if (and (org-xob--is-source-p)
+              (org-goto-first-child))
+         (while
+             (progn
+               (funcall func)
+               (outline-get-next-sibling)))
+       (message "XOB: map-source, nothing to do here.") nil))))
+
+;;;;; KB Context Functions
+(defun org-xob--node-get-link-entries (source)
+  "Populates source item list from the node. The items are represented by their
+respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
+(which are all other links to xob KB nodes). Assumes org-super-links convention
+where the backlinks are in a BACKLINKS drawer."
+  (save-window-excursion
+    (save-excursion
+      (org-id-goto (plist-get source :PID))
+      (plist-put source :items
+                 (org-xob--node-get-links (plist-get source :name))))))
+
+(defun org-xob--node-get-links (linktype)
+  "Return list of link paths within the node at point. If linktype is 'backlinks'
+then return only links in the backlinks drawer. If linktype is 'forlinks'
+then return all other links."
+  (let* ((test (if (eq linktype 'backlinks)
+                   (lambda (x) x)
+                 (if (eq linktype 'forlinks)
+                     (lambda (x) (not x))))))
+    (save-excursion
+      (save-restriction
+        (org-back-to-heading t)
+        (org-narrow-to-subtree)
+        (delete-dups
+         (delq nil
+               (org-element-map (org-element-parse-buffer) 'link
+                 (lambda (link)
+                   (let (ID)
+                     (if (funcall test (equal (org-element-property
+                                               :drawer-name (cadr (org-element-lineage link)))
+                                              "BACKLINKS"))
+                         (if (org-xob--is-node-p
+                              (setq ID (org-element-property :path link)))
+                             ID
+                           (message "XOB: invalid link %s" ID) nil)))))))))))
+
 (defun org-xob--kb-copy-paste (&optional selector insertor)
   "Wrapper function to display new content in a context item from the
 knowledge base. Executes function selector while point is at the heading
@@ -929,39 +984,6 @@ to all source items."
            (org-xob--map-source func)
          (funcall func))))))
 
-(defun org-xob--map-source (func &optional ID)
-  "Apply the function func to every child-item of a xob source.
-If the optional ID of a xob source is given, then apply func to that source.
-Otherwise apply to source at point."
-  (save-excursion
-    (if ID (org-xob--id-goto ID))
-    (org-with-wide-buffer
-     (if (and (org-xob--is-source-p)
-              (org-goto-first-child))
-         (while
-             (progn
-               (funcall func)
-               (outline-get-next-sibling)))
-       (message "XOB: map-source, nothing to do here.") nil))))
-
-;;;;; Activity
-
-(defun org-xob--open-today ()
-  "Open today node for logging."
-  (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
-  (and (or
-        (setq org-xob-today (gethash org-xob-today-string
-                                     org-xob--title-id))
-        (setq org-xob-today (org-xob--capture "ad")))
-       (save-window-excursion
-         (save-excursion
-           (org-id-goto org-xob-today)
-           (setq org-xob-today-buffer (current-buffer))))
-       (message "XOB: Todays log entry opened.") t))
-
-;;;;;; Clocking
-(defun org-xob--auto-clock-in ())
-(defun org-xob--auto-clock-out ())
 ;;;;; Node Functions
 
 (defun org-xob--is-node-p (&optional ID DEEPCHECK)
@@ -1116,28 +1138,7 @@ Returns mark for the link subheader."
           (org-back-to-heading))
         (point-marker)))))
 
-(defun org-xob--node-get-links (linktype)
-  "Return list of link paths within the node at point. If linktype is 'backlinks'
-then return only links in the backlinks drawer. If linktype is 'forlinks'
-then return all other links."
-  (let* ((test (if (eq linktype 'backlinks)
-                   (lambda (x) x)
-                 (if (eq linktype 'forlinks)
-                     (lambda (x) (not x))))))
-    (save-excursion
-      (save-restriction
-        (org-back-to-heading t)
-        (org-narrow-to-subtree)
-        (delete-dups
-         (org-element-map (org-element-parse-buffer) 'link
-           (lambda (link)
-             (if (funcall test (equal (org-element-property
-                                       :drawer-name (cadr (org-element-lineage link)))
-                                      "BACKLINKS"))
-                 (org-element-property :path link)))))))))
-
-;;;;; Node Versioning
-
+;; --- Node Versioning ---
 
 ;; (defun org-xob--sync-node (node)
 ;;   "Update entry based on local edits."
