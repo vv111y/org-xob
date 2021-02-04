@@ -317,7 +317,7 @@ Calling with C-u will force a restart."
        (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
          (prog1 (message "XOB: directory not found, creating.")
            (make-directory org-xob-dir t)))
-       (setq org-xob--open-nodes nil)
+       (not (setq org-xob--open-nodes nil))
        (org-xob--load-state)
        (org-xob--register-files)
        (org-xob--process-files)
@@ -484,7 +484,7 @@ If called with optional ID argument, then remove the node with that ID."
                                   (org-entry-put (point) "TYPE" c)))))))
 
 ;;;;; Sideline Commands
-;;;###autoload
+
 ;;;###autoload
 (defun org-xob-toggle-sideline (&optional flag)
   "Toggles display of the sideline window. If flag is 'ON then display sideline
@@ -494,7 +494,8 @@ regardless. Likewise with flag 'OFF."
    (save-excursion
      (org-xob-with-edit-buffer
       (if (boundp 'org-xob--sideline-window)
-          (if org-xob--sideline-window
+          (if (and org-xob--sideline-window
+                   (window-valid-p org-xob--sideline-window))
               (if (not (eq flag 'ON))
                   (progn
                     (delete-window org-xob--sideline-window)
