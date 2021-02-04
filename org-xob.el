@@ -863,9 +863,7 @@ source is a plist that describes the content source."
      (org-xob--source-refresh source))))
 
 (defun org-xob--source-refresh (source)
-  "Remake source tree. Check if items need to be added or removed.
-todo - possibly refresh item contents if changes were made.
-(this requires knowing what is displayed)"
+  "Remake source tree. Check if items need to be added or removed."
   (org-xob-with-context-buffer
    (if (org-xob--id-goto (plist-get source :ID))
        (let ((temp (copy-tree (plist-get source :items))))
@@ -1169,9 +1167,24 @@ Maybe useful for syncing."
                  (number-to-string
                   (car (time-convert (current-time) '10000)))))
 
+;;;;; Activity
 
+(defun org-xob--open-today ()
+  "Open today node for logging."
+  (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
+  (and (or
+        (setq org-xob-today (gethash org-xob-today-string
+                                     org-xob--title-id))
+        (setq org-xob-today (org-xob--capture "ad")))
+       (save-window-excursion
+         (save-excursion
+           (org-id-goto org-xob-today)
+           (setq org-xob-today-buffer (current-buffer))))
+       (message "XOB: Todays log entry opened.") t))
 
-
+;;;;;; Clocking
+(defun org-xob--auto-clock-in ())
+(defun org-xob--auto-clock-out ())
 ;;;;; xob Management
 
 ;;;###autoload
@@ -1247,6 +1260,7 @@ Maybe useful for syncing."
                      (funcall func))
                  (outline-next-heading)))))))))
 
+;; --- persistent objects ---
 (defun org-xob--save-state ()
   "Save exobrain state. For current version this means the lookup hashtables only."
   (unless (file-directory-p org-xob-dir)
@@ -1408,7 +1422,6 @@ Buffer remains open. Returns the filename."
       (kill-whole-line 1)
       (save-buffer))))
 
-;;; End
 
 (provide 'org-xob)
 

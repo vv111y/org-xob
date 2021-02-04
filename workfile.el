@@ -2716,6 +2716,7 @@ org-xob--templates
 ;;; evil keybindings
 (evil-define-key 'normal 'local 
   ;; (kbd "C-S-RET") 'org-xob-clear-heading
+  ;; (kbd "C-'") 'org-xob-clear-heading
   ;; (kbd "s") 'org-xob-to-summary
   ;; (kbd "S") 'org-xob-to-section
   (kbd "t") 'org-xob-to-node-tree
@@ -2729,6 +2730,11 @@ org-xob--templates
 (define-key org-mode-map
   (kbd "<M-S-return>") 'org-xob-clear-heading
   )
+
+(defun my-cider-debug-setup ()
+  (evil-make-overriding-map cider--debug-mode-map 'normal)
+  (evil-normalize-keymaps))
+** nested lists /misc
 (newline)
 
 (yank)
@@ -2778,3 +2784,52 @@ org-xob--templates
 
 (setq vvstr "bye")
 (symbol-name)
+** local vars
+(if (member 'backlinks (buffer-local-variables))
+    t nil)
+
+(setq-local vvlcl "beee")
+(local-variable-p vvlcl)
+
+vvlcl
+
+org-xob--node-sources
+
+((forlinks . "7b60cf7a-b568-49c0-9ff4-9995e544fdd0") (backlinks . "0ece6c89-56d3-4243-94a2-ba8b7840ffc0"))
+
+(assoc 'forlinks org-xob--node-sources)
+(consp (assoc 'forlinks org-xob--node-sources))
+(cdr-safe (assoc 'forlinks org-xob--node-sources))
+(-cons-pair-p '(2 . nil))
+(-cons-pair-p '(2 . 3))
+
+(nlistp (cdr-safe  '(2 . 4)))
+(defmacro vvmm (a)
+  `(progn
+     ;; (display-message-or-buffer "a is %s" a)
+     (message ",a is %s" ,a)
+     (message "grave,a is %s" ',a)
+
+     ;; (message ,a)
+     ;; (message ',a)
+     ))
+
+(vvmm wer)
+(setq bill "bill")
+(vvmm bill)
+
+(org-datetree-find-month-create (calendar-current-date))
+
+
+(org-datetree-find-month-create (calendar-current-date))
+(org-datetree--find-create-group (calendar-current-date) 'day)
+(org-datetree--find-create-group (calendar-current-date) 'month)
+(org-datetree--find-create-group (calendar-current-date -9) 'month)
+;; (org-datetree-insert-line (calendar-current-date))
+(org-datetree-insert-line 2021)
+(org-datetree-file-entry-under "* heem" (calendar-current-date))
+(org-datetree-file-entry-under "* beem" (calendar-current-date))
+(org-datetree-file-entry-under "* heem" (cdr (calendar-current-date)))
+
+(org-datetree-find-date-create (calendar-current-date))
+(org-entry-properties)
