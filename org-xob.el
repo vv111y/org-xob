@@ -527,7 +527,7 @@ regardless. Likewise with flag 'OFF."
   (org-xob-with-context-buffer
    (unless (or (eq '(4) arg)
                ;; (local-variable-p 'forlinks)
-               (cdr-safe (assoc 'forlinks org-xob--node-sources)))
+               (cdr-safe (assoc 'backlinks org-xob--node-sources)))
      (setq-local backlinks (org-xob--prepare-kb-source
                             org-xob--source-backlinks arg)))
    (org-xob--source-write backlinks))
