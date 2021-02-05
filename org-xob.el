@@ -981,6 +981,8 @@ to all source items."
                                     (insert str)))))))))))
     (save-window-excursion
       (org-with-wide-buffer
+       (if (pulse-available-p)
+           (pulse-momentary-highlight-one-line (point)))
        (if (org-xob--is-source-p)
            (org-xob--map-source func)
          (funcall func))))))
