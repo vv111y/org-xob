@@ -732,15 +732,15 @@ Buffer local to edit buffer."
   (and (boundp 'org-xob--context-buffer)
       (kill-buffer org-xob--context-buffer))
   (and (boundp 'bufID)
-       (assoc-delete-all bufID org-xob--open-nodes))
-  (let ((selfbuf (current-buffer))
-        (basebuf (buffer-base-buffer)))
-    (and basebuf
-         (with-current-buffer (buffer-base-buffer)
-           (setq-local org-xob--edit-buffers (cl-delete-if
-                                              (lambda (x) (or (not (buffer-live-p x))
-                                                              (eq selfbuf x) ))
-                                              org-xob--edit-buffers))))) nil)
+       (assoc-delete-all bufID org-xob--open-nodes)
+       (let ((selfbuf (current-buffer))
+             (basebuf (buffer-base-buffer)))
+         (if basebuf
+             (with-current-buffer (buffer-base-buffer)
+               (setq-local org-xob--edit-buffers (cl-delete-if
+                                                  (lambda (x) (or (not (buffer-live-p x))
+                                                                  (eq selfbuf x) ))
+                                                  org-xob--edit-buffers)))))) nil)
 
 (defun org-xob--update-modified-time ()
   "Hook to update the modified timestamp of all nodes that are being edited when saving.
