@@ -602,7 +602,8 @@ regardless. Likewise with flag 'OFF."
          (setq lines (nreverse lines))
          (pop lines)
          (mapconcat 'identity lines "\n")))
-   #'(lambda (str) (org-paste-subtree 3 str))))
+   #'(lambda (str) (if (org-kill-is-subtree-p str)
+                       (org-paste-subtree 3 str)))))
 
 ;; TEST
 ;;;###autoload
