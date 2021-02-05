@@ -996,20 +996,16 @@ With option DEEPCHECK, do not use any table lookup, but check whether the headin
 has valid UUID formatted ID and xob TYPE properties in the property drawer.
 Deepcheck only works on heading at point, any ID argument is ignored."
   (interactive)
-  (let (temp type)
-    (if DEEPCHECK
-        (if (and
-             (org-at-heading-p)
+  (let ((temp (if ID ID (org-id-get nil)))
+        type)
+    (if temp
+        (if DEEPCHECK
+            (and
              (equal "t" (org-entry-get (point) "xob"))
-             (setq temp (org-entry-get (point) "ID"))
-             (eq 0 (org-uuidgen-p temp))
              (setq type (org-entry-get (point) "TYPE"))
-             (member type org-xob--node-types))
-            t nil)
-      (setq temp (if ID ID (org-id-get nil)))
-      (if temp
-          (if (gethash temp org-xob--id-title) t nil)
-        nil))))
+             (member type org-xob--node-types)
+             (eq 0 (org-uuidgen-p temp)))
+          (if (gethash temp org-xob--id-title) t nil)))))
 
 (defun org-xob--eval-capture-templates ()
   "Re-evaluate the capture templates so they are up to date."
