@@ -1017,9 +1017,8 @@ Deepcheck only works on heading at point, any ID argument is ignored."
      :immediate-finish t
      :empty-lines-after 1)
 
-    ("ad" "today" entry (file+datetree org-xob--log-file)
-     ;; ("ad" "today" entry (file+datetree ,(concat org-xob-dir org-xob--log-file))
-     "* %u\n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
+          ("ad" "today" entry (file+function org-xob--log-file ,(lambda () (org-datetree-find-month-create (calendar-current-date))))
+     "**** %<%F %A> \n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
      :xob-node t
      :immediate-finish t
      :ntype "a.day"
@@ -1172,7 +1171,7 @@ Maybe useful for syncing."
 
 (defun org-xob--open-today ()
   "Open today node for logging."
-  (setq org-xob-today-string (concat "[" (format-time-string "%F %a") "]"))
+  (setq org-xob-today-string  (format-time-string "%F %A"))
   (and (or
         (setq org-xob-today (gethash org-xob-today-string
                                      org-xob--title-id))

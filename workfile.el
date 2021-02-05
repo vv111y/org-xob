@@ -1,7 +1,7 @@
 ;;; workfile.el --- a summary
-;;; elisp 
+;;; elisp
 
-;;;; flet 
+;;;; flet
 (list (split-string (org-entry-get (point) "LABELS")))
 (cl-flet ((func #'(lambda (x) (print x))))
   (func "what?"))
@@ -44,7 +44,7 @@
      (message "parse time: %.06f" (float-time (time-since time)))))
 
 
-;;;; looping 
+;;;; looping
 (type-of (cl-position 2 '(6 5 4 2 1)))
 
 (-repeat 1000 '2)
@@ -70,7 +70,7 @@
          collect (format "%s || %s" k v)
          )
 ;;; ---
-;;; org stuff 
+;;; org stuff
 ;;;; ap's searches
 (-flatten
 (-non-nil
@@ -80,7 +80,7 @@
                (org-with-wide-buffer
                 (goto-char (point-min))
                 (cl-loop with regexp = (format org-heading-keyword-regexp-format "MAYBE")
-                ;; (cl-loop with regexp = org-heading-regexp 
+                ;; (cl-loop with regexp = org-heading-regexp
                          while (re-search-forward regexp nil t)
                          collect (nth 4 (org-heading-components)))))))
          (org-agenda-files))))
@@ -94,7 +94,7 @@
                (org-with-wide-buffer
                 (goto-char (point-min))
                 ;; (cl-loop with regexp = (format org-heading-keyword-regexp-format "MAYBE")
-                (cl-loop with regexp = org-heading-regexp 
+                (cl-loop with regexp = org-heading-regexp
                          while (re-search-forward regexp nil t)
                          collect (nth 4 (org-heading-components)))))))
          (org-agenda-files))))
@@ -103,19 +103,19 @@
 
 (lambda ()
   (let ((case-fold-search nil))
-    (with-current-buffer (current-buffer) 
+    (with-current-buffer (current-buffer)
       (org-with-wide-buffer
        (goto-char (point-min))
        (cl-loop with regexp = (format org-heading-keyword-regexp-format "node")
        ;; (cl-loop with regexp = (formate org-heading-regexp)
-       ;; (cl-loop with regexp = org-heading-regexp 
+       ;; (cl-loop with regexp = org-heading-regexp
                 while (re-search-forward regexp nil t)
                 collect (nth 5 (org-heading-components)))))))
 
 (-non-nil
 (org-with-wide-buffer
  (goto-char (point-min))
- ;; (cl-loop with regexp = (format org-heading-keyword-regexp-format "node") 
+ ;; (cl-loop with regexp = (format org-heading-keyword-regexp-format "node")
  (cl-loop with regexp = org-heading-regexp
           while (re-search-forward regexp nil t)
           collect (nth 5 (org-heading-components)))))
@@ -143,7 +143,7 @@
 ;;                 (org-element-parse-buffer))
 
 
-;;;; logging & org stuff 
+;;;; logging & org stuff
 (org-log-beginning)
 (org-add-note)
 (org-add-log-note)
@@ -202,7 +202,7 @@
    (vv-parse-all-agenda)
    'ignore))
 
-;;;; org-id , hashing 
+;;;; org-id , hashing
 
 ;; not relevant to UUID
 ;; (org-id-decode)
@@ -227,9 +227,9 @@
    (org-entry-get nil "ITEM" nil)))
 
 ;;; tree stuff
-;;;; 1st 
+;;;; 1st
 
-;; respect contents pasting in to 
+;; respect contents pasting in to
 (org-insert-heading-respect-content t)
 (org-insert-heading-respect-content)
 
@@ -245,7 +245,7 @@
 (kill-new)
 (let ((str))
   (org-map-tree (lambda ()
-                  (setq str (concat str 
+                  (setq str (concat str
                                     (buffer-substring-no-properties
                                      (line-beginning-position)
                                      (line-end-position))))))
@@ -253,7 +253,7 @@
 
 ;; org-flag fns do hide/show
 
-;; all stuff before first subheading. could be good except the way I'm doing it now.  
+;; all stuff before first subheading. could be good except the way I'm doing it now.
 (org-copy-subtree nil nil nil 'nosubtrees)
 
 ;; just the text
@@ -278,17 +278,17 @@
 
 ;; USE THESE
 
-;; Mark the current subtree. This puts point at the start of the current subtree, and mark at the end.  
+;; Mark the current subtree. This puts point at the start of the current subtree, and mark at the end.
 (org-mark-subtree)
 
 (org-mark-element)
 
 ;; mark contents
-(progn 
+(progn
   (org-mark-subtree)
   (org-end-of-meta-data t))
 
-(progn 
+(progn
   (org-mark-subtree)
   (org-end-of-meta-data t)
   (copy-region-as-kill nil nil 'REGION))
@@ -306,8 +306,8 @@
 (org-mode-restart)
 
 (org-copy-subtree)
-(org-paste-subtree)		
-;; --- 
+(org-paste-subtree)
+;; ---
 
 ;; also
 ;; (substring) ;; meant for string arguments
@@ -322,7 +322,7 @@
 (org-cut-subtree)
 
 ;; a variable used in addition to kill ring
-(org-subtree-clip) 
+(org-subtree-clip)
 
 ;; also useful, marks rel to beg
   ;; Check markers in region.
@@ -338,13 +338,13 @@
 ;; convenient way to make a table of contents of the buffer."
 (outline-headers-as-kill beg end)
 
-;;;; use this for node with summary 
+;;;; use this for node with summary
 (require 'subr-x) ;; for when-let
 
-;; OR this. 
+;; OR this.
 (org-copy-subtree nil nil nil 'nosubtrees)
 
-;; looks excessive but works. 
+;; looks excessive but works.
 (defun vv-get-headline-with-text ()
   "Return a list with the headline text of the top-level headline for point as first element and the section text as second element."
     (interactive)
@@ -378,9 +378,9 @@
         ))))
 
 ;; mess of testing
-;; (save-excursion 
+;; (save-excursion
 ;;   (save-restriction
-    ;; (org-narrow-to-subtree) 
+    ;; (org-narrow-to-subtree)
     ;; (buffer-substring ())
     ;; (org-end-of-meta-data 'full)
     ;; (print (org-element-at-point))
@@ -390,7 +390,7 @@
       ;; (buffer-substring-no-properties (org-element-property :contents-begin p)
       ;;                                 (org-element-property :contents-end p)))
     ;; (org-element-property :cont (org-element-at-point))
-    ;; (org-element-interpret-data 
+    ;; (org-element-interpret-data
     ;;  (org-element-at-point))
     ;; (org-element-map
     ;;     (org-element-at-point)
@@ -402,7 +402,7 @@
     ;;   'no-recursion
     ;;   )
     ;; ))
-(progn 
+(progn
   (org-goto-first-child)
   (previous-line)
   (move-end-of-line nil))
@@ -411,7 +411,7 @@
   "Return a list consisting of the heading title and the
 first section of text (before the next heading) at point."
   (interactive)
-  (print 
+  (print
    (save-excursion
      (save-restriction
        (widen)
@@ -426,7 +426,7 @@ first section of text (before the next heading) at point."
   "Copy to kill ring the heading and the first paragraph of text."
   (interactive)
   (kill-new
-   (org-element-interpret-data 
+   (org-element-interpret-data
     (let* ((data (org-element-context 'greater-elements))
            (headline (org-element-map
                          data
@@ -454,7 +454,7 @@ first section of text (before the next heading) at point."
 (defun vv/heading-children ()
   "Return list of child headings of heading at point."
   (interactive)
-  (print 
+  (print
    (org-with-wide-buffer
     (when (org-goto-first-child)
       (cl-loop collect (org-get-heading t t)
@@ -465,12 +465,12 @@ first section of text (before the next heading) at point."
   (interactive)
   (org-end-of-meta-data 'full)
   (let ((str))
-    
+
     (save-excursion
       (save-restriction
         (org-narrow-to-subtree)
         (org-map-tree (lambda ()
-                        (setq str (concat str 
+                        (setq str (concat str
                                           (buffer-substring-no-properties
                                            (line-beginning-position)
                                            (line-end-position))
@@ -504,15 +504,15 @@ first section of text (before the next heading) at point."
 ;; clean version
 (defun vv-vv ()
   "delete contents of every child heading."
-  (interactive) 
+  (interactive)
   (save-excursion
-    (save-restriction 
+    (save-restriction
       (org-narrow-to-subtree)
       (outline-show-all)
       (outline-next-heading)
       (while
-          (progn 
-            (save-excursion 
+          (progn
+            (save-excursion
               (org-mark-subtree)
               (org-end-of-meta-data t)
               (call-interactively #'delete-region)
@@ -533,15 +533,15 @@ first section of text (before the next heading) at point."
   t)
 (defun org-xob--tree-delete-contents ()
   "delete contents of every child heading."
-  (interactive) 
+  (interactive)
   (save-excursion
-    (save-restriction 
+    (save-restriction
       (org-narrow-to-subtree)
       (outline-show-all)
       (outline-next-heading)
       (while
-          (progn 
-            (save-excursion 
+          (progn
+            (save-excursion
               (org-mark-subtree)
               (org-end-of-meta-data t)
               (call-interactively #'delete-region)
@@ -553,19 +553,19 @@ first section of text (before the next heading) at point."
 ;; delete contents
 (defun vv-vv ()
   "delete contents of every child heading."
-  (interactive) 
+  (interactive)
   ;; (save-restriction)
 	;; (org-back-to-heading t)
 	;; (org-narrow-to-subtree)
-  (save-restriction 
+  (save-restriction
   (save-excursion
       ;; (org-with-wide-buffer)
       (org-narrow-to-subtree)
       (outline-show-all)
       (outline-next-heading)
       (while
-          (progn 
-            (save-excursion 
+          (progn
+            (save-excursion
               (org-mark-subtree)
               (org-end-of-meta-data t)
               ;; (set-marker (mark-marker) (- (mark) 1))
@@ -585,15 +585,15 @@ first section of text (before the next heading) at point."
   )
 
 ;; tryouts
-(progn 
-  (delete-region 
-   (progn 
+(progn
+  (delete-region
+   (progn
      (org-end-of-meta-data t)
      (point))
    (org-entry-end-position)))
 
-(lambda () 
-  (save-excursion 
+(lambda ()
+  (save-excursion
     (org-mark-subtree)
     (org-end-of-meta-data t)
     (call-interactively #'delete-region)))
@@ -603,7 +603,7 @@ first section of text (before the next heading) at point."
 Items is a list of org-ids."
   ;; TODO assuming on parent header
   (if (org-xob--is-source-p)
-      (progn 
+      (progn
         (dolist (el items nil)
           ()))))
 
@@ -616,8 +616,8 @@ Items is a list of org-ids."
   "Appends a single entry to the end of the source subtree.
 Assumes point is on the source heading."
   (let ((title (gethash ID org-xob--id-node)))
-    (if title 
-        (save-excursion 
+    (if title
+        (save-excursion
           (org-insert-subheading '(4))
           ;; alt (org-edit-headline (org-xob--ID-title ID))
           (insert title)
@@ -735,7 +735,7 @@ Assumes point is on the source heading."
 
 ;; this works
 (defun vv-goto-bl ()
-  (interactive) 
+  (interactive)
   (org-element-map (org-element-parse-buffer) 'link
     (lambda (link)
       (if (equal (org-element-property
@@ -747,7 +747,7 @@ Assumes point is on the source heading."
 
 ;; inverse, links not in backlinks
 (defun vv-goto-bl ()
-  (interactive) 
+  (interactive)
   (org-element-map (org-element-parse-buffer) 'link
     (lambda (link)
       (if (not (equal (org-element-property
@@ -761,7 +761,7 @@ Assumes point is on the source heading."
 
 ;; (setq here (org-element-property :contents-begin adrawer)
 
-(org-element-context) 
+(org-element-context)
 (org-element-at-point)
 
 (equal (org-element-property :drawer-name (org-element-at-point)) "BACKLINKS")
@@ -771,13 +771,13 @@ Assumes point is on the source heading."
 
 (org-element-lineage (org-element-at-point))
 
-(org-element-property :parent 
-(org-element-property :parent 
- (org-element-context))) 
+(org-element-property :parent
+(org-element-property :parent
+ (org-element-context)))
 
 ;;; ---
 ;;; get node
-;;;; main get node  
+;;;; main get node
 ;;;; testing version for reference
 ;; (setq org-xob-today nil)
 
@@ -787,7 +787,7 @@ Assumes point is on the source heading."
 ;;     (org-xob-start))
 ;;   (unless org-xob-today
 ;;     (setq org-xob-today (org-xob--capture "today")))
-;;   ;; Get node by title, or create new one 
+;;   ;; Get node by title, or create new one
 ;;   (helm :buffer "*xob get node*"
 ;;         :sources (helm-build-sync-source "vv-sss"
 ;;                    :candidates (lambda ()
@@ -803,7 +803,7 @@ Assumes point is on the source heading."
 ;;                                            (org-xob--activate-node ID))))))
 
 ;;;; alternative to get contents, used in activate-node fn
-;; (contents (save-mark-and-excursion (progn 
+;; (contents (save-mark-and-excursion (progn
 ;;                                      (marker-buffer m)
 ;;                                      (goto-char m)
 ;;                                      (move-marker m nil)
@@ -828,7 +828,7 @@ Assumes point is on the source heading."
 
 ;;;; xob edit node
 
-;; A org-tree-to-indirect-buffer 
+;; A org-tree-to-indirect-buffer
 (org-tree-to-indirect-buffer &optional ARG)
 (org-tree-to-indirect-buffer)
 
@@ -867,7 +867,7 @@ inhibit-modification-hooks
 ;; hello
 ;; hello
 ;;; helm | hashing
-;;;; scratch 
+;;;; scratch
 (defun vv/helm-try ()
   (interactive)
   (helm :sources (helm-build-async-source "async-src"
@@ -970,7 +970,7 @@ inhibit-modification-hooks
                                       (org-xob--get-entry ,ID)
                                     (org-xob--capture helm-input)))))))
 
-;;;; hash table 
+;;;; hash table
 ;; create empty table
 (setq org-xob--table-size 10000)
 (setq org-xob--title-id (make-hash-table
@@ -992,7 +992,7 @@ inhibit-modification-hooks
 ;; (setq vv/ttls (list))
 ;; (defun vv/nodetitles (k v)
 ;;   (org-id-goto k)
-;;   ;; (add-to-list 'vv/ttls 
+;;   ;; (add-to-list 'vv/ttls
 ;;   ;;              ;; (org-entry-get nil "ITEM")
 ;;   ;;              (nth 4 (org-heading-components))
 ;;   ;;              )
@@ -1052,7 +1052,7 @@ inhibit-modification-hooks
          (shell-quote-argument "mm2.org")
          (shell-quote-argument "mm.org")
          ))
-         
+
 ;; (shell-command-to-string
 ;;  (format "xdelta3 -ecAS %s %s | xargs xdelta3 -d <(echo \"%s\")"
 ;;          (shell-quote-argument "mm.org")
@@ -1258,7 +1258,7 @@ inhibit-modification-hooks
 ;;; node structs and hashtable
 (cl-defstruct node title type backlinks)
 ;; (setq vv/ns (make-node :title "meee" :backlinks (list)))
-;; nice to know, not using it 
+;; nice to know, not using it
 ;; (setf (node-backlinks vv/ns) (append '(a)))
 ;;; trial #2 xob state : alternate use struct for state
 (cl-defstruct xob-state kb-count kb-current kb-files t-id-table-fn id-n-table-fn)
@@ -1266,7 +1266,7 @@ inhibit-modification-hooks
 ;;; xob-new-file, save/load object
 (defun xob-new-file ()
   (interactive)
-  (let ((filename (concat 
+  (let ((filename (concat
                    org-xob--KB-filename-prefix
                    (format "%03d" (xob-state-kb-count xob))
                    ".org")))
@@ -1360,7 +1360,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
       (org-entry-put (point) "TYPE" type)
       (if (org-capture-get :todo) (org-todo))
       (setq node (make-node :title title
-                            :type type 
+                            :type type
                             :backlinks (list)))
       (puthash title ID org-xob--title-id)
       (puthash ID node org-xob--id-node)
@@ -1425,7 +1425,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;; (defun org-xob--get-entry (key)
 ;;   (format "getting entry %s" key))
 
-;;; xob--objects 
+;;; xob--objects
 (org-xob--activate-node '"5fc3aafe-fa83-4ec4-9db3-12e703d31bb2")
 (org-xob--save-state)
 (symbol-value (car (car org-xob--objects)))
@@ -1459,7 +1459,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
    (get-buffer-create "*Messages*")
    `((window . ,(window-parent window)) (window-height . 5))))
 
-(let ((window 
+(let ((window
        (display-buffer-in-atom-window
         (get-buffer-create "*node context*")
         `((window . ,(selected-window)) (side . right))))))
@@ -1478,7 +1478,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
   "Open context content in a side window."
   (interactive)
   ;; (org-xob-new-buffer)
-  (setq vv-sw 
+  (setq vv-sw
          (display-buffer-in-atom-window
           (get-buffer vv-sb)
           `((window . ,(selected-window)) (side . right)))))
@@ -1500,14 +1500,14 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (window-atom-root)
 (window-tree)
 
-(display-buffer 
+(display-buffer
  (window-buffer))
 
 (setq vv-sb (get-buffer-create "*node context*"))
 
 (defun vv-sw ()
   (interactive)
-  (setq vv-sw 
+  (setq vv-sw
         (display-buffer-in-side-window vv-sb
                                        `((side . right) (slot . 0)))))
 
@@ -1517,19 +1517,19 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 
 ;; (defun vv-sw ()
 ;;   (interactive)
-;;   (setq vv-sw 
+;;   (setq vv-sw
 ;;         (split-window (selected-window) nil 'right nil))
 ;;   (with-selected-window vv-sw (display-buffer vv-sb)))
 
 (defun org-xob-toggle-sideline ()
   "Toggles display of the contextual side window."
   (interactive)
-  (if org-xob--sideline-window 
-      (progn 
+  (if org-xob--sideline-window
+      (progn
         (delete-window org-xob--sideline-window)
         (setq org-xob--sideline-window nil))
-    (progn 
-      (setq org-xob--sideline-window 
+    (progn
+      (setq org-xob--sideline-window
             (split-window-right))
       (select-window org-xob--sideline-window)
       (display-buffer-same-window org-xob--context-buffer nil))))
@@ -1563,42 +1563,42 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 
 ;; (defun org-xob--nodes-in-buffer (buff)
 ;;   ;; traverse headings, check if node, append ID to list
-;;   nil 
+;;   nil
 ;;   )
 
 ;;;; "Search buffers for org heading with ID and place point there."
 
 (org-xob--goto-heading "3A3BD225-A186-4CC4-B900-DF10DAA31B42")
 (setq vv-id "3A3BD225-A186-4CC4-B900-DF10DAA31B42")
-(progn 
+(progn
   (re-search-forward vv-id)
   (org-back-to-heading 'invisible-ok))
- 
+
 ;; MAYBE or set marker?
 ;; not map, loop till found
-;; TODO excessive for this version. I'm at the conext buffer already when called. 
+;; TODO excessive for this version. I'm at the conext buffer already when called.
 (defun org-xob--goto-heading (ID)
   "Search buffers for org heading with ID and place point there."
   (let ((mm))
     (save-excursion
       (save-restriction
-        (setq mm 
-              (catch 'found 
+        (setq mm
+              (catch 'found
                 (dolist (buf (buffer-list))
                   (with-current-buffer buf
                     ;; TODO finer than org
                     (if (eq major-mode 'org-mode)
                         (progn
-                          (org-with-wide-buffer 
+                          (org-with-wide-buffer
                            (goto-char (point-min))
                            (when (re-search-forward ID nil t)
-                             (progn 
+                             (progn
                                (org-back-to-heading 'invisible-ok)
                                (throw 'found (point-marker)))))))))))))
     (if (and (marker-buffer)
              (car mm))
-        
-        (progn 
+
+        (progn
           (switch-to-buffer (marker-buffer mm))
           (goto-char mm)
           t)
@@ -1660,7 +1660,7 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (org-map-entries (lambda () (push (cons (point) (nth 4 (org-heading-components))) vv-p)))
 (org-map-entries (lambda () (push (point) vv-p)))
 
-(org-entry-put (point) "NID" 
+(org-entry-put (point) "NID"
                (org-entry-get (point) "ID" nil nil))
 
 ;;;; old: tags
@@ -1669,14 +1669,14 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 (defvar orb-xob--A-tag "A")
 (defvar orb-xob--node-tag "node")
 
-;;;; define generic sources [2020-12-19 Sat 09:43] 
+;;;; define generic sources [2020-12-19 Sat 09:43]
 
 (defun org-xob--display-source (source mainID)
   "Open a source tree for node mainID into the context buffer.
 If it is already there, then refresh it. source items are shown as org headings.
 source is a plist that describes the content source."
   (interactive)
-  (save-window-excursion 
+  (save-window-excursion
     (with-current-buffer org-xob--context-buffer
       (if (org-xob--goto-heading source)
           (progn
@@ -1712,7 +1712,7 @@ source is a plist that describes the content source."
 (setq-local org-xob--source-backlinks
             '(:name "backlinks"
                     :tags ("KB")
-                    :title nil 
+                    :title nil
                     :ID nil
                     :PID nil
                     :func org-xob--get-backlinks
@@ -1721,7 +1721,7 @@ source is a plist that describes the content source."
 (setq-local org-xob--source-forlinks
             '(:name "forlinks"
                     :tags ("KB")
-                    :title nil 
+                    :title nil
                     :ID nil
                     :PID nil
                     :func org-xob--get-forlinks
@@ -1747,24 +1747,24 @@ source is a plist that describes the content source."
 ;;                               "BACKLINKS")
 ;;                      (org-element-property :path link))))))
 (setq target "boo")
-(condition-case nil 
+(condition-case nil
     (org-id-goto vvv)
     (error (message "not found")))
 
-(condition-case nil 
-    ;; (progn) 
-  (print "low") 
+(condition-case nil
+    ;; (progn)
+  (print "low")
   (print "beem")
   (error (message "eeem!")))
 
-;; this may not needed for full node, I will ignore ID altogether, and just use PID. 
-;; I may need to change where org-id is used. 
+;; this may not needed for full node, I will ignore ID altogether, and just use PID.
+;; I may need to change where org-id is used.
 (org-id-get-create 'FORCE)
 ;;;; change entries: try macro
 
 (defmacro vvm (&rest body)
   ;; (declare (debug (body)))
-  `(let ((func (lambda () (progn 
+  `(let ((func (lambda () (progn
                             (org-xob-clear-heading)
                             (org-end-of-meta-data)
                             (insert
@@ -1826,7 +1826,7 @@ source is a plist that describes the content source."
 ;;;; change entries: try nested lambdas instead of macro
 
 (defun nln (payload)
-  (let ((func (lambda () (progn 
+  (let ((func (lambda () (progn
                             (org-xob-clear-heading)
                             (org-end-of-meta-data)
                             (insert
@@ -1881,7 +1881,7 @@ source is a plist that describes the content source."
 ;;; old open day node - no
 
 (unless org-xob-today
-  (save-excursion 
+  (save-excursion
     (condition-case nil
         (setq org-xob-today (find-file org-xob-current-log-file))
       (error "xob log file not found."))
@@ -1914,13 +1914,13 @@ source is a plist that describes the content source."
 ;;                               ("alt" . a.log.tools)  							;; log tools
 ;;                               ("lp" . a.log.project)							;; log project
 
-;;                               ("nn" . n.n)												;; new general node 
+;;                               ("nn" . n.n)												;; new general node
 ;;                               ("nt" . n.topic)										;; kb topic
 ;;                               ("na" . n.bib.article)							;; bib article
 ;;                               ("nw" . n.bib.web)									;; bib webpage
 
-;;                               ("tf" . t.free)											;; unbound todo	
-;;                               ;; ("tp" . t.project)									;; project todo	
+;;                               ("tf" . t.free)											;; unbound todo
+;;                               ;; ("tp" . t.project)									;; project todo
 
 (setq org-xob--auto-types '("ad" "as" "al" "all" "alit" "alt" "lp" "nn" "nt" "na" "nw" "tf" "tp"))
 
@@ -1971,7 +1971,7 @@ source is a plist that describes the content source."
 
 (setq xob-logfile (concat org-xob-path org-xob--log-file))
 
-(and t (if (not org-xob-today) 
+(and t (if (not org-xob-today)
            (setq org-xob-today (org-xob--capture "ad"))))
 
 (setq org-xob-today nil)
@@ -2077,7 +2077,7 @@ source is a plist that describes the content source."
 (modify-dir-local-variable 'org-mode 'test test 'add-or-replace)
 
 (setq vvn "#+PROPERTY: xob t")
-(save-excursion 
+(save-excursion
   (goto-char (point-min))
   (newline)
   (goto-char (point-min))
@@ -2101,7 +2101,7 @@ source is a plist that describes the content source."
 (defun org-xob--new-KB-file ()
   "Create new KB file for next node in the brain. Returns the filename."
   (interactive)
-  (let* ((filename (concat 
+  (let* ((filename (concat
 
                     ;;
                     org-xob--KB-filename-prefix
@@ -2160,7 +2160,7 @@ source is a plist that describes the content source."
                  :candidates '(a b c d e f)
                  :action (lambda (c) (helm-marked-candidates))))
 
-;;; remove link, leave text option 
+;;; remove link, leave text option
 https://emacs.stackexchange.com/questions/10707/in-org-mode-how-to-remove-a-link
 (defun org-link-delete-link ()
   "Remove the link part of an org-mode link at point and keep
@@ -2254,7 +2254,7 @@ only the description"
 (let ((symbol1 "hi")
       (symbol2 "there")
       (symbol3 "well"))
-  (cl-mapcar #'zzm '(symbol1) '(symbol2) '(symbol3))) 
+  (cl-mapcar #'zzm '(symbol1) '(symbol2) '(symbol3)))
 ;; (zzm a b c)
 
 (cond
@@ -2300,7 +2300,7 @@ only the description"
 (org-xob--register-files)
 org-xob--templates
 
-;;; C-u 
+;;; C-u
 (defun prearg (&optional arg)
   (interactive "P")
   ;; (print arg)
@@ -2413,10 +2413,10 @@ org-xob--templates
     (message "good %s" fname)))
 ;;; clone
 (let (ba)
-  (progn 
+  (progn
     (save-window-excursion
       (save-excursion
-        (progn 
+        (progn
           ;; (org-id-goto "B135DD31-38AD-4357-B3D1-34CA7E61AD89")
           (org-id-goto "40B39DFF-0741-4920-A8B7-4BC1E5D9C9C4")
           (setq bem
@@ -2572,7 +2572,7 @@ org-xob--templates
   (if (symbolp 's) (boundp 's)))
 
 (display-message-or-buffer
- (concat 
+ (concat
   (mapcar (lambda (s)
             (cond
              ((and (symbolp s) (boundp s)) (eval s))
@@ -2604,13 +2604,13 @@ org-xob--templates
             ((and (symbolp s) (boundp s)) (eval s))
             ((string-or-null-p s) s)
             (t s)))
-         '('ID ID 
+         '('ID ID
                'org-xob--edit-buffers org-xob--edit-buffers
                'parent-ID: parent-ID
                'parent-title: parent-title
-               'title: title 
+               'title: title
                'parent-edit-buffer parent-edit-buffer
-               'org-xob--node-sources org-xob--node-sources 
+               'org-xob--node-sources org-xob--node-sources
                org-xob--source-backlinks
                org-xob--source-forlinks)))
 
@@ -2624,7 +2624,7 @@ org-xob--templates
 (outline-has-subheading-p)
 
 
-(outline-get-next-sibling) 
+(outline-get-next-sibling)
 (outline-get-last-sibling)
 
 (org-insert-subheading '(4))
@@ -2633,7 +2633,7 @@ org-xob--templates
 
 ;; (org-save-outline-visibility USE-MARKERS &rest BODY)
 ;; maybe useful
-(org-save-outline-visibility) 
+(org-save-outline-visibility)
 
 (org-element-contents (org-element-at-point))
 (org-element-context)
@@ -2682,7 +2682,7 @@ org-xob--templates
       (and (setq place (with-current-buffer org-xob--other-buffer
                          (org-find-entry-with-id sID)))
            (goto-char place))))
-;;; files probs 
+;;; files probs
 
 (equal "hit" "hi")
 (org-xob--register-files)
@@ -2702,7 +2702,7 @@ org-xob--templates
 (setq vvlines (list) )
 (org-map-tree
  (lambda ()
-   (push (concat 
+   (push (concat
           (buffer-substring-no-properties
            (line-beginning-position)
            (line-end-position))
@@ -2714,7 +2714,7 @@ org-xob--templates
 (mapconcat 'identity vvlines "\n")
 
 ;;; evil keybindings
-(evil-define-key 'normal 'local 
+(evil-define-key 'normal 'local
   ;; (kbd "C-S-RET") 'org-xob-clear-heading
   ;; (kbd "C-'") 'org-xob-clear-heading
   ;; (kbd "s") 'org-xob-to-summary
@@ -2818,8 +2818,37 @@ org-xob--node-sources
 (setq bill "bill")
 (vvmm bill)
 
+;;; datetree
 (org-datetree-find-month-create (calendar-current-date))
 
+(org-datetree-find-month-create (calendar-current-date) 'subtree-at-point)
+(org-datetree-find-month-create (calendar-current-date))
+
+(org-with-wide-buffer
+ (evil-save-state
+   (org-save-outline-visibility nil
+     (progn
+       ;; (org-reveal)
+       ;; (org-show-context)
+       ;; (org-show-all)
+       (outline-show-all)
+       (org-datetree-find-month-create (calendar-current-date))
+       (org-insert-subheading '(4))
+       (org-edit-headline "weet")
+       ))))
+
+;; (defun org-xob--goto-month ()
+;;   "Finds month heading."
+;;   (org-with-wide-buffer
+;;    (org-save-outline-visibility nil
+;;      (outline-show-all)
+;;      (org-datetree-find-month-create (calendar-current-date)))))
+
+(lambda () (org-datetree-find-month-create (calendar-current-date)))
+
+(org-current-level)
+
+;; (org-xob--capture "ad")
 
 (org-datetree-find-month-create (calendar-current-date))
 (org-datetree--find-create-group (calendar-current-date) 'day)
@@ -2833,3 +2862,33 @@ org-xob--node-sources
 
 (org-datetree-find-date-create (calendar-current-date))
 (org-entry-properties)
+
+(calendar-month-name (calendar-extract-month (calendar-current-date)))
+(calendar-month-name (car (calendar-current-date)))
+(calendar-day-name  (calendar-current-date))
+(calendar-extract-year (calendar-current-date))
+
+(calendar-day-name  (calendar-current-date))
+(calendar-extract-year (calendar-current-date))
+
+(org-capture-string str "")
+(org-capture-select-template "tt")
+(format-time-string "%F %a")
+(format-time-string "%F %A")
+(org-xob-refile-region)
+
+
+(pulse-tick 8)
+
+(defun vvbff ()
+  (let ((buf (cond
+              ((and (boundp 'bufID)
+                    (boundp 'org-xob--context-buffer)
+                    (bound-and-true-p org-xob-mode))
+               org-xob--context-buffer)
+              ((and (boundp 'parent-ID)
+                    (bound-and-true-p org-xob-context-mode))
+               (current-buffer))
+              (t nil))))
+    (if (buffer-live-p buf)
+        (with-current-buffer buf (goto-char (point-max)) (insert "\nhey\n")))))
