@@ -699,7 +699,7 @@ If ID is given, then convert todo with that ID."
           (add-to-list 'org-xob--edit-buffers buf)))
       (switch-to-buffer buf)
       (org-xob-mode 1)
-      (add-hook 'kill-buffer-hook #'org-xob--cleanup-buffers-hook -80 'local)
+      (add-hook 'kill-buffer-hook 'org-xob--cleanup-buffers-hook )
       (setq org-xob--open-nodes (append org-xob--open-nodes (list (cons ID ()))))
       (goto-char place)
       (org-narrow-to-subtree)
@@ -729,16 +729,18 @@ Buffer local to edit buffer."
   (if (and (boundp 'org-xob--sideline-window)
            (window-live-p org-xob--sideline-window))
       (delete-window org-xob--sideline-window))
-  (if (boundp 'org-xob--context-buffer)
-      (with-current-buffer org-xob--context-buffer
-        (kill-buffer)))
-  (assoc-delete-all bufID org-xob--open-nodes)
-  (let ((selfbuf (current-buffer)))
-    (with-current-buffer (buffer-base-buffer)
-      (setq-local org-xob--edit-buffers (cl-delete-if
-                                   (lambda (x) (or (not (buffer-live-p x))
-                                                   (eq selfbuf x) ))
-                                   org-xob--edit-buffers)))) nil)
+  (and (boundp 'org-xob--context-buffer)
+      (kill-buffer org-xob--context-buffer))
+  (and (boundp 'bufID)
+       (assoc-delete-all bufID org-xob--open-nodes))
+  (let ((selfbuf (current-buffer))
+        (basebuf (buffer-base-buffer)))
+    (and basebuf
+         (with-current-buffer (buffer-base-buffer)
+           (setq-local org-xob--edit-buffers (cl-delete-if
+                                              (lambda (x) (or (not (buffer-live-p x))
+                                                              (eq selfbuf x) ))
+                                              org-xob--edit-buffers))))) nil)
 
 (defun org-xob--update-modified-time ()
   "Hook to update the modified timestamp of all nodes that are being edited when saving.
