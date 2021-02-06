@@ -49,7 +49,7 @@
 ;; which takes care of flanges.
 ;;
 ;;  [1] https://example.com/foo.el
-;;  [2] https://example.com/bar.el
+;;  [2] 
 
 ;;; License:
 
@@ -92,7 +92,7 @@
 
 (defgroup org-xob nil
   "Settings for `org-xob'."
-  :link '(url-link "http://example.com/org-xob.el"))
+  :link '(url-link "http://github.com/vv111y/org-xob.el"))
 
 (defcustom org-xob-something nil
   "This setting does something."
@@ -141,11 +141,6 @@
 (defvar org-xob-dir "~/xob/"
   "Core directory for exobrain system.")
 
-;; TODO remove when done
-;; (setq org-xob-dir "~/xob/")
-;; (setq org-xob--KB-files nil)
-(setq org-xob-dir "~/DevWorkSpace/MyTools/Emacs/zettle/org-xob/xob/")
-
 (defvar org-xob-max-KB-filesize 524288
   "Specifies the largest size the knowledge base org-mode files should grow to. Once the current file reaches the limit, a new file is created.")
 
@@ -193,8 +188,7 @@
 
 ;;;;; node/capture variables
 
-;; TODO change to defvar when done
-(setq org-xob-labels '("one" "two" "cat" "dog"))
+(defvar org-xob-labels '("one" "two" "cat" "dog"))
 
 (defvar org-xob--node-types '("a.day" "a.project" "a.session" "a.log" "a.log.life" "a.log.tools" "a.log.project" "a.todo" "n.n" "n.topic" "n.bib.article" "n.bib.web" "t.free" "t.project"))
 
@@ -548,7 +542,8 @@ regardless. Likewise with flag 'OFF."
 
 ;;;###autoload
 (defun org-xob-ql-search ()
-  "Use org-ql to search the KB. Creates a new source in the context buffer."
+  "<Unavailable this release>
+Use org-ql to search the KB. Creates a new source in the context buffer."
   (interactive)
   (org-xob-with-xob-buffer
    nil))
@@ -569,7 +564,6 @@ regardless. Likewise with flag 'OFF."
   (interactive)
   (org-xob--kb-copy-paste))
 
-;; TODO find any paragraph before next heading
 ;;;###autoload
 (defun org-xob-to-summary ()
   "Show KB node summary. This is defined as the first paragraph if it exists."
@@ -578,8 +572,6 @@ regardless. Likewise with flag 'OFF."
    #'(lambda () (progn
                  (org-end-of-meta-data t)
                  (let ((p (org--paragraph-at-point)))
-                   ;; (if (equal (org-element-type p)
-                   ;;            'paragraph))
                    (if p
                        (buffer-substring-no-properties
                         (org-element-property :contents-begin p)
@@ -644,8 +636,7 @@ If ID is given, then convert todo with that ID."
   (interactive)
   (save-excursion
     (save-window-excursion
-      (if ID
-          (org-id-goto ID))
+      (when ID (org-id-goto ID))
       (if (org-entry-is-done-p)
           (progn
             (org-todo 'none)
@@ -773,11 +764,10 @@ Returns ID if successful, nil otherwise."
       ID)))
 
 (defun org-xob--id-goto (sID)
-  "TODO changed: goto context buffer and then look
-Search buffers for org heading with ID and place point there.
+  "Search buffers for org heading with ID and place point there.
 Return point position if found, nil otherwise."
   (let (place)
-    (if (org-not-nil sID)
+    (when (org-not-nil sID)
       (or (and (string= sID (org-entry-get (point) "ID"))
                (org-back-to-heading)
                (point))
