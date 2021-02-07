@@ -64,9 +64,37 @@
   (org-xob-map-buffers (org-xob-map-nodes func)))
 
 (defun org-xob-id-goto (ID)
-  (and (org-xob-buffer-p (current-buffer))
-       ())
-  ())
+  (let ((place (make-marker)))
+    (org-xob-map-buffers
+     (lambda (x) (set-marker place (or (org-find-property "PID" ID)
+                                       (org-find-property "COPY" ID)
+                                       (org-find-property "EDIT" ID)))))
+    (when place
+      (set-buffer (marker-buffer place))
+      (goto-char (place))
+      (setq place nil))))
+
+;; (let ((check (lambda (x) (or (org-entry-get (point) "PID")
+;;                                (org-entry-get (point) "COPY")
+;;                                (org-entry-get (point) "EDIT"))))))
+;;   (and (org-xob-buffer-p (current-buffer))
+;;        (or (string= ID check)))
+;;   ())
+
+;; TODO might not work, since loop continues. use until clause in cl-loop in map-buffers
+;; or maybe have more than one map fn, or optional args
+(defun org-xob-find-source (ID)
+  (let (place))
+  (org-xob-map-buffers
+   (lambda (x) (org-find-property "PID" ID))))
+
+(defun org-xob-find-copy (ID)
+  (org-xob-map-buffers
+   (lambda (x) (org-find-property "COPY" ID))))
+
+(defun org-xob-find-edit-node (ID)
+  (org-xob-map-buffers
+   (lambda (x) (org-find-property "EDIT" ID))))
 
 (defun org-xob-goto-buffer ()
   (interactive))
