@@ -49,7 +49,7 @@
 ;; which takes care of flanges.
 ;;
 ;;  [1] https://example.com/foo.el
-;;  [2] 
+;;  [2]
 
 ;;; License:
 
@@ -814,11 +814,13 @@ then check the heading associated with it."
   (interactive)
   (let ((temp (if ID ID
                 (org-entry-get (point) "ID")))
+        ;; TODO remove arg, buffer checks. use pid, tags
         (pid (or  (and (boundp 'bufID)
                        bufID)
                   (and (boundp 'parent-ID)
                        parent-ID))))
     (if (and temp
+             ;; todo remove
              (member temp (assoc pid org-xob--open-nodes))) t nil)))
 
 (defun org-xob--prepare-kb-source (source &optional arg)
@@ -861,6 +863,7 @@ source is a plist that describes the content source."
        (let ((temp (copy-tree (plist-get source :items))))
          (org-xob--map-source
           (lambda ()
+            ;; todo replace pid with copy
             (let ((pid (org-entry-get (point) "PID")))
               (if (member pid temp)
                   (setq temp (delete pid temp))
@@ -880,6 +883,7 @@ Assumes point is on the source heading."
           (progn
             (org-insert-subheading '(4))
             (org-edit-headline title)
+            ;; todo replace copy
             (org-entry-put (point) "PID" ID))
         (message "no kb node found for ID: %s" ID)))))
 
@@ -906,6 +910,7 @@ respective node IDs. Two kinds of links are distinguished: backlinks and forlink
 where the backlinks are in a BACKLINKS drawer."
   (save-window-excursion
     (save-excursion
+      ;; todo replace with copy
       (org-id-goto (plist-get source :PID))
       (plist-put source :items
                  (org-xob--node-get-links (plist-get source :name))))))
@@ -935,6 +940,7 @@ then return all other links."
                              ID
                            (message "XOB: invalid link %s" ID) nil)))))))))))
 
+;; todo redo
 (defun org-xob--kb-copy-paste (&optional selector insertor)
   "Wrapper function to display new content in a context item from the
 knowledge base. Executes function selector while point is at the heading
@@ -944,6 +950,7 @@ When called with point on the given context item, only that item will be
 updated. If called on a context source heading, then the update is applied
 to all source items."
   (let ((func #'(lambda ()
+                  ;; todo replace with copy
                   (let ((pid (org-entry-get (point) "PID")) str)
                     (unless (not pid)
                       (save-excursion
@@ -955,6 +962,7 @@ to all source items."
                       (if selector
                           (progn
                             (save-excursion
+                              ;; todo replace with copy
                               (org-id-goto pid)
                               (org-with-wide-buffer
                                (org-save-outline-visibility
