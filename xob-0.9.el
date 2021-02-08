@@ -5,6 +5,7 @@
 ;; Author: Will Rempel <Will@WillMBA>
 ;; Keywords: lisp, tools
 
+;;; my implementation tryout
 (defun org-xob-in-xob-buffer (&rest body)
   (or (org-xob-buffer-p (current-buffer))
         (and (org-xob-buffer-p org-xob-last-buffer)
@@ -47,9 +48,10 @@
        (equal major-mode 'org-mode)
        (bound-and-true-p org-xob-mode)))
 
+;; ---- can be redone with org-ql ---
 (defun org-xob-map-buffers (func)
   (cl-loop for buf in org-xob-buffers
-           do (funcall func))) ;; todo maybe collect
+           do (with-current-buffer buf (funcall func)))) ;; todo maybe collect
 
 (defun org-xob-map-nodes (func)
   (org-with-wide-buffer
@@ -81,6 +83,57 @@
 ;;        (or (string= ID check)))
 ;;   ())
 
+(defun org-xob-find-in-buffers (prop val)
+  (cl-loop for buf in org-xob-buffers
+           until (let (place)
+                   (with-current-buffer buf
+                     (if (setq place (org-find-property prop val))
+                         (list place buf)
+                       nil)))))
+
+(defun org-xob-find-any-in-buffers ())
+
+(defun org-xob-find-all-in-buffers (ID)
+  (cl-loop for buf in org-xob-buffers
+           collect (let (place)
+                     (with-current-buffer buf
+                       (org-with-wide-buffer
+                        (goto-char (point-min))
+                        (cl-loop until (eobp)
+                                 collect (when (re-search-forward ID nil t nil)
+                                           (org-back-to-heading)
+                                           (point))))))))
+
+(defun org-xob-if-apply-in-buffers (cond func)
+  (cl-loop for buf in org-xob-buffers
+           do (let (place)
+                (with-current-buffer buf
+                  (org-with-wide-buffer
+                   (goto-char (point-min))
+                   (org-xob-next-node)
+                   (when cond (funcall func)))))))
+
+(defun org-xob-next-node ()
+  (unless (and (org-at-heading-p)
+               (org-entry-get (point) "xob"))
+    (outline-next-heading)))
+
+(defun org-xob-update-copies (ID)
+  (org-xob-if-apply-in-buffers
+   (lambda () (string= ID (org-entry-get (point) "COPY")))
+   (lambda () (let ((shows (org-entry-get (point) "show")))
+                (cond
+                 ((string= "s" shows)
+                  (org-xob-to-summary))
+                 ((string= "S" shows)
+                  (org-xob-to-section))
+                 ((string= "t" shows)
+                  (org-xob-to-node-tree))
+                 ((string= "f" shows)
+                  (org-xob-to-full-node)))))))
+
+;; (pcase-let ((`(,ID ,title) (org-xob--get-create-node))))
+
 ;; TODO might not work, since loop continues. use until clause in cl-loop in map-buffers
 ;; or maybe have more than one map fn, or optional args
 (defun org-xob-find-source (ID)
@@ -88,13 +141,20 @@
   (org-xob-map-buffers
    (lambda (x) (org-find-property "PID" ID))))
 
-(defun org-xob-find-copy (ID)
-  (org-xob-map-buffers
-   (lambda (x) (org-find-property "COPY" ID))))
-
 (defun org-xob-find-edit-node (ID)
   (org-xob-map-buffers
    (lambda (x) (org-find-property "EDIT" ID))))
 
 (defun org-xob-goto-buffer ()
   (interactive))
+
+;; NO more than one
+;; (defun org-xob-find-copy (ID)
+;;   (org-xob-map-buffers
+;;    (lambda (x) (org-find-property "COPY" ID))))
+
+;;; org-ql implementation
+
+(require 'org-ql-search-block)
+(require 'org-ql-search)
+(require 'org-ql)
