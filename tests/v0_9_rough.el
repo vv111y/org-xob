@@ -1,9 +1,11 @@
-;;; xob-0.9.el --- next version                      -*- lexical-binding: t; -*-
+;;; v0_9_rough.el --- my own hacks before jumping to org-ql  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2021  Will Rempel
 
 ;; Author: Will Rempel <Will@WillMBA>
-;; Keywords: lisp, tools
+;; Keywords: 
+
+
 
 ;;; my implementation tryout
 (defun org-xob-in-xob-buffer (&rest body)
@@ -104,7 +106,7 @@
                                            (org-back-to-heading)
                                            (point))))))))
 
-(defun org-xob-if-apply-in-buffers (cond func)
+(defun org-xob-if-apply-in-buffers (pred func)
   (cl-loop for buf in org-xob-buffers
            do (let (place)
                 (with-current-buffer buf
@@ -152,9 +154,3 @@
 ;; (defun org-xob-find-copy (ID)
 ;;   (org-xob-map-buffers
 ;;    (lambda (x) (org-find-property "COPY" ID))))
-
-;;; org-ql implementation
-
-(require 'org-ql-search-block)
-(require 'org-ql-search)
-(require 'org-ql)
