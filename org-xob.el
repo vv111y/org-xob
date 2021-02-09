@@ -404,9 +404,8 @@ If called with optional ID argument, then remove the node with that ID."
                    (org-super-links--delete-link link-element)))))
          (remhash ID org-xob--id-title)
          (remhash title org-xob--title-id)
-         (org-entry-put (point) "TYPE" "")
-         (org-entry-put (point) "xob" "")
-         ;; (org-id-update-id-locations (list (buffer-file-name)) 'silent)
+         (org-entry-delete (point) "TYPE")
+         (org-entry-delete (point) "xob")
          (org-xob--save-state))))))
 
 ;;;###autoload
