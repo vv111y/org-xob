@@ -232,21 +232,11 @@
   :keymap  (let ((map (make-sparse-keymap))) map)
   :group 'org-xob
   :require 'org-xob
-  (progn
-    (unless org-xob-on-p (org-xob-start))
-    ))
-
-;;;###autoload
-(define-minor-mode org-xob-context-mode
-  "Org-Exobrain Minor Mode. For this release it is only used in the context buffer."
-  :lighter "ⓧ"
-  :keymap  (let ((map (make-sparse-keymap))) map)
-  :group 'org-xob
-  :require 'org-xob
-  (progn
-    (unless org-xob-on-p (org-xob-start))
-    (if org-xob-context-mode
-        (evil-define-key 'normal 'local (kbd "t") 'org-xob-to-node-tree))
+  (if org-xob-context-mode
+      (progn
+        (unless org-xob-on-p (org-xob-start))
+        ;; (evil-define-key 'normal 'local (kbd "t") 'org-xob-to-node-tree)
+        )
     ))
 
 ;;;; Macros
