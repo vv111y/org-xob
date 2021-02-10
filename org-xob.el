@@ -227,12 +227,12 @@
 
 ;;;###autoload
 (define-minor-mode org-xob-mode
-  "Org-Exobrain Minor Mode. For this release it is only used in the context buffer."
+  "Org-Exobrain Minor Mode." 
   :lighter "Ⓧ"
   :keymap  (let ((map (make-sparse-keymap))) map)
   :group 'org-xob
   :require 'org-xob
-  (if org-xob-context-mode
+  (if org-xob-mode
       (progn
         (unless org-xob-on-p (org-xob-start))
         ;; (evil-define-key 'normal 'local (kbd "t") 'org-xob-to-node-tree)
@@ -1006,8 +1006,8 @@ to all source items."
 
 (org-ql-defpred is-xob-source (&optional ID)
   "doc"
-  :normalizers ((`,@(set-difference org-xob-available-sources (org-get-tags))))
-  :body (and (set-difference source-types (org-get-tags))
+  :normalizers ((`(set-difference (org-get-tags) ,org-xob-available-sources)))
+  :body (and (not (set-difference (org-get-tags) org-xob-available-sources))
              (property "PID" ID)))
 
 ;;;;; org-ql mapping functions
