@@ -530,11 +530,15 @@ regardless. Likewise with flag 'OFF."
   (org-xob-toggle-sideline 'on)))
 
 ;;;###autoload
-(defun org-xob-ql-search ()
-  "<Unavailable this release>
-Use org-ql to search the KB. Creates a new source in the context buffer."
-  (interactive)
+(defun org-xob-ql-search (qname query)
+  "Use org-ql to search the KB. Creates a new source in the context buffer."
+  (interactive "sQuery Name:
+sQuery Form: ")
   (org-xob-with-xob-buffer
+   ;; get query
+   ;; store it / create source object
+   ;; send it through to display
+   ;; list of saved queries / persist too 
    nil))
 
 ;;;;; Context Presentation Commands
@@ -973,6 +977,38 @@ to all source items."
        (if (org-xob--is-source-p)
            (org-xob--map-source func)
          (funcall func))))))
+
+;;;;; org-ql predicates
+(org-ql-defpred is-deep-xob-node ()
+  "Deepcheck xob nodes."
+  :body (and (property "xob" t)
+             (member (org-entry-get (point) "TYPE")
+                     org-xob--node-types)
+             (eq 0 (org-uuidgen-p (or (org-entry-get (point) "ID")
+                                      (org-entry-get (point) "COPY")
+                                      (org-entry-get (point) "EDIT"))))))
+
+(org-ql-defpred is-xob-node (ID)
+  "Is xob node in the system."
+  :body (if (gethash ID org-xob--id-title) t nil))
+
+(org-ql-defpred is-xob-copy (ID)
+  "need"
+  :body (property "COPY" ID))
+
+(org-ql-defpred is-xob-edit (&optional ID)
+  "need"
+  :body (property "EDIT" ID))
+
+(org-ql-defpred is-xob-id (&optional ID)
+  "need"
+  :body (property "ID" ID))
+
+(org-ql-defpred is-xob-source (&optional ID)
+  "doc"
+  :normalizers ((`,@(set-difference org-xob-available-sources (org-get-tags))))
+  :body (and (set-difference source-types (org-get-tags))
+             (property "PID" ID)))
 
 ;;;;; Node Functions
 
