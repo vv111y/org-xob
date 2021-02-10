@@ -248,16 +248,12 @@
      (message "xob is not on.")))
 
 (defmacro org-xob-with-xob-buffer (&rest body)
-  ;; (declare (debug (body)))
-  `(if (or (and (boundp 'bufID)
-                (org-xob--is-node-p bufID)
-                (bound-and-true-p org-xob-mode))
-           (and (boundp 'parent-ID)
-                (org-xob--is-node-p parent-ID)
-                (bound-and-true-p org-xob-context-mode)))
-       (progn
-         ,@body)
-     (message "Not in a xob buffer.") nil))
+  (or (org-xob-buffer-p (current-buffer))
+      (and (org-xob-buffer-p org-xob-last-buffer)
+           (switch-to-buffer org-xob-last-buffer))
+      (switch-to-buffer (setq org-xob-last-buffer
+                              (org-xob--new-buffer))))
+  ,@body)
 
 (defmacro org-xob-with-context-buffer (&rest body)
   `(let ((buf (cond
