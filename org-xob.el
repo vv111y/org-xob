@@ -540,9 +540,11 @@ sQuery Form: ")
 ;;;;; Context Presentation Commands
 
 ;;;###autoload
-(defun org-xob-refresh-context ()
-  "Refresh all displayed sources"
+(defun org-xob-refresh-node-context ()
+  "Refresh all displayed sources for node at point."
   (interactive)
+  (org-xob-map-node-sources (org-entry-get (point) "EDIT")
+                            'org-xob)
   (org-xob-with-context-buffer
    (dolist (el org-xob--node-sources)
      (org-xob--source-refresh el))))
@@ -1036,11 +1038,17 @@ to all source items."
 
 ;;;;; TODO propogate edits 
 
-(defun org-xob-update-copies (ID))
+(defun org-xob-update-copies (ID)
+  ;; get state
+  ;; redo state
+  )
 
-(defun org-xob-sync-edits ())
-
-(defun org-xob-sync-edit-node ())
+(defun org-xob-sync-edit ()
+  ;; make diff
+  ;; apply diff OR replace original
+  ;; record diff
+  ;; update-copies
+  )
 
 ;;;;; Node Functions
 
