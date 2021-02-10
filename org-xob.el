@@ -1010,6 +1010,36 @@ to all source items."
   :body (and (set-difference source-types (org-get-tags))
              (property "PID" ID)))
 
+;;;;; org-ql mapping functions
+
+(defun org-xob-map-all-nodes (func)
+  (org-ql-select org-xob-buffers
+    '(is-xob-node)
+    :action func))
+
+(defun org-xob-map-all-edits (func)
+  (org-ql-select org-xob-buffers
+    '(is-xob-edit)
+    :action func))
+
+(defun org-xob-map-all-copies (func)
+  (org-ql-select org-xob-buffers
+    '(is-xob-copy)
+    :action func))
+
+(defun org-xob-map-all-sources (func)
+  (org-ql-select org-xob-buffers
+    '(is-xob-source)
+    :action func))
+
+;;;;; TODO propogate edits 
+
+(defun org-xob-update-copies (ID))
+
+(defun org-xob-sync-edits ())
+
+(defun org-xob-sync-edit-node ())
+
 ;;;;; Node Functions
 
 (defun org-xob--is-node-p (&optional ID DEEPCHECK)

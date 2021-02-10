@@ -13,8 +13,6 @@
 
 (defun org-xob-map-buffers (func))
 
-(defun org-xob-map-all-nodes (func))
-
 (defun org-xob-id-goto (ID))
 
 (defun org-xob-find-in-buffers (prop val))
