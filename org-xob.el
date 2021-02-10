@@ -116,7 +116,7 @@
 
 ;;;;; knowledge base sources
 
-(defvar org-xob-available-sources
+(defvar org-xob-available-sources 
   "List of context information sources that are available in the xob system.")
 
 (defvar org-xob--source-backlinks
@@ -223,7 +223,7 @@
                   (define-key map key fn)))
     map))
 
-;;;; Minor Mode
+;;;; Minor Mode 
 
 ;;;###autoload
 (define-minor-mode org-xob-mode
@@ -731,7 +731,7 @@ ID should be buffer local in a xob edit buffer."
     (save-excursion
       (dolist (buf org-xob--edit-buffers)
         (if (buffer-live-p buf)
-            (with-current-buffer buf
+            (with-current-buffer buf 
               (goto-char (point-min))
               (re-search-forward bufID)
               (org-back-to-heading t)
@@ -848,6 +848,7 @@ source is a plist that describes the content source."
        (org-entry-put (point) "PID" (plist-get source :PID)))
      (org-xob--source-refresh source))))
 
+;; todo check state type, lookup + call 
 (defun org-xob--source-refresh (source)
   "Remake source tree. Check if items need to be added or removed."
   (org-xob-with-context-buffer
@@ -944,7 +945,7 @@ to all source items."
   (let ((func #'(lambda ()
                   ;; todo replace with copy
                   (let ((pid (org-entry-get (point) "PID")) str)
-                    (unless (not pid)
+                    (unless (not pid) 
                       (save-excursion
                         (org-back-to-heading t)
                         (org-mark-subtree)
@@ -965,7 +966,7 @@ to all source items."
                                 (progn
                                   (org-end-of-subtree)
                                   (newline)
-                                  (if insertor
+                                  (if insertor 
                                       (funcall insertor str)
                                     (insert str)))))))))))
     (save-window-excursion
@@ -1084,7 +1085,7 @@ Deepcheck only works on heading at point, any ID argument is ignored."
      :immediate-finish t
      :ntype "a.day"
      )
-
+    
     ;; TODO finish agenda entries
     ("ap" "new project" entry (file org-xob--agenda-file)
      "* Project  \n:PROPERTIES:\n:TYPE:\t\t\ta.project\n:END:\n:BACKLINKS:\n:END:\n"
@@ -1092,14 +1093,14 @@ Deepcheck only works on heading at point, any ID argument is ignored."
      :ntype "a.project"
      :immediate-finish t
      )
-
+    
     ("as" "new session" entry (file org-xob--agenda-file)
      "* session  \n:PROPERTIES:\n:TYPE:\t\t\ta.session\n:END:\n:BACKLINKS:\n:END:\n"
      :xob-node t
      :ntype "a.session"
      :immediate-finish t
      )
-
+    
     ("tf" "todo general" entry (file org-xob--agenda-file)
      "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
      :xob-node t
@@ -1171,7 +1172,7 @@ as a capture hook function."
         (progn
           (setq ID (org-element-property :path link))
           (setq title (gethash ID org-xob--id-title))
-          (if title
+          (if title 
               (org-xob--edit-node ID title)))
       nil)))
 
@@ -1187,7 +1188,7 @@ Returns mark for the link subheader."
          (lambda () (if (string-match-p (regexp-quote ID)
                                          (nth 4 (org-heading-components)))
                          (setq place (point)))))
-        (if place (progn
+        (if place (progn 
                     (goto-char place)
                     (org-back-to-heading))
           (newline)
@@ -1382,7 +1383,7 @@ If there are no saved tables, then create new empty ones."
   (org-xob--clear-file-variables)
   (mapc
    (lambda (filename)
-     (unless (string-match-p "#" filename)
+     (unless (string-match-p "#" filename) 
        (with-temp-buffer
          (insert-file-contents-literally filename nil 0 1024 nil)
          (let* ((x (car (org-collect-keywords '("PROPERTY"))))
@@ -1472,9 +1473,9 @@ Buffer remains open. Returns the filename."
         org-xob--agenda-files nil
         org-xob--log-files nil
         org-xob--archive-files nil
-        org-xob--KB-file nil
-        org-xob--agenda-file nil
-        org-xob--log-file nil
+        org-xob--KB-file nil 
+        org-xob--agenda-file nil 
+        org-xob--log-file nil 
         org-xob--archive-file nil))
 
 (defun org-xob--uncurrent-file (file)

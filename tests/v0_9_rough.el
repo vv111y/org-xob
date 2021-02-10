@@ -8,13 +8,6 @@
 
 
 ;;; my implementation tryout
-(defun org-xob-in-xob-buffer (&rest body)
-  (or (org-xob-buffer-p (current-buffer))
-        (and (org-xob-buffer-p org-xob-last-buffer)
-             (switch-to-buffer org-xob-last-buffer))
-        (switch-to-buffer (setq org-xob-last-buffer
-                                (org-xob--new-buffer)))))
-
 (defun org-xob--edit-node (ID title)
   (interactive)
   (org-xob-with-xob-on
