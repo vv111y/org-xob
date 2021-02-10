@@ -985,14 +985,12 @@ With option DEEPCHECK, do not use any table lookup, but check whether the headin
 has valid UUID formatted ID and xob TYPE properties in the property drawer.
 Deepcheck only works on heading at point, any ID argument is ignored."
   (interactive)
-  (let ((temp (if ID ID (org-id-get nil)))
-        type)
+  (let ((temp (if ID ID (org-id-get nil))))
     (if temp
         (if DEEPCHECK
             (and
-             (equal "t" (org-entry-get (point) "xob"))
-             (setq type (org-entry-get (point) "TYPE"))
-             (member type org-xob--node-types)
+             (string= "t" (org-entry-get (point) "xob"))
+             (member (org-entry-get (point) "TYPE") org-xob--node-types)
              (eq 0 (org-uuidgen-p temp)))
           (if (gethash temp org-xob--id-title) t nil)))))
 
