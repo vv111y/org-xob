@@ -994,11 +994,17 @@ to all source items."
 
 (org-ql-defpred is-xob-edit (&optional ID)
   "need"
-  :body (property "EDIT" ID))
+  :body (and (property "EDIT" ID)
+             (tags "EDIT")))
 
 (org-ql-defpred is-xob-id (&optional ID)
   "need"
   :body (property "ID" ID))
+
+(org-ql-defpred is-xob-original (&optional ID)
+  "need"
+  :body (and (property "ID" ID)
+             (not (tags "EDIT"))))
 
 (org-ql-defpred is-xob-source (&optional ID)
   "doc"
