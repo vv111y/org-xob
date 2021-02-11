@@ -645,6 +645,11 @@ If ID is given, then convert todo with that ID."
 ;;;; Backend
 ;;;;; Buffer Functions
 
+(defun org-xob-buffer-p (buf)
+  (with-current-buffer buf
+    (and (bound-and-true-p org-xob-mode)
+         (if (eq major-mode 'org-mode)))))
+
 (defun org-xob--edit-node (ID title)
   "Create an indirect buffer of the node with name title."
   (let ((short-title (truncate-string-to-width title 20))
@@ -1050,6 +1055,13 @@ Deepcheck only works on heading at point, any ID argument is ignored."
              (member (org-entry-get (point) "TYPE") org-xob--node-types)
              (eq 0 (org-uuidgen-p temp)))
           (if (gethash temp org-xob--id-title) t nil)))))
+
+(defun org-xob--is-edit-node-p ()
+  (let ((id (org-entry-get (point) "EDIT")))
+    (and (string= "t" (org-entry-get (point) "xob"))
+         (eq 0 (org-uuidgen-p id))
+         (member "edit" (org-get-tags))
+         id)))
 
 (defun org-xob--eval-capture-templates ()
   "Re-evaluate the capture templates so they are up to date."
