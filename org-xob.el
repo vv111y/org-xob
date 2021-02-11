@@ -1024,7 +1024,18 @@ to all source items."
     '(is-xob-source)
     :action func))
 
-;;;;; TODO propogate edits 
+(defun org-xob-map-node-sources (ID func)
+  (org-ql-select org-xob-buffers
+    `(is-xob-source ,ID)
+    :action func))
+
+(defun org-xob-node-source (ID source func)
+  (org-ql-select org-xob-buffers
+    `(and (is-xob-source ,ID)
+          (tags source))
+    :action func))
+
+;;;;; TODO propogate edits test
 
 (defun org-xob-update-copies (ID)
   ;; get state
