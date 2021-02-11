@@ -265,33 +265,6 @@
                               (org-xob--new-buffer))))
   ,@body)
 
-(defmacro org-xob-with-context-buffer (&rest body)
-  `(let ((buf (cond
-               ((and (boundp 'bufID)
-                     (boundp 'org-xob--context-buffer)
-                     (bound-and-true-p org-xob-mode))
-                org-xob--context-buffer)
-               ((and (boundp 'parent-ID)
-                     (bound-and-true-p org-xob-context-mode))
-                (current-buffer))
-               (t nil))))
-     (if (buffer-live-p buf)
-         (with-current-buffer buf ,@body))))
-
-(defmacro org-xob-with-edit-buffer (&rest body)
-  (declare (debug (body)))
-  `(let ((buf (cond
-               ((and (boundp 'ID)
-                     (boundp 'org-xob--context-buffer)
-                     (bound-and-true-p org-xob-mode))
-                (current-buffer))
-               ((and (boundp 'parentID)
-                     (bound-and-true-p org-xob-context-mode))
-                parent-edit-buffer)
-               (t nil))))
-     (if (buffer-live-p buf)
-         (with-current-buffer buf ,@body))))
-
 ;;;; Commands
 ;;;;; Main Commands
 ;;;###autoload
@@ -307,10 +280,10 @@ Calling with C-u will force a restart."
         (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
         (message "XOB: hooks enabled."))
+       (not (setq org-xob--open-nodes nil))
        (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
          (prog1 (message "XOB: directory not found, creating.")
            (make-directory org-xob-dir t)))
-       (not (setq org-xob--open-nodes nil))
        (org-xob--load-state)
        (org-xob--register-files)
        (org-xob--process-files)
@@ -404,6 +377,7 @@ If called with optional ID argument, then remove the node with that ID."
          (org-entry-delete (point) "xob")
          (org-xob--save-state))))))
 
+;; TODO some macro expansion error
 ;;;###autoload
 (defun org-xob-insert-link ()
   "Inserts a properly formatted xob node link at point. If we are in a xob buffer,
