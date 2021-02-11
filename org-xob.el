@@ -73,6 +73,7 @@
 (require 'org-element)
 (require 'org-id)
 (require 'org-ql)
+(require 'org-ql-search)
 (require 'cl)
 (require 'cl-lib)
 (require 'org-super-links)
@@ -99,11 +100,20 @@
   :type 'something)
 
 ;;;; Variables
+;;;;; State variables
 
 (defvar org-xob-on-p nil)
 
 (defvar org-xob-today nil
   "The current day node.")
+
+(defvar org-xob-last-buffer nil "Last xob buffer used.")
+
+(defvar org-xob--open-nodes ()
+  "List of all nodes that are opened for editing.")
+
+(cl-defstruct open-node "associate list of displayed context items for an opened node ID."
+              ID sources)
 
 ;;;;; hash tables
 
