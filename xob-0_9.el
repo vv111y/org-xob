@@ -7,10 +7,6 @@
 
 ;;; org-ql implementation
 
-;; (require 'org-ql-search-blocks)
-;; (require 'org-ql-search)
-;; (require 'org-ql)
-
 (defun org-xob-map-buffers (func))
 
 (defun org-xob-id-goto (ID))
@@ -26,4 +22,3 @@
 (defun org-xob-update-copies (ID))
 
 ;;; rewrites
-

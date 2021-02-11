@@ -473,28 +473,43 @@ regardless. Likewise with flag 'OFF."
                                     org-xob--context-buffer)))
         (message "XOB: no sideline window associated with this buffer."))))))
 
-;;;###autoload
-(defun org-xob-show-context ()
-  "Display the context buffer in the sideline window."
-  (interactive)
-  (org-xob-with-xob-on
-   (org-xob-with-edit-buffer
-    (org-xob-show-side-buffer org-xob--context-buffer))))
-
 ;;;;; KB Context Commands
 
 ;;;###autoload
-(defun org-xob-show-backlinks (&optional arg)
+(defun org-xob-show-backlinks (source &optional arg)
   "Add backlinks contents to the context buffer."
   (interactive)
-  (org-xob-with-context-buffer
-   (unless (or (eq '(4) arg)
-               ;; (local-variable-p 'forlinks)
-               (cdr-safe (assoc 'backlinks org-xob--node-sources)))
-     (setq-local backlinks (org-xob--prepare-kb-source
-                            org-xob--source-backlinks arg)))
-   (org-xob--source-write backlinks))
-  (org-xob-toggle-sideline 'on))
+  (org-xob-show-source 'backlinks 'org-xob--source-backlinks arg))
+
+(defun org-xob-show-source (source source-type &optional arg)
+  "Add backlinks contents to the context buffer."
+  (interactive)
+    (if-let ((eid (org-xob--is-edit-node-p)))
+        (if-let* ((srcs (org-xob--this-node-sources eid))
+                  (src (mapcar '(lambda (x)
+                                  (if (equal source (car-safe (cdr-safe x)))
+                                      x)) srcs))
+                  (f (not (eq '(4) arg))))
+            (let (m)
+              (if (org-xob-map-node-sources eid src
+                                            (lambda () (setq m (point-marker))))
+                  (unless (get-buffer-window (marker-buffer m) t)
+                    (pop-to-buffer (marker-buffer m))
+                    (save-excursion 
+                      (goto-char m)
+                      (if (pulse-available-p)
+                          (pulse-momentary-highlight-one-line (point)))))
+                (org-xob--source-write source)))
+          ;; TODO make src, save it
+          (let ((newsrc (copy-tree source-type)))
+            (push newsrc 'srcs)
+            (setq newsrc (org-xob--prepare-kb-source
+                          newsrc arg))))))
+
+(defun org-xob--this-node-sources (id)
+  (cl-remove nil 
+             (mapcar '(lambda (x) (when (string= id (open-node-ID x))
+                                    (open-node-sources x))) org-xob--open-nodes)))
 
 ;;;###autoload
 (defun org-xob-show-forlinks (&optional arg)

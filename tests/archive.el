@@ -576,3 +576,23 @@ Return point position if found, nil otherwise."
 (unless (and (plist-get source :items)
              (equal arg '(4)))
   (org-xob--node-get-link-entries source))
+;;; try show-backlinks for v0.9, fail
+(if-let ((eid (org-xob--is-edit-node-p)))
+    (if-let ((srcs (org-xob--this-node-sources eid)))
+        (if-let ((src (mapcar '(lambda (x) (progn (car-safe (cdr-safe x))
+                                                  x)) srcs)))
+            (progn
+              )))
+
+
+  (unless (or (eq '(4) arg)
+              ;; todo want to check if a source is there and then get it, or make new
+              ;; todo maybe change sources to structs now
+              (member 'backlinks
+                      (mapcar '(lambda (x)(car-safe (cdr-safe x))) srcs))
+              (cdr-safe (assoc 'backlinks org-xob--node-sources)))
+
+    (push (copy-tree org-xob--source-backlinks) ())
+    (setq-local backlinks (org-xob--prepare-kb-source
+                           org-xob--source-backlinks arg)))
+  (org-xob--source-write backlinks))

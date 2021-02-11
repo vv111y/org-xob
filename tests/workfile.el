@@ -1263,6 +1263,7 @@ inhibit-modification-hooks
 ;;; trial #2 xob state : alternate use struct for state
 (cl-defstruct xob-state kb-count kb-current kb-files t-id-table-fn id-n-table-fn)
 (setq xob (make-xob-state :kb-count 0 :t-id-table-fn "title-id-table" :id-n-table-fn "id-node-table"))
+
 ;;; xob-new-file, save/load object
 (defun xob-new-file ()
   (interactive)
@@ -2588,6 +2589,7 @@ org-xob--templates
             "(org-xob--source-backlinks): %s" org-xob--source-backlinks  "\n"
             "(org-xob--source-forlinks): %s" org-xob--source-forlinks "\n") )))
 
+;;; symbols vs strings
 (defun vvamm (s)
   (cond
    ((and (symbolp s) (boundp s)) (eval s))
@@ -2892,4 +2894,31 @@ org-xob--node-sources
               (t nil))))
     (if (buffer-live-p buf)
         (with-current-buffer buf (goto-char (point-max)) (insert "\nhey\n")))))
+;;; symbols + lists
 
+(setq vvl (list 'a 'b 'c))
+(prin1 (car vvl))
+(type-of (car vvl))
+(symbol- (car vvl))
+(equal 'a (car vvl))
+(type-of 'be)
+(push (copy-tree org-xob--source-backlinks) vvl)
+(plist-get (car vvl) :name)
+(equal 'backlinks (plist-get (car vvl) :name))
+(type-of org-xob--source-backlinks)
+(type-of (cadr org-xob--source-backlinks))
+(type-of (car-safe (cdr-safe org-xob--source-backlinks)))
+(mapcar '(lambda (x)(car-safe (cdr-safe x))) vvl)
+(if-let ((a "a")
+          (c (concat a "e"))
+          (b nil)
+          )
+    (format c)
+  (format "%s : %s" a c))
+
+(intern "vve")
+(symbol-name 'vve)
+(if-let ((b "bee")
+         (c (not t)))
+    (format "then")
+  (format "else"))
