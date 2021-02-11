@@ -783,51 +783,63 @@ then check the heading associated with it."
              (member temp (assoc pid org-xob--open-nodes))) t nil)))
 
 (defun org-xob-show-source (source source-type &optional arg)
-  "Add backlinks contents to the context buffer."
-  (interactive)
-    (if-let ((eid (org-xob--is-edit-node-p)))
+  "Show context source for opened node at point. The second argument
+source-type is the data structure defining the source. If necessary will
+make"
+  ;; in an edit node? get id, name
+  (if-let ((eid (org-xob--is-edit-node-p))
+           (title (truncate-string-to-width
+                   (nth 4 (org-heading-components) 25))))
+      ;; get src list, get src if there
         (if-let* ((srcs (org-xob--this-node-sources eid))
                   (src (mapcar '(lambda (x)
                                   (if (equal source (car-safe (cdr-safe x)))
-                                      x)) srcs))
-                  (f (not (eq '(4) arg))))
+                                      x)) srcs)))
+            ;; if src in list then it is prepped, find it
             (let (m)
+              (when (eq '(4) arg) ;; if arg then repopulate items
+                (funcall (plist-get newsrc :getfn) newsrc))
               (if (org-xob-map-node-sources eid src
                                             (lambda () (setq m (point-marker))))
-                  (unless (get-buffer-window (marker-buffer m) t)
-                    (pop-to-buffer (marker-buffer m))
+                  ;; if found, maybe pop its buffer, pulse it 
+                  (progn 
+                    (unless (get-buffer-window (marker-buffer m) t)
+                      (pop-to-buffer (marker-buffer m)))
                     (save-excursion 
                       (goto-char m)
                       (if (pulse-available-p)
                           (pulse-momentary-highlight-one-line (point)))))
+                ;; not found, then write src
                 (org-xob--source-write source)))
-          ;; TODO make src, save it
+          ;; make new src, add to srcs 
           (let ((newsrc (copy-tree source-type)))
-            (push newsrc 'srcs)
-            (setq newsrc (org-xob--prepare-kb-source
-                          newsrc arg))))))
+            (plist-put newsrc :ID (setq ID (org-xob--id-create)))
+            (plist-put newsrc :PID eid)
+            (plist-put newsrc :title title)
+            (funcall (plist-get newsrc :getfn) newsrc)
+            (push newsrc srcs)))))
 
 (defun org-xob--this-node-sources (id)
   (cl-remove nil 
              (mapcar '(lambda (x) (when (string= id (open-node-ID x))
                                     (open-node-sources x))) org-xob--open-nodes)))
 
-(defun org-xob--prepare-kb-source (source &optional arg)
-  "fill in material for a node context source."
-  (org-xob-with-context-buffer
-   (let (ID name)
-     (if arg
-         (funcall (plist-get source :getfn) source))
-     (unless (org-xob--id-goto (plist-get source :ID))
-       (plist-put source :ID (setq ID (org-xob--id-create))))
-     (setq name (plist-get source :name))
-     (plist-put source :PID parent-ID)
-     (plist-put source :title parent-title)
-     (make-local-variable name)
-     (nconc (assoc parent-ID org-xob--open-nodes) (list ID))
-     (push (cons name ID) org-xob--node-sources)
-     (funcall (plist-get source :getfn) source)
-     source)))
+;; (defun org-xob--prepare-kb-source (source &optional arg)
+;;   "fill in material for a node context source."
+;;   (org-xob-with-context-buffer ;; x
+;;    (let (ID name)
+;;      (if arg
+;;          (funcall (plist-get source :getfn) source))
+;;      (unless (org-xob--id-goto (plist-get source :ID)) ;; use ql
+;;        (plist-put source :ID (setq ID (org-xob--id-create))))
+;;      (setq name (plist-get source :name))
+;;      (plist-put source :PID parent-ID)
+;;      (plist-put source :title parent-title)
+;;      ;; (make-local-variable name)
+;;      ;; (nconc (assoc parent-ID org-xob--open-nodes) (list ID))
+;;      ;; (push (cons name ID) org-xob--node-sources) ;; done in show source
+;;      (funcall (plist-get source :getfn) source)
+;;      source)))
 
 (defun org-xob--source-write (source)
   "Open a source tree into the context buffer. If it is already there,
