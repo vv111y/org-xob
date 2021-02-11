@@ -523,15 +523,13 @@ sQuery Form: ")
 
 ;;;;; Context Presentation Commands
 
+;; todo test
 ;;;###autoload
 (defun org-xob-refresh-node-context ()
   "Refresh all displayed sources for node at point."
   (interactive)
   (org-xob-map-node-sources (org-entry-get (point) "EDIT")
-                            'org-xob)
-  (org-xob-with-context-buffer
-   (dolist (el org-xob--node-sources)
-     (org-xob--source-refresh el))))
+                            'org-xob--source-refresh))
 
 ;;;###autoload
 (defun org-xob-clear-heading ()
@@ -961,7 +959,7 @@ to all source items."
            (org-xob--map-source func)
          (funcall func))))))
 
-;;;;; org-ql predicates
+;;;;; org-ql predicates test
 (org-ql-defpred is-deep-xob-node ()
   "Deepcheck xob nodes."
   :body (and (property "xob" t)
@@ -999,7 +997,7 @@ to all source items."
   :body (and (not (set-difference (org-get-tags) org-xob-available-sources))
              (property "PID" ID)))
 
-;;;;; org-ql mapping functions
+;;;;; org-ql mapping functions test
 
 (defun org-xob-map-all-nodes (func)
   (org-ql-select org-xob-buffers
