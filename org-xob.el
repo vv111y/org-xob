@@ -479,50 +479,15 @@ regardless. Likewise with flag 'OFF."
 (defun org-xob-show-backlinks (source &optional arg)
   "Add backlinks contents to the context buffer."
   (interactive)
-  (org-xob-show-source 'backlinks 'org-xob--source-backlinks arg))
-
-(defun org-xob-show-source (source source-type &optional arg)
-  "Add backlinks contents to the context buffer."
-  (interactive)
-    (if-let ((eid (org-xob--is-edit-node-p)))
-        (if-let* ((srcs (org-xob--this-node-sources eid))
-                  (src (mapcar '(lambda (x)
-                                  (if (equal source (car-safe (cdr-safe x)))
-                                      x)) srcs))
-                  (f (not (eq '(4) arg))))
-            (let (m)
-              (if (org-xob-map-node-sources eid src
-                                            (lambda () (setq m (point-marker))))
-                  (unless (get-buffer-window (marker-buffer m) t)
-                    (pop-to-buffer (marker-buffer m))
-                    (save-excursion 
-                      (goto-char m)
-                      (if (pulse-available-p)
-                          (pulse-momentary-highlight-one-line (point)))))
-                (org-xob--source-write source)))
-          ;; TODO make src, save it
-          (let ((newsrc (copy-tree source-type)))
-            (push newsrc 'srcs)
-            (setq newsrc (org-xob--prepare-kb-source
-                          newsrc arg))))))
-
-(defun org-xob--this-node-sources (id)
-  (cl-remove nil 
-             (mapcar '(lambda (x) (when (string= id (open-node-ID x))
-                                    (open-node-sources x))) org-xob--open-nodes)))
+  (org-xob-with-xob-buffer
+   (org-xob-show-source 'backlinks 'org-xob--source-backlinks arg)))
 
 ;;;###autoload
 (defun org-xob-show-forlinks (&optional arg)
   "Add forlinks contents to the context buffer."
   (interactive)
-  (org-xob-with-context-buffer
-   (unless (or (eq '(4) arg)
-               ;; (local-variable-p 'forlinks)
-               (cdr-safe (assoc 'forlinks org-xob--node-sources)))
-     (setq-local forlinks (org-xob--prepare-kb-source
-                           org-xob--source-forlinks arg)))
-   (org-xob--source-write forlinks)
-  (org-xob-toggle-sideline 'on)))
+  (org-xob-with-xob-buffer
+   (org-xob-show-source 'forlinks 'org-xob--source-forlinks arg)))
 
 ;;;###autoload
 (defun org-xob-ql-search (qname query)
@@ -816,6 +781,36 @@ then check the heading associated with it."
     (if (and temp
              ;; todo remove
              (member temp (assoc pid org-xob--open-nodes))) t nil)))
+
+(defun org-xob-show-source (source source-type &optional arg)
+  "Add backlinks contents to the context buffer."
+  (interactive)
+    (if-let ((eid (org-xob--is-edit-node-p)))
+        (if-let* ((srcs (org-xob--this-node-sources eid))
+                  (src (mapcar '(lambda (x)
+                                  (if (equal source (car-safe (cdr-safe x)))
+                                      x)) srcs))
+                  (f (not (eq '(4) arg))))
+            (let (m)
+              (if (org-xob-map-node-sources eid src
+                                            (lambda () (setq m (point-marker))))
+                  (unless (get-buffer-window (marker-buffer m) t)
+                    (pop-to-buffer (marker-buffer m))
+                    (save-excursion 
+                      (goto-char m)
+                      (if (pulse-available-p)
+                          (pulse-momentary-highlight-one-line (point)))))
+                (org-xob--source-write source)))
+          ;; TODO make src, save it
+          (let ((newsrc (copy-tree source-type)))
+            (push newsrc 'srcs)
+            (setq newsrc (org-xob--prepare-kb-source
+                          newsrc arg))))))
+
+(defun org-xob--this-node-sources (id)
+  (cl-remove nil 
+             (mapcar '(lambda (x) (when (string= id (open-node-ID x))
+                                    (open-node-sources x))) org-xob--open-nodes)))
 
 (defun org-xob--prepare-kb-source (source &optional arg)
   "fill in material for a node context source."
