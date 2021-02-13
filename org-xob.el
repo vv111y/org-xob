@@ -841,6 +841,7 @@ make"
 ;;      (funcall (plist-get source :getfn) source)
 ;;      source)))
 
+;; TODO where? below node, side?
 (defun org-xob--source-write (source)
   "Open a source tree into the context buffer. If it is already there,
 then refresh it. source items are shown as org headings.
@@ -1011,7 +1012,9 @@ to all source items."
 
 (org-ql-defpred is-xob-id (&optional ID)
   "need"
-  :body (property "ID" ID))
+  :body (and (property "xob" "t")
+             (member (org-entry-get (point) "TYPE") org-xob--node-types)
+             (eq 0 (org-uuidgen-p (property "ID" ID)))))
 
 (org-ql-defpred is-xob-original (&optional ID)
   "need"
@@ -1260,16 +1263,17 @@ Maybe useful for syncing."
 
 (defun org-xob--open-today ()
   "Open today node for logging."
-  (setq org-xob-today-string  (format-time-string "%F %A"))
-  (and (or
-        (setq org-xob-today (gethash org-xob-today-string
-                                     org-xob--title-id))
-        (setq org-xob-today (org-xob--capture "ad")))
-       (save-window-excursion
-         (save-excursion
-           (org-id-goto org-xob-today)
-           (setq org-xob-today-buffer (current-buffer))))
-       (message "XOB: Todays log entry opened.") t))
+  (org-xob-with-xob-on
+   (setq org-xob-today-string  (format-time-string "%F %A"))
+   (and (or
+         (setq org-xob-today (gethash org-xob-today-string
+                                      org-xob--title-id))
+         (setq org-xob-today (org-xob--capture "ad")))
+        (save-window-excursion
+          (save-excursion
+            (org-id-goto org-xob-today)
+            (setq org-xob-today-buffer (current-buffer))))
+        (message "XOB: Todays log entry opened.") t)))
 
 ;;;;;; Clocking
 (defun org-xob--auto-clock-in ())

@@ -2922,3 +2922,8 @@ org-xob--node-sources
          (c (not t)))
     (format "then")
   (format "else"))
+
+;;; windows
+(window-left (selected-window))
+(window-right (selected-window))
+(window-)
