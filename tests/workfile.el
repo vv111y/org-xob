@@ -2892,3 +2892,4 @@ org-xob--node-sources
               (t nil))))
     (if (buffer-live-p buf)
         (with-current-buffer buf (goto-char (point-max)) (insert "\nhey\n")))))
+

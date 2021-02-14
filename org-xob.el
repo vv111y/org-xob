@@ -1335,18 +1335,20 @@ If there are no saved tables, then create new empty ones."
 (defun org-xob--process-files ()
   "Called after files have been regisetered. Properly setup various file variables.
 If necessary create new files."
-  (cl-mapcar #'(lambda (filename prefix filelist)
+  (cl-mapcar #'(lambda (filetype prefix filelist)
                  (save-window-excursion
                    (save-excursion
-                     (let ((filename (eval filename)))
-                         ;; ((filename (concat org-xob-dir (eval file))))
-                       (if (and filename
+                     (let (filename)
+                       (unless 
+                           (and (boundp filetype)
+                                filetype
+                                (setq filename (eval filetype))
                                 (file-exists-p filename)
-                                (not (equal filename org-xob-dir)))
-                           (progn (find-file-noselect filename)
-                                  (message "XOB: found file for %s" filename))
-                         (message "XOB: current file for %s missing, initializing new." filename)
-                         (org-xob--new-file filename prefix filelist))))))
+                                (not (equal filename org-xob-dir))
+                                (find-file-noselect filename)
+                                (message "XOB: found file for %s" filetype))
+                         (message "XOB: current file for %s missing, initializing new." filetype)
+                         (org-xob--new-file filetype prefix filelist))))))
              '(org-xob--agenda-file
                org-xob--log-file
                org-xob--archive-file
