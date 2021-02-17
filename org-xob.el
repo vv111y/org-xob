@@ -107,6 +107,8 @@
 (defvar org-xob-today nil
   "The current day node.")
 
+(defvar org-xob-buffers nil "List of active xob buffers.")
+
 (defvar org-xob-last-buffer nil "Last xob buffer used.")
 
 (defvar org-xob--open-nodes ()
@@ -449,29 +451,29 @@ then also update the forlinks source."
                         :action (lambda (c)
                                   (org-entry-put (point) "TYPE" c)))))))
 
-;;;;; Sideline Commands
+;;;;; Display Commands TODO all
 
+;; TODO test
 ;;;###autoload
-(defun org-xob-toggle-sideline (&optional flag)
-  "Toggles display of the sideline window. If flag is 'ON then display sideline
-regardless. Likewise with flag 'OFF."
-  (interactive)
-  (org-xob-with-xob-on
-   (save-excursion
-     (org-xob-with-edit-buffer
-      (if (boundp 'org-xob--sideline-window)
-          (if (and org-xob--sideline-window
-                   (window-valid-p org-xob--sideline-window))
-              (if (not (eq flag 'ON))
-                  (progn
-                    (delete-window org-xob--sideline-window)
-                    (setq org-xob--sideline-window nil)))
-            (and (not (eq flag 'OFF))
-                 (setq org-xob--sideline-window
-                       (split-window-right))
-                 (set-window-buffer org-xob--sideline-window
-                                    org-xob--context-buffer)))
-        (message "XOB: no sideline window associated with this buffer."))))))
+(defun org-xob-to-side-window (side buf)
+  "Move subtree at point to window on side of current one. If there is no window
+then make one. If no xob buffer is there, make a new one. If optional buf is
+specified, then use that buffer."
+  (interactive (list (completing-read "side:" '(left right))
+                     (completing-read "buffer:" (cons "[?]" org-xob-buffers))))
+  ;; todo if move to source heading
+  (org-cut-subtree)
+  (save-excursion
+    (if-let ((if (eq side 'left)
+                 (win (window-left (selected-window)))
+               (win (window-right (selected-window)))))
+        (select-window win)
+      (select-window (split-window nil nil side)))
+    (if (string= buf "[?]")
+        (org-xob--new-buffer)
+      (set-buffer buf))
+    (goto-char (point-max))
+    (org-paste-subtree 1 nil nil 'remove)))
 
 ;;;;; KB Context Commands
 

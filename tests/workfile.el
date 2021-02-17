@@ -2894,6 +2894,30 @@ org-xob--node-sources
               (t nil))))
     (if (buffer-live-p buf)
         (with-current-buffer buf (goto-char (point-max)) (insert "\nhey\n")))))
+;;; timestamp from datetree
+
+(defun vv/dt-to-ts ()
+  (interactive)
+  (save-excursion
+    (org-back-to-heading)
+    (org-set-property
+     "CREATED"
+     (concat "["
+             (truncate-string-to-width 
+              (nth 4 (org-heading-components)) 14)
+             "]"))))
+
+(defun vv/dt-to-ts/parent ()
+  (interactive)
+  (org-set-property
+   "CREATED"
+   (concat "["
+           (truncate-string-to-width 
+            (save-excursion
+              (org-up-heading-safe)
+              (nth 4 (org-heading-components))) 14)
+           "]")))
+
 ;;; symbols + lists
 
 (setq vvl (list 'a 'b 'c))
@@ -2923,7 +2947,31 @@ org-xob--node-sources
     (format "then")
   (format "else"))
 
+;;; interactive stuff
+(defun vvff (a b)
+  (interactive
+   (list (completing-read "A:" '(e f g))
+         (completing-read "B:" '(x y z)))
+               )
+  (message "%s  |  %s" a b))
+
+(vvff)
+
+(defun vvff (a b)
+  (interactive
+   (list '1 '2
+         )
+   )
+  (message "%s  |  %s" a b))
+
+(defun vvff (a)
+  (interactive (list 'a))
+  ;; (interactive 'a)
+  (format "%s" a))
+
+
 ;;; windows
 (window-left (selected-window))
 (window-right (selected-window))
 (window-)
+
