@@ -391,7 +391,7 @@ If called with optional ID argument, then remove the node with that ID."
            (org-id-goto ID))
        (let* ((ID (org-id-get (point)))
               (title (gethash ID org-xob--id-title))
-              (forlinks (org-xob--node-get-links "forlinks"))
+              (forlinks (org-xob--node-get-links 'forlinks))
               link-element)
          (dolist (el forlinks)
            (save-excursion
