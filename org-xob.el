@@ -772,6 +772,18 @@ Return point position if found, nil otherwise."
 
 ;;;;; Contexts Functions
 
+(defun org-xob--edit-node (ID title)
+  "Open node for editing in current buffer."
+  (org-xob-with-xob-buffer
+   (goto-char (point-max))
+   (org-xob--kb-copy-paste
+    #'(lambda () (org-copy-subtree))
+    #'(lambda () (org-paste-subtree 1 nil nil 'remove)))
+   (org-toggle-tag "edit" 'ON)
+   (org-entry-put (point) "EDIT" (org-entry-get "ID"))
+   (org-entry-delete "ID")
+   (push ID 'org-xob--open-nodes)))
+
 (defun org-xob--is-source-p (&optional ID)
   "Check if heading at point is a valid xob source. If an ID argument is supplied,
 then check the heading associated with it."
