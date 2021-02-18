@@ -549,9 +549,9 @@ sQuery Form: ")
          (pop lines)
          (mapconcat 'identity lines "\n")))
    #'(lambda (str) (if (org-kill-is-subtree-p str)
-                       (org-paste-subtree 3 str)))))
+                       (org-paste-subtree
+                        (+ 1 (org-current-level)) str)))))
 
-;; TEST
 ;;;###autoload
 (defun org-xob-to-section ()
   "Show the top section of KB node, no subheadings."
