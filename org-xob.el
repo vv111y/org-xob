@@ -631,67 +631,37 @@ If ID is given, then convert todo with that ID."
     (and (bound-and-true-p org-xob-mode)
          (if (eq major-mode 'org-mode)))))
 
-(defun org-xob--edit-node (ID title)
-  "Create an indirect buffer of the node with name title."
-  (let ((short-title (truncate-string-to-width title 20))
-        place buf)
-    (if (setq buf (get-buffer short-title))
-        (switch-to-buffer buf)
-      (save-window-excursion
-        (org-with-wide-buffer
-          (org-id-goto ID)
-          (setq place (point))
-          (unless (boundp 'org-xob--edit-buffers)
-            (setq-local org-xob--edit-buffers nil))
-          (add-hook 'write-contents-functions #'org-xob--update-modified-time nil t)
-          (save-excursion
-            (setq buf (clone-indirect-buffer short-title t)))
-          (add-to-list 'org-xob--edit-buffers buf)))
-      (switch-to-buffer buf)
-      (org-xob-mode 1)
-      (add-hook 'kill-buffer-hook 'org-xob--cleanup-buffers-hook )
-      (setq org-xob--open-nodes (append org-xob--open-nodes (list (cons ID ()))))
-      (goto-char place)
-      (org-narrow-to-subtree)
-      (setq-local bufID ID title title short-title short-title
-                  log-entry (org-xob--insert-link-header ID title org-xob-today)
-                  org-xob--context-buffer (get-buffer-create (concat  "*context-" title))
-                  org-xob--sideline-window nil)
-      (org-xob--setup-context-buffer ID
-                                     short-title
-                                     (current-buffer)))))
+(defun org-xob-new-buffer ()
+  "Create new xob buffer."
+  (interactive)
+  (let (buf)
+    (setq buf (get-buffer-create (concat "xob-" (length 'org-xob-buffers))))
+    (push buf 'org-xob-buffers)
+    (with-current-buffer buf
+      (org-mode)
+      (org-xob-mode 1))))
 
-(defun org-xob--setup-context-buffer (ID title edit-buffer)
-  "Create context buffer, leave it empty by default. set title and buffer
-local variables for the edit buffer and the back and for links source objects."
-  (with-current-buffer org-xob--context-buffer
-    (org-mode)
-    (org-xob-context-mode 1)
-    (setq-local parent-ID ID
-                parent-title title
-                parent-edit-buffer edit-buffer
-                org-xob--node-sources nil)))
+;; (defun org-xob--cleanup-buffers-hook ()
+;;   "Cleanup when closing a node edit buffer. Close sideline window if open, delete
+;; context buffer, and remove edit buffer from list of open indirect buffers.
+;; Buffer local to edit buffer."
+;;   (if (and (boundp 'org-xob--sideline-window)
+;;            (window-live-p org-xob--sideline-window))
+;;       (delete-window org-xob--sideline-window))
+;;   (and (boundp 'org-xob--context-buffer)
+;;       (kill-buffer org-xob--context-buffer))
+;;   (and (boundp 'bufID)
+;;        (assoc-delete-all bufID org-xob--open-nodes)
+;;        (let ((selfbuf (current-buffer))
+;;              (basebuf (buffer-base-buffer)))
+;;          (if basebuf
+;;              (with-current-buffer (buffer-base-buffer)
+;;                (setq-local org-xob--edit-buffers (cl-delete-if
+;;                                                   (lambda (x) (or (not (buffer-live-p x))
+;;                                                                   (eq selfbuf x) ))
+;;                                                   org-xob--edit-buffers)))))) nil)
 
-(defun org-xob--cleanup-buffers-hook ()
-  "Cleanup when closing a node edit buffer. Close sideline window if open, delete
-context buffer, and remove edit buffer from list of open indirect buffers.
-Buffer local to edit buffer."
-  (if (and (boundp 'org-xob--sideline-window)
-           (window-live-p org-xob--sideline-window))
-      (delete-window org-xob--sideline-window))
-  (and (boundp 'org-xob--context-buffer)
-      (kill-buffer org-xob--context-buffer))
-  (and (boundp 'bufID)
-       (assoc-delete-all bufID org-xob--open-nodes)
-       (let ((selfbuf (current-buffer))
-             (basebuf (buffer-base-buffer)))
-         (if basebuf
-             (with-current-buffer (buffer-base-buffer)
-               (setq-local org-xob--edit-buffers (cl-delete-if
-                                                  (lambda (x) (or (not (buffer-live-p x))
-                                                                  (eq selfbuf x) ))
-                                                  org-xob--edit-buffers)))))) nil)
-
+;; todo
 (defun org-xob--update-modified-time ()
   "Hook to update the modified timestamp of all nodes that are being edited when saving.
 ID should be buffer local in a xob edit buffer."
