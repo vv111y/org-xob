@@ -1446,10 +1446,10 @@ org-capture-after-finalize-hook ;; done. for closing stuff
               ;; (setq (symbol-value k) 4)
               ))
 
-;;; seconds timestamp
+;;; timestamping
 (time-convert (current-time) 'integer)
 (car (time-convert (current-time) '10000))
-;; (concat "[" (format-time-string "%F %a %R") "]")
+(concat "[" (format-time-string "%F %a %R") "]")
 
 ;;; Workspace
 ;;;; dual buffers/windows
@@ -2975,3 +2975,4 @@ org-xob--node-sources
 (window-right (selected-window))
 (window-)
 
+(if nil "hi" (concat "bee" "boo"))

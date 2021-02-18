@@ -1038,50 +1038,53 @@ Deepcheck only works on heading at point, any ID argument is ignored."
   "Re-evaluate the capture templates so they are up to date."
   (setq org-xob--templates
         `(("nn" "new node" entry (file org-xob--KB-file)
-     "* %(eval org-xob--last-title) \n:PROPERTIES:\n:TYPE:\t\t\tn.n\n:CREATED:\t\t%U\n:MODIFIED:\t\t%U\n:END:\n:BACKLINKS:\n:END:\n"
-     :xob-node t
-     :ntype "n.n"
-     :immediate-finish t
-     :empty-lines-after 1)
+           "* %(eval org-xob--last-title) \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :ntype "n.n"
+           :immediate-finish t
+           :empty-lines-after 1)
 
           ("ad" "today" entry (file+function org-xob--log-file ,(lambda () (org-datetree-find-month-create (calendar-current-date))))
-     "**** %<%F %A> \n:PROPERTIES:\n:TYPE:\t\t\ta.day\n:END:\n:BACKLINKS:\n:END:\n"
-     :xob-node t
-     :immediate-finish t
-     :ntype "a.day"
-     )
+           "**** %<%F %A> \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :immediate-finish t
+           :ntype "a.day"
+           )
 
-    ;; TODO finish agenda entries
-    ("ap" "new project" entry (file org-xob--agenda-file)
-     "* Project  \n:PROPERTIES:\n:TYPE:\t\t\ta.project\n:END:\n:BACKLINKS:\n:END:\n"
-     :xob-node t
-     :ntype "a.project"
-     :immediate-finish t
-     )
+          ;; org-projectile for now 
+          ("ap" "new project" entry (file org-xob--agenda-file)
+           "* %^{description} \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :ntype "a.project"
+           :immediate-finish t
+           )
 
-    ("as" "new session" entry (file org-xob--agenda-file)
-     "* session  \n:PROPERTIES:\n:TYPE:\t\t\ta.session\n:END:\n:BACKLINKS:\n:END:\n"
-     :xob-node t
-     :ntype "a.session"
-     :immediate-finish t
-     )
-
-    ("tf" "todo general" entry (file org-xob--agenda-file)
-     "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
-     :xob-node t
-     :todo t
-     :ntype "a.todo"
-     :immediate-finish t
-     )
-
-    ("tp" "todo project" entry (file org-xob--agenda-file)
-     "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
-     :xob-node t
-     :todo t
-     :ntype "a.todo"
-     :immediate-finish t
-     )
-    )))
+          ;; not sure
+          ("as" "new session" entry (file org-xob--agenda-file)
+           "* %^{description}  \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :ntype "a.session"
+           :immediate-finish t
+           )
+          
+          ;; regular templates for now
+          ("tf" "todo general" entry (file org-xob--agenda-file)
+           "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
+           :xob-node t
+           :todo t
+           :ntype "a.todo"
+           :immediate-finish t
+           )
+          
+          ;; org-projectile for now 
+          ("tp" "todo project" entry (file org-xob--agenda-file)
+           "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
+           :xob-node t
+           :todo t
+           :ntype "a.todo"
+           :immediate-finish t
+           )
+          )))
 
 ;; --new nodes and links--
 (defun org-xob--get-create-node ()
@@ -1106,15 +1109,13 @@ as a capture hook function."
   (if (or (org-capture-get :xob-node) heading)
       (let ((ID (org-id-get-create))
             (title (nth 4 (org-heading-components)))
-            type node)
-        (if heading
-            (setq type "n.n")
-          (setq type (org-capture-get :ntype)))
+            (timestamp (concat "[" (format-time-string "%F %a") "]")))
         (if (org-capture-get :todo) (org-todo))
         (org-entry-put (point) "xob" "t")
-        ;; (org-entry-put (point) "CREATED" timestamp)
-        ;; (org-entry-put (point) "MODIFIED" timestamp)
-        (org-entry-put (point) "TYPE" type)
+        (org-entry-put (point) "TYPE" (if heading "n.n"
+                                        (org-capture-get :ntype)))
+        (org-entry-put (point) "CREATED" timestamp)
+        (org-entry-put (point) "MODIFIED" timestamp)
         (puthash ID title org-xob--id-title)
         (puthash title ID org-xob--title-id)
         (setq org-xob--last-captured ID))))
