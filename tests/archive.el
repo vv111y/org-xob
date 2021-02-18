@@ -596,3 +596,32 @@ Return point position if found, nil otherwise."
     (setq-local backlinks (org-xob--prepare-kb-source
                            org-xob--source-backlinks arg)))
   (org-xob--source-write backlinks))
+
+
+  (let ((short-title (truncate-string-to-width title 20))
+        place buf)
+    (if (setq buf (get-buffer short-title))
+        (switch-to-buffer buf)
+      (save-window-excursion
+        (org-with-wide-buffer
+          (org-id-goto ID)
+          (setq place (point))
+          (unless (boundp 'org-xob--edit-buffers)
+            (setq-local org-xob--edit-buffers nil))
+          (add-hook 'write-contents-functions #'org-xob--update-modified-time nil t)
+          (save-excursion
+            (setq buf (clone-indirect-buffer short-title t)))
+          (add-to-list 'org-xob--edit-buffers buf)))
+      (switch-to-buffer buf)
+      (org-xob-mode 1)
+      (add-hook 'kill-buffer-hook 'org-xob--cleanup-buffers-hook )
+      (setq org-xob--open-nodes (append org-xob--open-nodes (list (cons ID ()))))
+      (goto-char place)
+      (org-narrow-to-subtree)
+      (setq-local bufID ID title title short-title short-title
+                  log-entry (org-xob--insert-link-header ID title org-xob-today)
+                  org-xob--context-buffer (get-buffer-create (concat  "*context-" title))
+                  org-xob--sideline-window nil)
+      (org-xob--setup-context-buffer ID
+                                     short-title
+                                     (current-buffer))))
