@@ -104,8 +104,7 @@
 
 (defvar org-xob-on-p nil)
 
-(defvar org-xob-today nil
-  "The current day node.")
+(defvar org-xob-today nil "The current day node.")
 
 (defvar org-xob-buffers nil "List of active xob buffers.")
 
@@ -114,8 +113,8 @@
 (defvar org-xob--open-nodes ()
   "List of all nodes that are opened for editing.")
 
-(cl-defstruct open-node "associate list of displayed context items for an opened node ID."
-              ID sources)
+;; "associate list of displayed context items for an opened node ID."
+(cl-defstruct open-node ID sources)
 
 ;;;;; hash tables
 
@@ -626,7 +625,7 @@ If ID is given, then convert todo with that ID."
     (org-super-links--insert-link)))
 
 ;;;; Backend
-;;;;; Buffer Functions
+;;;;; Buffer Functions MOSTLY
 
 (defun org-xob-buffer-p (buf)
   (with-current-buffer buf
@@ -643,27 +642,7 @@ If ID is given, then convert todo with that ID."
       (org-mode)
       (org-xob-mode 1))))
 
-;; (defun org-xob--cleanup-buffers-hook ()
-;;   "Cleanup when closing a node edit buffer. Close sideline window if open, delete
-;; context buffer, and remove edit buffer from list of open indirect buffers.
-;; Buffer local to edit buffer."
-;;   (if (and (boundp 'org-xob--sideline-window)
-;;            (window-live-p org-xob--sideline-window))
-;;       (delete-window org-xob--sideline-window))
-;;   (and (boundp 'org-xob--context-buffer)
-;;       (kill-buffer org-xob--context-buffer))
-;;   (and (boundp 'bufID)
-;;        (assoc-delete-all bufID org-xob--open-nodes)
-;;        (let ((selfbuf (current-buffer))
-;;              (basebuf (buffer-base-buffer)))
-;;          (if basebuf
-;;              (with-current-buffer (buffer-base-buffer)
-;;                (setq-local org-xob--edit-buffers (cl-delete-if
-;;                                                   (lambda (x) (or (not (buffer-live-p x))
-;;                                                                   (eq selfbuf x) ))
-;;                                                   org-xob--edit-buffers)))))) nil)
-
-;; todo
+;; TODO redo with org-ql
 (defun org-xob--update-modified-time ()
   "Hook to update the modified timestamp of all nodes that are being edited when saving.
 ID should be buffer local in a xob edit buffer."
@@ -695,7 +674,7 @@ Returns ID if successful, nil otherwise."
                ID)
       ID)))
 
-;; todo
+;; TODO redo with org-ql
 (defun org-xob--id-goto (sID)
   "Search buffers for org heading with ID and place point there.
 Return point position if found, nil otherwise."
@@ -711,26 +690,7 @@ Return point position if found, nil otherwise."
                (set-buffer org-xob--other-buffer)
                (goto-char place))))))
 
-;; todo remove
-(defun org-xob-show-side-buffer (abuffer)
-  "Show abuffer in the sideline window."
-  (if (boundp 'org-xob--sideline-window)
-      (org-xob-toggle-sideline 'ON)
-    (save-excursion
-      (select-window org-xob--sideline-window)
-      (display-buffer-same-window abuffer nil))))
-
-;; todo remove
-(defun org-xob--other-buffer ()
-  "Returns the buffer object corresponding to the other xob buffer of this pair."
-  (or
-   (and (boundp 'org-xob--context-buffer)
-        (bufferp org-xob--context-buffer)
-        org-xob--context-buffer)
-   (and (boundp 'parent-edit-buffer)
-        (bufferp parent-edit-buffer)
-        parent-edit-buffer)))
-
+;; TODO redo with org-ql
 (defun org-xob--goto-buffer-heading (ID)
   "Go to heading in current buffer with ID. Does not require org-id."
   (let ((m (point)))
@@ -744,6 +704,7 @@ Return point position if found, nil otherwise."
 
 ;;;;; Contexts Functions
 
+;; TEST
 (defun org-xob--edit-node (ID title)
   "Open node for editing in current buffer."
   (org-xob-with-xob-buffer
@@ -756,6 +717,7 @@ Return point position if found, nil otherwise."
    (org-entry-delete "ID")
    (push ID 'org-xob--open-nodes)))
 
+;; TODO
 (defun org-xob--is-source-p (&optional ID)
   "Check if heading at point is a valid xob source. If an ID argument is supplied,
 then check the heading associated with it."
@@ -779,7 +741,7 @@ make"
   (if-let ((eid (org-xob--is-edit-node-p))
            (title (truncate-string-to-width
                    (nth 4 (org-heading-components) 25))))
-      ;; get src list, get src if there
+      ;; get src list, get src if in list
         (if-let* ((srcs (org-xob--this-node-sources eid))
                   (src (mapcar '(lambda (x)
                                   (if (equal source (car-safe (cdr-safe x)))
@@ -800,7 +762,7 @@ make"
                           (pulse-momentary-highlight-one-line (point)))))
                 ;; not found, then write src
                 (org-xob--source-write source)))
-          ;; make new src, add to srcs
+          ;; not in list, make new src, add to srcs
           (let ((newsrc (copy-tree source-type)))
             (plist-put newsrc :ID (setq ID (org-xob--id-create)))
             (plist-put newsrc :PID eid)
@@ -813,24 +775,8 @@ make"
              (mapcar '(lambda (x) (when (string= id (open-node-ID x))
                                     (open-node-sources x))) org-xob--open-nodes)))
 
-;; (defun org-xob--prepare-kb-source (source &optional arg)
-;;   "fill in material for a node context source."
-;;   (org-xob-with-context-buffer ;; x
-;;    (let (ID name)
-;;      (if arg
-;;          (funcall (plist-get source :getfn) source))
-;;      (unless (org-xob--id-goto (plist-get source :ID)) ;; use ql
-;;        (plist-put source :ID (setq ID (org-xob--id-create))))
-;;      (setq name (plist-get source :name))
-;;      (plist-put source :PID parent-ID)
-;;      (plist-put source :title parent-title)
-;;      ;; (make-local-variable name)
-;;      ;; (nconc (assoc parent-ID org-xob--open-nodes) (list ID))
-;;      ;; (push (cons name ID) org-xob--node-sources) ;; done in show source
-;;      (funcall (plist-get source :getfn) source)
-;;      source)))
-
 ;; TODO where? below node, side?
+;; TODO replace pid with copy
 (defun org-xob--source-write (source)
   "Open a source tree into the context buffer. If it is already there,
 then refresh it. source items are shown as org headings.
@@ -847,7 +793,7 @@ source is a plist that describes the content source."
        (org-entry-put (point) "PID" (plist-get source :PID)))
      (org-xob--source-refresh source))))
 
-;; todo check state type, lookup + call
+;; TODO check state type, lookup + call
 (defun org-xob--source-refresh (source)
   "Remake source tree. Check if items need to be added or removed."
   (org-xob-with-context-buffer
@@ -894,8 +840,8 @@ Otherwise apply to source at point."
                (outline-get-next-sibling)))
        (message "XOB: map-source, nothing to do here.") nil))))
 
-;;;;; KB Context Functions
-;; no change
+;;;;; KB Context Functions UNCHANGED
+
 (defun org-xob--node-get-link-entries (source)
   "Populates source item list from the node. The items are represented by their
 respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
@@ -908,7 +854,6 @@ where the backlinks are in a BACKLINKS drawer."
       (plist-put source :items
                  (org-xob--node-get-links (plist-get source :name))))))
 
-;; no change
 (defun org-xob--node-get-links (linktype)
   "Return list of link paths within the node at point. If linktype is 'backlinks'
 then return only links in the backlinks drawer. If linktype is 'forlinks'
@@ -934,7 +879,7 @@ then return all other links."
                              ID
                            (message "XOB: invalid link %s" ID) nil)))))))))))
 
-;; todo test with new sources packaging
+;; TODO test with new sources packaging
 (defun org-xob--kb-copy-paste (&optional selector insertor)
   "Wrapper function to display new content in a context item from the
 knowledge base. Executes function selector while point is at the heading
@@ -1250,16 +1195,15 @@ Maybe useful for syncing."
                  (number-to-string
                   (car (time-convert (current-time) '10000)))))
 
-;;;;; Activity
+;;;;; Activity NO CHANGE
 
 (defun org-xob--open-today ()
   "Open today node for logging."
   (org-xob-with-xob-on
    (setq org-xob-today-string  (format-time-string "%F %A"))
-   (and (or
-         (setq org-xob-today (gethash org-xob-today-string
+   (and (or (setq org-xob-today (gethash org-xob-today-string
                                       org-xob--title-id))
-         (setq org-xob-today (org-xob--capture "ad")))
+            (setq org-xob-today (org-xob--capture "ad")))
         (save-window-excursion
           (save-excursion
             (org-id-goto org-xob-today)
