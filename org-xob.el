@@ -1284,7 +1284,7 @@ Maybe useful for syncing."
            (goto-char (point-min))
            (while
                (progn
-                 (if (org-xob--is-node-p "" 'DEEPCHECK)
+                 (if (org-xob--is-node-p nil 'DEEPCHECK)
                      (funcall func))
                  (outline-next-heading)))))))))
 
