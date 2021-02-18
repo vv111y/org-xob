@@ -591,27 +591,29 @@ If ID is given, then convert todo with that ID."
   (save-excursion
     (save-window-excursion
       (when ID (org-id-goto ID))
-      (if (org-entry-is-done-p)
-          (progn
-            (org-todo 'none)
-            (org-schedule '(4))
-            (org-deadline '(4))
-            (when-let* ((log-start (org-log-beginning))
-                        (log-entry (org-xob--insert-link-header
-                                    (org-id-get)
-                                    (nth 4 (org-heading-components))
-                                    org-xob-today)))
-              (goto-char log-start)
-              (forward-line -1)
-              (org-mark-element)
-              (kill-region (point) (mark))
+      (when (org-xob--is-node-p)
+        (when (org-entry-is-done-p)
+          (org-todo 'none)
+          (org-schedule '(4))
+          (org-deadline '(4))
+          (when-let* ((log-start (org-log-beginning))
+                      (log-entry (org-xob--insert-link-header
+                                  (org-id-get)
+                                  (nth 4 (org-heading-components))
+                                  org-xob-today)))
+            (goto-char log-start)
+            (forward-line -1)
+            (org-mark-element)
+            (kill-region (point) (mark))
+            (save-excursion
               (org-id-goto log-entry)
               (org-end-of-meta-data)
-              (yank)))
+              (yank))))
         (org-entry-put (point) "TYPE" "a.log")
-        ;; TODO move to a KB file?
-        )
-        (message: "XOB: todo entry is not done."))))
+        (org-cut-subtree)
+        (with-current-buffer (find-file org-xob--KB-file)
+          (goto-char (point-max))
+          (org-paste-subtree 1 nil nil 'remove))))))
 
 (defun org-xob-todo-at-point ()
   "create a todo entry for node at point. Todo is filed in current inbox."
