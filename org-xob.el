@@ -715,24 +715,23 @@ Return point position if found, nil otherwise."
    (org-toggle-tag "edit" 'ON)
    (org-entry-put (point) "EDIT" (org-entry-get "ID"))
    (org-entry-delete "ID")
-   (push ID 'org-xob--open-nodes)))
+   (push (make-open-node :ID id :sources ())
+         'org-xob--open-nodes)))
 
-;; TODO
-(defun org-xob--is-source-p (&optional ID)
-  "Check if heading at point is a valid xob source. If an ID argument is supplied,
-then check the heading associated with it."
+;; TEST
+(defun org-xob--is-source-p (&optional PID ID)
+  "Check if heading at point is a valid xob source. If PID and ID
+arguments are supplied, then check the associated heading."
   (interactive)
   (let ((temp (if ID ID
                 (org-entry-get (point) "ID")))
-        ;; TODO remove arg, buffer checks. use pid, tags
-        (pid (or  (and (boundp 'bufID)
-                       bufID)
-                  (and (boundp 'parent-ID)
-                       parent-ID))))
-    (if (and temp
-             ;; todo remove
-             (member temp (assoc pid org-xob--open-nodes))) t nil)))
+        (pid (if PID PID
+               (org-entry-get (point) "PID"))))
+    (if (and temp pid
+             (member temp (org-xob--this-node-sources PID)))
+        t nil)))
 
+;; TEST
 (defun org-xob-show-source (source source-type &optional arg)
   "Show context source for opened node at point. The second argument
 source-type is the data structure defining the source. If necessary will
