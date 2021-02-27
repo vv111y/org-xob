@@ -2894,3 +2894,85 @@ org-xob--node-sources
         (with-current-buffer buf (goto-char (point-max)) (insert "\nhey\n")))))
 
 (if nil "hi" (concat "bee" "boo"))
+;;; timestamp from datetree
+
+(defun vv/dt-to-ts ()
+  (interactive)
+  (save-excursion
+    (org-back-to-heading)
+    (org-set-property
+     "CREATED"
+     (concat "["
+             (truncate-string-to-width 
+              (nth 4 (org-heading-components)) 14)
+             "]"))))
+
+(defun vv/dt-to-ts/parent ()
+  (interactive)
+  (org-set-property
+   "CREATED"
+   (concat "["
+           (truncate-string-to-width 
+            (save-excursion
+              (org-up-heading-safe)
+              (nth 4 (org-heading-components))) 14)
+           "]")))
+
+;;; symbols + lists
+
+(setq vvl (list 'a 'b 'c))
+(prin1 (car vvl))
+(type-of (car vvl))
+(symbol- (car vvl))
+(equal 'a (car vvl))
+(type-of 'be)
+(push (copy-tree org-xob--source-backlinks) vvl)
+(plist-get (car vvl) :name)
+(equal 'backlinks (plist-get (car vvl) :name))
+(type-of org-xob--source-backlinks)
+(type-of (cadr org-xob--source-backlinks))
+(type-of (car-safe (cdr-safe org-xob--source-backlinks)))
+(mapcar '(lambda (x)(car-safe (cdr-safe x))) vvl)
+(if-let ((a "a")
+          (c (concat a "e"))
+          (b nil)
+          )
+    (format c)
+  (format "%s : %s" a c))
+
+(intern "vve")
+(symbol-name 'vve)
+(if-let ((b "bee")
+         (c (not t)))
+    (format "then")
+  (format "else"))
+
+;;; interactive stuff
+(defun vvff (a b)
+  (interactive
+   (list (completing-read "A:" '(e f g))
+         (completing-read "B:" '(x y z)))
+               )
+  (message "%s  |  %s" a b))
+
+(vvff)
+
+(defun vvff (a b)
+  (interactive
+   (list '1 '2
+         )
+   )
+  (message "%s  |  %s" a b))
+
+(defun vvff (a)
+  (interactive (list 'a))
+  ;; (interactive 'a)
+  (format "%s" a))
+
+
+;;; windows
+(window-left (selected-window))
+(window-right (selected-window))
+(window-)
+
+(if nil "hi" (concat "bee" "boo"))
