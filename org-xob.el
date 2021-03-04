@@ -397,7 +397,7 @@ then also update the forlinks source."
   (org-xob-with-xob-on
    (if (use-region-p)
        (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-         (kill-region (point) (mark))
+         (clipboard-kill-region (point) (mark))
          (save-window-excursion
            (org-with-wide-buffer
              (org-id-goto ID)
@@ -407,7 +407,9 @@ then also update the forlinks source."
                    (forward-line -1))
                (org-end-of-subtree)
                (newline))
-             (yank)))))))
+             (if (org-kill-is-subtree-p)
+                 (org-paste-subtree
+                  (+ 1 (org-current-level)) nil t t))))))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
@@ -780,7 +782,7 @@ make"
   "Open a source tree into the context buffer. If it is already there,
 then refresh it. source items are shown as org headings.
 source is a plist that describes the content source."
-  (org-xob-with-context-buffer
+  (org-xob-with-context-buffer ;; remove
     (org-with-wide-buffer
      (unless (org-xob--id-goto (plist-get source :ID))
        (goto-char (point-max))
@@ -795,7 +797,7 @@ source is a plist that describes the content source."
 ;; TODO check state type, lookup + call
 (defun org-xob--source-refresh (source)
   "Remake source tree. Check if items need to be added or removed."
-  (org-xob-with-context-buffer
+  (org-xob-with-context-buffer ;; remove
    (if (org-xob--id-goto (plist-get source :ID))
        (let ((temp (copy-tree (plist-get source :items))))
          (org-xob--map-source

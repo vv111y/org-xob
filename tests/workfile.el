@@ -2782,6 +2782,23 @@ org-xob--templates
 (org-end-of-meta-data t)
 (org-end-of-meta-data 1)
 
+(defun vv/mm ()
+  (interactive)
+  ;; (org-save-outline-visibility t)
+  (org-show-all)
+  (org-end-of-subtree)
+  ;; (org-end-of-subtree t t)
+  ;; (outline-end-of-heading)
+  ;; (outline-end-of-subtree)
+  ;; (newline)
+  ;; (forward-line -1)
+  ;; (newline)
+  ;; (forward-line -1)
+  )
+
+(re-search-forward (rx (and line-end space)) nil t nil)
+(org-insert-heading '(4) t t)
+
 (car org-xob--open-nodes)
 
 (setq vvstr "bye")
@@ -2903,7 +2920,7 @@ org-xob--node-sources
     (org-set-property
      "CREATED"
      (concat "["
-             (truncate-string-to-width 
+             (truncate-string-to-width
               (nth 4 (org-heading-components)) 14)
              "]"))))
 
@@ -2912,7 +2929,7 @@ org-xob--node-sources
   (org-set-property
    "CREATED"
    (concat "["
-           (truncate-string-to-width 
+           (truncate-string-to-width
             (save-excursion
               (org-up-heading-safe)
               (nth 4 (org-heading-components))) 14)
@@ -2976,3 +2993,5 @@ org-xob--node-sources
 (window-)
 
 (if nil "hi" (concat "bee" "boo"))
+;;; org cut paste
+(org-kill-is-subtree-p)
