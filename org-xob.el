@@ -438,7 +438,9 @@ then also update the forlinks source."
                (newline))
              (if (org-kill-is-subtree-p)
                  (org-paste-subtree
-                  (+ 1 (org-current-level)) nil t t))))))))
+                  (+ 1 (org-current-level)) nil t t)
+               (yank)
+               (org-xob--modify-time))))))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()

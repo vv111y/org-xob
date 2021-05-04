@@ -2896,23 +2896,25 @@ org-xob--node-sources
 (if nil "hi" (concat "bee" "boo"))
 ;;; timestamp from datetree
 
-(defun vv/dt-to-ts ()
+(defun org-xob/datetree-timestamp ()
+  "For entry in a datetree, add a 'created' property with the timestamp derived from the datetree."
   (interactive)
   (save-excursion
     (org-back-to-heading)
     (org-set-property
      "CREATED"
      (concat "["
-             (truncate-string-to-width 
+             (truncate-string-to-width
               (nth 4 (org-heading-components)) 14)
              "]"))))
 
-(defun vv/dt-to-ts/parent ()
+(defun org-xob/dt-ts/parent ()
+  "For entry in a datetree, add a 'created' property with the timestamp derived from the datetree."
   (interactive)
   (org-set-property
    "CREATED"
    (concat "["
-           (truncate-string-to-width 
+           (truncate-string-to-width
             (save-excursion
               (org-up-heading-safe)
               (nth 4 (org-heading-components))) 14)
@@ -2976,3 +2978,18 @@ org-xob--node-sources
 (window-)
 
 (if nil "hi" (concat "bee" "boo"))
+;;; fix missing timestamps
+(defun org-xob-fix-missing-props ()
+  (interactive)
+  (let ((props (list "CREATED"
+                     "MODIFIED"))
+        (filelist (append org-xob--KB-files
+                          org-xob--agenda-files
+                          (list org-xob--log-file))))
+    (org-xob-visit-nodes
+     filelist
+     #'(lambda ()
+         (dolist (prop props)
+           (unless (org-entry-get (point) prop)
+             (org-entry-put (point) prop
+                            (concat "[" (format-time-string "%F %a %R") "]"))))))))
