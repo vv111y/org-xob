@@ -751,6 +751,14 @@ ID should be buffer local in a xob edit buffer."
                                    (concat "[" (format-time-string "%F %a %R") "]")))))))
       nil)))
 
+(defun org-xob--modify-time ()
+  "Function to change the modified time for a node. Assumes point is somewhere in the relevant node."
+  (org-back-to-heading t)
+  (let ((mdate (org-entry-get (point) "MODIFIED")))
+    (if mdate
+        (org-entry-put (point) "MODIFIED"
+                       (concat "[" (format-time-string "%F %a %R") "]")))))
+
 ;;;;; Buffer Navigation
 
 (defun org-xob--id-create ()
