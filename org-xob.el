@@ -4,7 +4,6 @@
 ;; Author: Willy Rempel <willy.rempel@acm.org>
 ;; URL: https://github.com/vv111y/org-xob.el
 ;; Version: 0.5-pre
-;; Package-Requires: ((emacs "25.2") (org) (org-element) (org-id) (org-ql) (cl-lib) (org-super-links))
 ;; Keywords:
 
 ;; This file is not part of GNU Emacs.
