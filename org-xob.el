@@ -453,14 +453,17 @@ then also update the forlinks source."
   (interactive)
   (org-xob-with-xob-on
    (unless (org-xob--is-node-p)
-     (org-xob--new-node (point))
-     (let ((filename (buffer-file-name)))
-       (unless (member filename org-xob--KB-files)
-         (save-excursion
-           (goto-char (point-min))
-           (insert org-xob--xob-header))
-         (save-buffer)
-         (push filename org-xob--KB-files))))))
+     (let ((title (nth 4 (org-heading-components))))
+       (if (gethash title org-xob--title-id)
+           (message "heading title conflicts with a xob node. Please rename.")
+         (org-xob--new-node (point))
+         (let ((filename (buffer-file-name)))
+           (unless (member filename org-xob--KB-files)
+             (save-excursion
+               (goto-char (point-min))
+               (insert org-xob--xob-header))
+             (save-buffer)
+             (push filename org-xob--KB-files))))))))
 
 ;;;###autoload
 (defun org-xob-add-node-labels ()
