@@ -2995,3 +2995,26 @@ org-xob--node-sources
 (if nil "hi" (concat "bee" "boo"))
 ;;; org cut paste
 (org-kill-is-subtree-p)
+;;; v0.9 edit buffer
+(defun org-xob-with-xob-buffer (&rest body)
+  (or (org-xob-buffer-p (current-buffer))
+      (and (org-xob-buffer-p org-xob-last-buffer)
+           (switch-to-buffer org-xob-last-buffer))
+      (switch-to-buffer (setq org-xob-last-buffer
+                              (org-xob-new-buffer))))
+  ,@body)
+
+(fmakunbound 'org-xob-with-xob-buffer)
+(defun vv/pp ()
+  (org-paste-subtree 1 
+                     (buffer-substring (point) (mark))
+                     nil nil))
+
+(org-xob-with-xob-buffer t)
+
+(defun org-xob-buffer-p (buf)
+  (let ((buf org-xob-last-buffer))
+    (if (buffer-live-p buf)
+        (with-current-buffer buf
+          (and (bound-and-true-p org-xob-mode)
+               (if (eq major-mode 'org-mode)))))))

@@ -518,13 +518,13 @@ sQuery Form: ")
 (defun org-xob-clear-heading ()
   "Clears contents of context entry at point, or for whole context source."
   (interactive)
-  (org-xob--kb-copy-paste))
+  (org-xob--context-copy-paste))
 
 ;;;###autoload
 (defun org-xob-to-summary ()
   "Show KB node summary. This is defined as the first paragraph if it exists."
   (interactive)
-  (org-xob--kb-copy-paste
+  (org-xob--context-copy-paste
    #'(lambda () (progn
                  (org-end-of-meta-data t)
                  (let ((p (org--paragraph-at-point)))
@@ -537,7 +537,7 @@ sQuery Form: ")
 (defun org-xob-to-node-tree ()
   "Show only subheadings of KB node."
   (interactive)
-  (org-xob--kb-copy-paste
+  (org-xob--context-copy-paste
    #'(lambda ()
        (let (lines)
          (org-map-tree
@@ -557,7 +557,7 @@ sQuery Form: ")
 (defun org-xob-to-section ()
   "Show the top section of KB node, no subheadings."
   (interactive)
-  (org-xob--kb-copy-paste
+  (org-xob--context-copy-paste
    #'(lambda () (let ((beg) (end))
                   (org-end-of-meta-data t)
                   (setq beg (point))
@@ -569,7 +569,7 @@ sQuery Form: ")
 (defun org-xob-to-full-node ()
   "Show the full KB node, excepting properties drawer, planning & clocking information."
   (interactive)
-  (org-xob--kb-copy-paste
+  (org-xob--context-copy-paste
    #'(lambda ()
        (let ((org-yank-folded-subtrees nil)
              (org-yank-adjusted-subtrees t))
@@ -714,8 +714,9 @@ Return point position if found, nil otherwise."
   "Open node for editing in current buffer."
   (org-xob-with-xob-buffer
    (goto-char (point-max))
-   (org-xob--kb-copy-paste
+   (org-xob--context-copy-paste
     #'(lambda () (org-copy-subtree))
+    ;; TODO fix, won't paste, user-error: Before first headline at position 1 in buffer xob-2
     #'(lambda () (org-paste-subtree 1 nil nil 'remove)))
    (org-toggle-tag "edit" 'ON)
    (org-entry-put (point) "EDIT" (org-entry-get "ID"))
@@ -884,7 +885,7 @@ then return all other links."
                            (message "XOB: invalid link %s" ID) nil)))))))))))
 
 ;; TODO test with new sources packaging
-(defun org-xob--kb-copy-paste (&optional selector insertor)
+(defun org-xob--context-copy-paste (&optional selector insertor)
   "Wrapper function to display new content in a context item from the
 knowledge base. Executes function selector while point is at the heading
 of the origin node in the KB. selector must be a lambda that returns
@@ -1460,4 +1461,4 @@ Buffer remains open. Returns the filename."
 
 (provide 'org-xob)
 
-;;; org-xob.el ends here
+;;; org-xob.el ends here 
