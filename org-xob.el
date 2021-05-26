@@ -466,6 +466,19 @@ then also update the forlinks source."
              (push filename org-xob--KB-files))))))))
 
 ;;;###autoload
+(defun org-xob-rename-node ()
+  "Updates xob system with node heading at point."
+  (interactive)
+  (when (org-xob--is-node-p)
+    (org-back-to-heading)
+    (when-let ((newname (nth 4 (org-heading-components)))
+               (ID (org-entry-get (point) "ID"))
+               (oldname (gethash ID org-xob--id-title)))
+      (puthash ID newname org-xob--id-title)
+      (puthash newname ID org-xob--title-id)
+      (remhash oldname org-xob--title-id))))
+
+;;;###autoload
 (defun org-xob-add-node-labels ()
   "Select labels to apply to node at point, or at optional node specified by ID."
   (interactive)
