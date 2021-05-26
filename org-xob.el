@@ -890,36 +890,24 @@ then return all other links."
 knowledge base. Executes function selector while point is at the heading
 of the origin node in the KB. selector must be a lambda that returns
 the the contents of interest as a string.
+If no arguments are given, then the context item is cleared.
 When called with point on the given context item, only that item will be
 updated. If called on a context source heading, then the update is applied
 to all source items."
   (let ((func #'(lambda ()
                   ;; todo replace with copy
-                  (let ((pid (org-entry-get (point) "PID")) str)
-                    (unless (not pid)
-                      (save-excursion
-                        (org-back-to-heading t)
-                        (org-mark-subtree)
-                        (org-end-of-meta-data)
-                        (call-interactively #'delete-region)
-                        (deactivate-mark 'force))
-                      (if selector
+                  (when-let ((pid (org-entry-get (point) "PID")) str)
+                    (when (org-uuidgen-p pid)
+                     (org-xob--clear-node)
+                     (and selector
+                          (stringp
+                           (setq str (org-xob--select-content pid selector)))
                           (progn
-                            (save-excursion
-                              ;; todo replace with copy
-                              (org-id-goto pid)
-                              (org-with-wide-buffer
-                               (org-save-outline-visibility
-                                   (org-narrow-to-subtree)
-                                 (setq str (funcall selector))
-                                 (deactivate-mark 'force))))
-                            (if (stringp str)
-                                (progn
-                                  (org-end-of-subtree)
-                                  (newline)
-                                  (if insertor
-                                      (funcall insertor str)
-                                    (insert str)))))))))))
+                            (org-end-of-subtree)
+                            (newline)
+                            (if insertor
+                                (funcall insertor str)
+                              (insert str)))))))))
     (save-window-excursion
       (org-with-wide-buffer
        (if (pulse-available-p)
@@ -927,6 +915,29 @@ to all source items."
        (if (org-xob--is-source-p)
            (org-xob--map-source func)
          (funcall func))))))
+
+(defun org-xob--clear-node ()
+  "clears the contents of the heading but does not touch the Properties drawer."
+  (save-excursion
+    (org-back-to-heading t)
+    (org-mark-subtree)
+    (org-end-of-meta-data)
+    (call-interactively #'delete-region)
+    (deactivate-mark 'force)))
+
+(defun org-xob--select-content (id selector)
+  "Sets point to beginning of kb node with id and uses the function argument selector to mark the content to return.
+Returns content as a string with properties."
+  (let str
+    (save-excursion
+      ;; todo replace with copy
+      (org-id-goto id)
+      (org-with-wide-buffer
+       (org-save-outline-visibility
+           (org-narrow-to-subtree)
+         (setq str (funcall selector))
+         (deactivate-mark 'force))))
+    str))
 
 ;;;;; org-ql predicates test
 (org-ql-defpred is-deep-xob-node ()
@@ -1057,7 +1068,7 @@ Deepcheck only works on heading at point, any ID argument is ignored."
            :ntype "a.day"
            )
 
-          ;; org-projectile for now 
+          ;; org-projectile for now
           ("ap" "new project" entry (file org-xob--agenda-file)
            "* %^{description} \n:BACKLINKS:\n:END:\n"
            :xob-node t
@@ -1072,7 +1083,7 @@ Deepcheck only works on heading at point, any ID argument is ignored."
            :ntype "a.session"
            :immediate-finish t
            )
-          
+
           ;; regular templates for now
           ("tf" "todo general" entry (file org-xob--agenda-file)
            "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
@@ -1081,8 +1092,8 @@ Deepcheck only works on heading at point, any ID argument is ignored."
            :ntype "a.todo"
            :immediate-finish t
            )
-          
-          ;; org-projectile for now 
+
+          ;; org-projectile for now
           ("tp" "todo project" entry (file org-xob--agenda-file)
            "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
            :xob-node t
@@ -1461,4 +1472,4 @@ Buffer remains open. Returns the filename."
 
 (provide 'org-xob)
 
-;;; org-xob.el ends here 
+;;; org-xob.el ends here
