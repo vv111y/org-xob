@@ -108,7 +108,7 @@
 
 (defvar org-xob-buffers nil "List of active xob buffers.")
 
-(defvar org-xob-last-buffer nil "Last xob buffer used.")
+(defvar org-xob-last-buffer "" "Last xob buffer used.")
 
 (defvar org-xob--open-nodes ()
   "List of all nodes that are opened for editing.")
@@ -259,12 +259,12 @@
      (message "xob is not on.")))
 
 (defmacro org-xob-with-xob-buffer (&rest body)
-  (or (org-xob-buffer-p (current-buffer))
-      (and (org-xob-buffer-p org-xob-last-buffer)
-           (switch-to-buffer org-xob-last-buffer))
-      (switch-to-buffer (setq org-xob-last-buffer
-                              (org-xob--new-buffer))))
-  ,@body)
+  `(progn (or (org-xob-buffer-p (current-buffer))
+              (and (org-xob-buffer-p org-xob-last-buffer)
+                   (switch-to-buffer org-xob-last-buffer))
+              (switch-to-buffer (setq org-xob-last-buffer
+                                      (org-xob--new-buffer))))
+          ,@body))
 
 ;;;; Commands
 ;;;;; Main Commands DONE
@@ -630,19 +630,22 @@ If ID is given, then convert todo with that ID."
 ;;;;; Buffer Functions MOSTLY
 
 (defun org-xob-buffer-p (buf)
-  (with-current-buffer buf
-    (and (bound-and-true-p org-xob-mode)
-         (if (eq major-mode 'org-mode)))))
+  (if (buffer-live-p buf)
+      (with-current-buffer buf
+        (and (bound-and-true-p org-xob-mode)
+             (if (eq major-mode 'org-mode) t nil)))))
 
 (defun org-xob-new-buffer ()
   "Create new xob buffer."
   (interactive)
   (let (buf)
-    (setq buf (get-buffer-create (concat "xob-" (length 'org-xob-buffers))))
-    (push buf 'org-xob-buffers)
+    (setq buf (get-buffer-create (concat "xob-" (number-to-string
+                                                 (length org-xob-buffers)))))
+    (push buf org-xob-buffers)
     (with-current-buffer buf
       (org-mode)
-      (org-xob-mode 1))))
+      (org-xob-mode 1))
+    buf))
 
 ;; TODO redo with org-ql
 (defun org-xob--update-modified-time ()
