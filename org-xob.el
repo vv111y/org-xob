@@ -711,18 +711,22 @@ Return point position if found, nil otherwise."
 
 ;; TEST
 (defun org-xob--edit-node (ID title)
-  "Open node for editing in current buffer."
-  (org-xob-with-xob-buffer
-   (goto-char (point-max))
-   (org-xob--context-copy-paste
-    #'(lambda () (org-copy-subtree))
-    ;; TODO fix, won't paste, user-error: Before first headline at position 1 in buffer xob-2
-    #'(lambda () (org-paste-subtree 1 nil nil 'remove)))
-   (org-toggle-tag "edit" 'ON)
-   (org-entry-put (point) "EDIT" (org-entry-get "ID"))
-   (org-entry-delete "ID")
-   (push (make-open-node :ID id :sources ())
-         'org-xob--open-nodes)))
+  "Open node for editing."
+   ;; check if already open
+  (if (org-xob--id-goto ID)
+      (unless (get-buffer-window)
+        (set-window-buffer (current-buffer)))
+    (org-xob-with-xob-buffer
+     (goto-char (point-max))
+     (org-xob--select-content ID
+                              #'(lambda () (org-copy-subtree)))
+     ;; TODO fix, won't paste, user-error: Before first headline at position 1 in buffer xob-2
+     (org-paste-subtree 1 nil nil 'remove)
+     (org-toggle-tag "edit" 'ON)
+     (org-entry-put (point) "EDIT" (org-entry-get "ID"))
+     (org-entry-put (point) "ID" (uuidgen-4))
+     (push (make-open-node :ID id :sources ())
+           'org-xob--open-nodes))))
 
 ;; TEST
 (defun org-xob--is-source-p (&optional PID ID)
