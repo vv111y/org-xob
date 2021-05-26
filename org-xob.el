@@ -419,6 +419,12 @@ then also update the forlinks source."
       (org-xob--source-refresh 'forlinks)))))
 
 ;;;###autoload
+(defun org-xob-delete-link ()
+  "simple wrapper to call org-superlinks-delete-link"
+  (interactive)
+  (org-super-links-delete-link))
+
+;;;###autoload
 (defun org-xob-refile-region ()
   "Move text in region to the end of the top section of a selected node."
   (interactive)
