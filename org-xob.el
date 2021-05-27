@@ -684,11 +684,9 @@ ID should be buffer local in a xob edit buffer."
             (with-current-buffer buf
               (goto-char (point-min))
               (re-search-forward bufID)
-              (org-back-to-heading t)
-              (let ((mdate (org-entry-get (point) "MODIFIED")))
-                (if mdate
-                    (org-entry-put (point) "MODIFIED"
-                                   (concat "[" (format-time-string "%F %a %R") "]")))))))
+              (if (org-entry-get (point) "MODIFIED")
+                  (org-entry-put (point) "MODIFIED"
+                                 (concat "[" (format-time-string "%F %a %R") "]"))))))
       nil)))
 
 ;;;;; Buffer Navigation
