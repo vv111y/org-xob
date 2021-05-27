@@ -1248,6 +1248,18 @@ Maybe useful for syncing."
    (setq org-xob-today-string  (format-time-string "%F %A"))
    (and (or (setq org-xob-today (gethash org-xob-today-string
                                       org-xob--title-id))
+            (setq org-xob-today
+                  (save-window-excursion 
+                    (save-excursion
+                      (find-file org-xob--log-file)
+                      (org-with-wide-buffer
+                       (if (re-search-forward org-xob-today-string)
+                           (let (id)
+                             (setq id (org-entry-get (point) "ID"))
+                             (puthash id org-xob-today-string org-xob--id-title)
+                             (puthash org-xob-today-string id org-xob--title-id)
+                             id)
+                         nil)))))
             (setq org-xob-today (org-xob--capture "ad")))
         (save-window-excursion
           (save-excursion
