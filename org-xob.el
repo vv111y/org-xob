@@ -403,19 +403,23 @@ then also update the forlinks source."
   (org-xob-with-xob-on
    (if (use-region-p)
        (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-         (clipboard-kill-region (point) (mark))
-         (save-window-excursion
-           (org-with-wide-buffer
-             (org-id-goto ID)
-             (if (org-goto-first-child)
-                 (progn
-                   (newline 2)
-                   (forward-line -1))
-               (org-end-of-subtree)
-               (newline))
-             (if (org-kill-is-subtree-p)
-                 (org-paste-subtree
-                  (+ 1 (org-current-level)) nil t t))))))))
+         (when (bound-and-true-p ID)
+           (kill-region (point) (mark))
+           (save-window-excursion
+             (org-with-wide-buffer
+              (org-id-goto ID)
+              (if (org-goto-first-child)
+                  (progn
+                    (newline 2)
+                    (forward-line -1))
+                (org-end-of-subtree)
+                (newline))
+              ;; todo refactor out, for reuse
+              (if (org-kill-is-subtree-p)
+                  (org-paste-subtree
+                   (+ 1 (org-current-level)) nil t t)
+                (yank)
+                (org-xob--modify-time)))))))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
