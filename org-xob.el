@@ -480,15 +480,18 @@ then also update the forlinks source."
 
 ;;;;; Display Commands DONE
 
-;; TODO test
+;; TODO redo with new regime
 ;;;###autoload
 (defun org-xob-to-side-window (side buf)
   "Move subtree at point to window on side of current one. If there is no window
 then make one. If no xob buffer is there, make a new one. If optional buf is
 specified, then use that buffer."
   (interactive (list (completing-read "side:" '(left right))
+                     ;; don't select
                      (completing-read "buffer:" (cons "[?]" org-xob-buffers))))
-  ;; todo if move to source heading
+  ;; check if dual-pane
+  ;; check if proper node tree
+  ;; cut context, goto side buf, paste at end
   (org-cut-subtree)
   (save-excursion
     (if-let ((if (eq side 'left)
@@ -742,15 +745,16 @@ Return point position if found, nil otherwise."
         (set-window-buffer (current-buffer)))
     (org-xob-with-xob-buffer
      (goto-char (point-max))
-     (org-xob--select-content ID
-                              #'(lambda () (org-copy-subtree)))
-     ;; TODO fix, won't paste, user-error: Before first headline at position 1 in buffer xob-2
-     (org-paste-subtree 1 nil nil 'remove)
+     (insert
+      (org-xob--select-content ID
+                               #'(lambda () (org-copy-subtree))))
+     (org-back-to-heading)
      (org-toggle-tag "edit" 'ON)
      (org-entry-put (point) "EDIT" (org-entry-get "ID"))
      (org-entry-put (point) "ID" (uuidgen-4))
      (push (make-open-node :ID id :sources ())
-           'org-xob--open-nodes))))
+           'org-xob--open-nodes)
+     (outline-hide-entry))))
 
 ;; TEST
 (defun org-xob--is-source-p (&optional PID ID)

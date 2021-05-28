@@ -1454,16 +1454,30 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;;; Workspace
 ;;;; dual buffers/windows
 ;;;; atomic window ex.
-(let ((window (split-window-right)))
-  (window-make-atom (window-parent window))
-  (display-buffer-in-atom-window
-   (get-buffer-create "*Messages*")
-   `((window . ,(window-parent window)) (window-height . 5))))
+(let ((right (split-window-right))
+      (left (selected-window)))
+  (window-make-atom (window-parent left))
+  (get-buffer-create "left")
+  (select-window right)
+  (get-buffer-create "right")
+  (insert "on the right")
+  (select-window left)
+  (insert "on the left")
+  )
 
-(let ((window
+(let ((right
        (display-buffer-in-atom-window
-        (get-buffer-create "*node context*")
-        `((window . ,(selected-window)) (side . right))))))
+        (get-buffer-create "right")
+        `((window . ,(selected-window)) (side . right))))
+      (left (selected-window)))
+  (set-window-buffer left
+                     (get-buffer-create "left"))
+  (select-window right)
+  (get-buffer-create "right")
+  (insert "on the right")
+  (select-window left)
+  (insert "on the left")
+  )
 
 ;; (defun org-xob-open-sideline ()
 ;;   "Open context content in a side window."
