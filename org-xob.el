@@ -717,10 +717,12 @@ Return point position if found, nil otherwise."
                (point))
           (and (setq place (org-find-entry-with-id sID))
                (goto-char place))
-          (and (setq place (with-current-buffer (org-xob--other-buffer)
-                             (org-find-entry-with-id sID)))
-               (set-buffer org-xob--other-buffer)
-               (goto-char place))))))
+          (dolist (buf org-xob-buffers)
+            (when (setq place (with-current-buffer buf
+                                (org-find-entry-with-id sID)))
+              (set-buffer buf)
+              (goto-char place)
+              (return place)))))))
 
 ;; TODO redo with org-ql
 (defun org-xob--goto-buffer-heading (ID)
