@@ -676,22 +676,6 @@ If ID is given, then convert todo with that ID."
       (org-xob-mode 1))
     buf))
 
-;; TODO redo with org-ql
-(defun org-xob--update-modified-time ()
-  "Hook to update the modified timestamp of all nodes that are being edited when saving.
-ID should be buffer local in a xob edit buffer."
-  (save-window-excursion
-    (save-excursion
-      (dolist (buf org-xob--edit-buffers)
-        (if (buffer-live-p buf)
-            (with-current-buffer buf
-              (goto-char (point-min))
-              (re-search-forward bufID)
-              (if (org-entry-get (point) "MODIFIED")
-                  (org-entry-put (point) "MODIFIED"
-                                 (concat "[" (format-time-string "%F %a %R") "]"))))))
-      nil)))
-
 ;;;;; Buffer Navigation
 
 ;; no change
@@ -736,7 +720,7 @@ Return point position if found, nil otherwise."
          (goto-char m)
          (message "%s not found." ID))))))
 
-;;;;; Contexts Functions
+;;;;;  Edit Node Functions
 
 ;; TEST
 (defun org-xob--edit-node (ID title)
@@ -757,6 +741,224 @@ Return point position if found, nil otherwise."
      (push (make-open-node :ID id :sources ())
            'org-xob--open-nodes)
      (outline-hide-entry))))
+
+;; TODO redo with org-ql
+(defun org-xob--update-modified-time ()
+  "Hook to update the modified timestamp of all nodes that are being edited when saving.
+ID should be buffer local in a xob edit buffer."
+  (save-window-excursion
+    (save-excursion
+      (dolist (buf org-xob--edit-buffers)
+        (if (buffer-live-p buf)
+            (with-current-buffer buf
+              (goto-char (point-min))
+              (re-search-forward bufID)
+              (if (org-entry-get (point) "MODIFIED")
+                  (org-entry-put (point) "MODIFIED"
+                                 (concat "[" (format-time-string "%F %a %R") "]"))))))
+      nil)))
+
+;;;;; TODO propogate edits test
+
+(defun org-xob-update-copies (ID)
+  ;; get state
+  ;; redo state
+  )
+
+(defun org-xob-sync-edit ()
+  ;; make diff
+  ;; apply diff OR replace original
+  ;; record diff
+  ;; update-copies
+  )
+
+;;;;; Node Functions NO CHANGE
+
+(defun org-xob--is-node-p (&optional ID DEEPCHECK)
+  "Check if a heading is a xob node. Called interactively it defaults to heading at point.
+If an ID argument is supplied, then check the heading associated with it.
+With option DEEPCHECK, do not use any table lookup, but check whether the heading
+has valid UUID formatted ID and xob TYPE properties in the property drawer.
+Deepcheck only works on heading at point, any ID argument is ignored."
+  (interactive)
+  (let ((temp (if ID ID (org-id-get nil))))
+    (if temp
+        (if DEEPCHECK
+            (and
+             (string= "t" (org-entry-get (point) "xob"))
+             (member (org-entry-get (point) "TYPE") org-xob--node-types)
+             (eq 0 (org-uuidgen-p temp)))
+          (if (gethash temp org-xob--id-title) t nil)))))
+
+(defun org-xob--is-edit-node-p ()
+  (let ((id (org-entry-get (point) "EDIT")))
+    (and (string= "t" (org-entry-get (point) "xob"))
+         (eq 0 (org-uuidgen-p id))
+         (member "edit" (org-get-tags))
+         id)))
+
+(defun org-xob--eval-capture-templates ()
+  "Re-evaluate the capture templates so they are up to date."
+  (setq org-xob--templates
+        `(("nn" "new node" entry (file org-xob--KB-file)
+           "* %(eval org-xob--last-title) \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :ntype "n.n"
+           :immediate-finish t
+           :empty-lines-after 1)
+
+          ("ad" "today" entry (file+function org-xob--log-file ,(lambda () (org-datetree-find-month-create (calendar-current-date))))
+           "**** %<%F %A> \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :immediate-finish t
+           :ntype "a.day"
+           )
+
+          ;; org-projectile for now
+          ("ap" "new project" entry (file org-xob--agenda-file)
+           "* %^{description} \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :ntype "a.project"
+           :immediate-finish t
+           )
+
+          ;; not sure
+          ("as" "new session" entry (file org-xob--agenda-file)
+           "* %^{description}  \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :ntype "a.session"
+           :immediate-finish t
+           )
+
+          ;; regular templates for now
+          ("tf" "todo general" entry (file org-xob--agenda-file)
+           "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
+           :xob-node t
+           :todo t
+           :ntype "a.todo"
+           :immediate-finish t
+           )
+
+          ;; org-projectile for now
+          ("tp" "todo project" entry (file org-xob--agenda-file)
+           "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
+           :xob-node t
+           :todo t
+           :ntype "a.todo"
+           :immediate-finish t
+           )
+          )))
+
+;; --new nodes and links--
+(defun org-xob--get-create-node ()
+  "Find or create new xob KB node using helm. Returns node (ID title) as a list."
+  (unless org-xob-on-p
+    (org-xob-start))
+  (helm :buffer "*xob get node*"
+        :sources (helm-build-sync-source "xob-kb"
+                   :candidates (lambda ()
+                                 (let* ((cans (hash-table-keys org-xob--title-id)))
+                                   (cons helm-input cans)))
+                   :volatile t
+                   :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
+                                             (unless ID
+                                               (setq ID (org-xob--capture title)))
+                                             (list ID title))))))
+
+(defun org-xob--new-node (&optional heading)
+  "Both a hook function and for general node creation. If orgmode 'heading' is given,
+then convert it into a new node in place. Otherwise it is assumed to be called
+as a capture hook function."
+  (if (or (org-capture-get :xob-node) heading)
+      (let ((ID (org-id-get-create))
+            (title (nth 4 (org-heading-components)))
+            (timestamp (concat "[" (format-time-string "%F %a") "]")))
+        (if (org-capture-get :todo) (org-todo))
+        (org-entry-put (point) "xob" "t")
+        (org-entry-put (point) "TYPE" (if heading "n.n"
+                                        (org-capture-get :ntype)))
+        (org-entry-put (point) "CREATED" timestamp)
+        (org-entry-put (point) "MODIFIED" timestamp)
+        (puthash ID title org-xob--id-title)
+        (puthash title ID org-xob--title-id)
+        (setq org-xob--last-captured ID))))
+
+(defun org-xob--capture (title)
+  (let* ((org-capture-templates org-xob--templates)
+         ID)
+    (if (member title org-xob--auto-templates)
+        (org-capture nil title)
+      (progn
+        (setq org-xob--last-title title)
+        (org-capture nil "nn")))
+    org-xob--last-captured))
+
+(defun org-xob--link-hook-fn ()
+  "If a link is a xob node, then reopen node in xob edit mode."
+  (let ((link (org-element-context))
+        ID title)
+    (if (equal "ID" (org-element-property :type link))
+        (progn
+          (setq ID (org-element-property :path link))
+          (setq title (gethash ID org-xob--id-title))
+          (if title
+              (org-xob--edit-node ID title)))
+      nil)))
+
+(defun org-xob--insert-link-header (ID title target)
+  "Checks if link subheader exist at target. If not, inserts a
+subheading with an org link to the node with ID and title.
+Returns mark for the link subheader."
+  (save-excursion
+    (save-window-excursion
+      (org-id-goto target)
+      (let ((place nil))
+        (org-map-tree
+         (lambda () (if (string-match-p (regexp-quote ID)
+                                         (nth 4 (org-heading-components)))
+                         (setq place (point)))))
+        (if place (progn
+                    (goto-char place)
+                    (org-back-to-heading))
+          (newline)
+          (org-insert-subheading '(4))
+          (org-insert-link nil (concat "ID:" ID) title)
+          (newline)
+          (org-back-to-heading))
+        (point-marker)))))
+
+;; --- Node Versioning ---
+
+;; (defun org-xob--sync-node (node)
+;;   "Update entry based on local edits."
+;;   ;; is node in KB? no, add, else
+;;   ;; is node different? no, ignore, else sync/update
+;;   nil
+;;   )
+
+;; (defun org-xob--diff-node (now-node last-node)
+;;   "Creates a diff using =org-xob--delta-executable=.
+;; The order of versions is reversed; the diff allows the reconstruction of
+;; the last-node from the now-node.
+;; The diff is stored in the currently active =org-xob--KB-file=."
+;;   (shell-command))
+;; ;; (defun org-xob--new-node-diff (nodeID)
+;; ;;   (let ((old-id (org-id-store-link node)))))
+
+;; (defun org-xob--diff-filename (node)
+;;   (concat
+;;    ;; node id
+;;    "-"
+;;    (format-time-string "%j-%H-%M")))
+
+(defun org-xob--node-add-time-property (property)
+  "Convenience function to add high resolution time property.
+Maybe useful for syncing."
+  (org-entry-put (point) property
+                 (number-to-string
+                  (car (time-convert (current-time) '10000)))))
+
+;;;;; Contexts Functions
 
 ;; TEST
 (defun org-xob--is-source-p (&optional PID ID)
@@ -1045,206 +1247,6 @@ Returns content as a string with properties."
     `(and (is-xob-source ,ID)
           (tags source))
     :action func))
-
-;;;;; TODO propogate edits test
-
-(defun org-xob-update-copies (ID)
-  ;; get state
-  ;; redo state
-  )
-
-(defun org-xob-sync-edit ()
-  ;; make diff
-  ;; apply diff OR replace original
-  ;; record diff
-  ;; update-copies
-  )
-
-;;;;; Node Functions NO CHANGE
-
-(defun org-xob--is-node-p (&optional ID DEEPCHECK)
-  "Check if a heading is a xob node. Called interactively it defaults to heading at point.
-If an ID argument is supplied, then check the heading associated with it.
-With option DEEPCHECK, do not use any table lookup, but check whether the heading
-has valid UUID formatted ID and xob TYPE properties in the property drawer.
-Deepcheck only works on heading at point, any ID argument is ignored."
-  (interactive)
-  (let ((temp (if ID ID (org-id-get nil))))
-    (if temp
-        (if DEEPCHECK
-            (and
-             (string= "t" (org-entry-get (point) "xob"))
-             (member (org-entry-get (point) "TYPE") org-xob--node-types)
-             (eq 0 (org-uuidgen-p temp)))
-          (if (gethash temp org-xob--id-title) t nil)))))
-
-(defun org-xob--is-edit-node-p ()
-  (let ((id (org-entry-get (point) "EDIT")))
-    (and (string= "t" (org-entry-get (point) "xob"))
-         (eq 0 (org-uuidgen-p id))
-         (member "edit" (org-get-tags))
-         id)))
-
-(defun org-xob--eval-capture-templates ()
-  "Re-evaluate the capture templates so they are up to date."
-  (setq org-xob--templates
-        `(("nn" "new node" entry (file org-xob--KB-file)
-           "* %(eval org-xob--last-title) \n:BACKLINKS:\n:END:\n"
-           :xob-node t
-           :ntype "n.n"
-           :immediate-finish t
-           :empty-lines-after 1)
-
-          ("ad" "today" entry (file+function org-xob--log-file ,(lambda () (org-datetree-find-month-create (calendar-current-date))))
-           "**** %<%F %A> \n:BACKLINKS:\n:END:\n"
-           :xob-node t
-           :immediate-finish t
-           :ntype "a.day"
-           )
-
-          ;; org-projectile for now
-          ("ap" "new project" entry (file org-xob--agenda-file)
-           "* %^{description} \n:BACKLINKS:\n:END:\n"
-           :xob-node t
-           :ntype "a.project"
-           :immediate-finish t
-           )
-
-          ;; not sure
-          ("as" "new session" entry (file org-xob--agenda-file)
-           "* %^{description}  \n:BACKLINKS:\n:END:\n"
-           :xob-node t
-           :ntype "a.session"
-           :immediate-finish t
-           )
-
-          ;; regular templates for now
-          ("tf" "todo general" entry (file org-xob--agenda-file)
-           "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
-           :xob-node t
-           :todo t
-           :ntype "a.todo"
-           :immediate-finish t
-           )
-
-          ;; org-projectile for now
-          ("tp" "todo project" entry (file org-xob--agenda-file)
-           "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
-           :xob-node t
-           :todo t
-           :ntype "a.todo"
-           :immediate-finish t
-           )
-          )))
-
-;; --new nodes and links--
-(defun org-xob--get-create-node ()
-  "Find or create new xob KB node using helm. Returns node (ID title) as a list."
-  (unless org-xob-on-p
-    (org-xob-start))
-  (helm :buffer "*xob get node*"
-        :sources (helm-build-sync-source "xob-kb"
-                   :candidates (lambda ()
-                                 (let* ((cans (hash-table-keys org-xob--title-id)))
-                                   (cons helm-input cans)))
-                   :volatile t
-                   :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
-                                             (unless ID
-                                               (setq ID (org-xob--capture title)))
-                                             (list ID title))))))
-
-(defun org-xob--new-node (&optional heading)
-  "Both a hook function and for general node creation. If orgmode 'heading' is given,
-then convert it into a new node in place. Otherwise it is assumed to be called
-as a capture hook function."
-  (if (or (org-capture-get :xob-node) heading)
-      (let ((ID (org-id-get-create))
-            (title (nth 4 (org-heading-components)))
-            (timestamp (concat "[" (format-time-string "%F %a") "]")))
-        (if (org-capture-get :todo) (org-todo))
-        (org-entry-put (point) "xob" "t")
-        (org-entry-put (point) "TYPE" (if heading "n.n"
-                                        (org-capture-get :ntype)))
-        (org-entry-put (point) "CREATED" timestamp)
-        (org-entry-put (point) "MODIFIED" timestamp)
-        (puthash ID title org-xob--id-title)
-        (puthash title ID org-xob--title-id)
-        (setq org-xob--last-captured ID))))
-
-(defun org-xob--capture (title)
-  (let* ((org-capture-templates org-xob--templates)
-         ID)
-    (if (member title org-xob--auto-templates)
-        (org-capture nil title)
-      (progn
-        (setq org-xob--last-title title)
-        (org-capture nil "nn")))
-    org-xob--last-captured))
-
-(defun org-xob--link-hook-fn ()
-  "If a link is a xob node, then reopen node in xob edit mode."
-  (let ((link (org-element-context))
-        ID title)
-    (if (equal "ID" (org-element-property :type link))
-        (progn
-          (setq ID (org-element-property :path link))
-          (setq title (gethash ID org-xob--id-title))
-          (if title
-              (org-xob--edit-node ID title)))
-      nil)))
-
-(defun org-xob--insert-link-header (ID title target)
-  "Checks if link subheader exist at target. If not, inserts a
-subheading with an org link to the node with ID and title.
-Returns mark for the link subheader."
-  (save-excursion
-    (save-window-excursion
-      (org-id-goto target)
-      (let ((place nil))
-        (org-map-tree
-         (lambda () (if (string-match-p (regexp-quote ID)
-                                         (nth 4 (org-heading-components)))
-                         (setq place (point)))))
-        (if place (progn
-                    (goto-char place)
-                    (org-back-to-heading))
-          (newline)
-          (org-insert-subheading '(4))
-          (org-insert-link nil (concat "ID:" ID) title)
-          (newline)
-          (org-back-to-heading))
-        (point-marker)))))
-
-;; --- Node Versioning ---
-
-;; (defun org-xob--sync-node (node)
-;;   "Update entry based on local edits."
-;;   ;; is node in KB? no, add, else
-;;   ;; is node different? no, ignore, else sync/update
-;;   nil
-;;   )
-
-;; (defun org-xob--diff-node (now-node last-node)
-;;   "Creates a diff using =org-xob--delta-executable=.
-;; The order of versions is reversed; the diff allows the reconstruction of
-;; the last-node from the now-node.
-;; The diff is stored in the currently active =org-xob--KB-file=."
-;;   (shell-command))
-;; ;; (defun org-xob--new-node-diff (nodeID)
-;; ;;   (let ((old-id (org-id-store-link node)))))
-
-;; (defun org-xob--diff-filename (node)
-;;   (concat
-;;    ;; node id
-;;    "-"
-;;    (format-time-string "%j-%H-%M")))
-
-(defun org-xob--node-add-time-property (property)
-  "Convenience function to add high resolution time property.
-Maybe useful for syncing."
-  (org-entry-put (point) property
-                 (number-to-string
-                  (car (time-convert (current-time) '10000)))))
 
 ;;;;; Activity NO CHANGE
 
