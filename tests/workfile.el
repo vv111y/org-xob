@@ -3024,11 +3024,5 @@ org-xob--node-sources
                      (buffer-substring (point) (mark))
                      nil nil))
 
-(org-xob-with-xob-buffer t)
-
-(defun org-xob-buffer-p (buf)
-  (let ((buf org-xob-last-buffer))
-    (if (buffer-live-p buf)
-        (with-current-buffer buf
-          (and (bound-and-true-p org-xob-mode)
-               (if (eq major-mode 'org-mode)))))))
+(let ((r 'bee))
+  (eq r 'bee))

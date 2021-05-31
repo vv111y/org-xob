@@ -478,7 +478,7 @@ then also update the forlinks source."
                         :action (lambda (c)
                                   (org-entry-put (point) "TYPE" c)))))))
 
-;;;;; Display Commands DONE
+;;;;; Display Commands TODO redo again
 
 ;; TODO redo with new regime
 ;;;###autoload
@@ -693,7 +693,8 @@ Returns ID if successful, nil otherwise."
 ;; TODO redo with org-ql
 (defun org-xob--id-goto (sID)
   "Search buffers for org heading with ID and place point there.
-Return point position if found, nil otherwise."
+Return point position if found, nil otherwise. This does not display
+the buffer."
   (let (place)
     (when (org-not-nil sID)
       (or (and (string= sID (org-entry-get (point) "ID"))
@@ -769,7 +770,7 @@ ID should be buffer local in a xob edit buffer."
                                  (concat "[" (format-time-string "%F %a %R") "]"))))))
       nil)))
 
-;;;;; TODO propogate edits test
+;;;;; TODO propogate edits
 
 (defun org-xob-update-copies (ID)
   ;; get state
@@ -783,7 +784,7 @@ ID should be buffer local in a xob edit buffer."
   ;; update-copies
   )
 
-;;;;; Node Functions NO CHANGE
+;;;;; Node Functions UNCHANGED
 
 (defun org-xob--is-node-p (&optional ID DEEPCHECK)
   "Check if a heading is a xob node. Called interactively it defaults to heading at point.
@@ -969,7 +970,7 @@ Maybe useful for syncing."
                  (number-to-string
                   (car (time-convert (current-time) '10000)))))
 
-;;;;; Contexts Functions
+;;;;; Contexts Functions TODO
 
 ;; TEST
 (defun org-xob--is-source-p (&optional PID ID)
@@ -1259,7 +1260,7 @@ Returns content as a string with properties."
           (tags source))
     :action func))
 
-;;;;; Activity NO CHANGE
+;;;;; Activity UNCHANGED
 
 (defun org-xob--open-today ()
   "Open today node for logging."
@@ -1289,7 +1290,7 @@ Returns content as a string with properties."
 ;;;;;; Clocking
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
-;;;;; xob Management
+;;;;; xob Management UNCHANGED?
 
 ;;;###autoload
 (defun org-xob-info ()
