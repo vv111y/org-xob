@@ -500,7 +500,7 @@ specified, then use that buffer."
         (select-window win)
       (select-window (split-window nil nil side)))
     (if (string= buf "[?]")
-        (org-xob--new-buffer)
+        (org-xob-new-buffer)
       (set-buffer buf))
     (goto-char (point-max))
     (org-paste-subtree 1 nil nil 'remove)))
@@ -670,16 +670,29 @@ If ID is given, then convert todo with that ID."
          (eq org-xob--buf 'parent))))
 
 (defun org-xob-new-buffer ()
-  "Create new xob buffer."
+  "Create new xob buffer. Defaults to dual-pane buffer pair."
   (interactive)
-  (let (buf)
-    (setq buf (get-buffer-create (concat "xob-" (number-to-string
-                                                 (length org-xob-buffers)))))
-    (push buf org-xob-buffers)
-    (with-current-buffer buf
+  (let ((numbufs (number-to-string
+                  (length org-xob-buffers)))
+        buf1 buf2)
+    (with-current-buffer
+        (setq buf1 (get-buffer-create
+                    (concat "xob-E-" numbufs)))
       (org-mode)
-      (org-xob-mode 1))
-    buf))
+      (org-xob-mode 1)
+      (setq-local org-xob--buf 'parent)
+      (setq-local org-xob--pair-buf buf2)
+      (setq-local org-xob--display 'dual))
+    (with-current-buffer
+        (setq buf2 (get-buffer-create
+                    (concat "xob-C-" numbufs)))
+      (org-mode)
+      (org-xob-mode 1)
+      (setq-local org-xob--buf 'child)
+      (setq-local org-xob--pair-buf buf1))   
+    (setq org-xob-last-buffer buf1)
+    (push buf1 org-xob-buffers)
+    buf1))
 
 ;;;;; Buffer Navigation
 
