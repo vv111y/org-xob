@@ -664,6 +664,11 @@ If ID is given, then convert todo with that ID."
         (and (bound-and-true-p org-xob-mode)
              (if (eq major-mode 'org-mode) t nil)))))
 
+(defun org-xob-edit-buffer-p (buf)
+  (and (org-xob-buffer-p buf)
+       (with-current-buffer buf
+         (eq org-xob--buf 'parent))))
+
 (defun org-xob-new-buffer ()
   "Create new xob buffer."
   (interactive)
