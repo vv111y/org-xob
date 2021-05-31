@@ -720,6 +720,17 @@ Return point position if found, nil otherwise."
          (goto-char m)
          (message "%s not found." ID))))))
 
+;;;;; Windows
+
+(defun org-xob--single-pane ()
+  "Use single pane interface. If dual-pane is open, then kill
+the windows."
+  )
+
+(defun org-xob--dual-pane ()
+  "Use dual-pane interface"
+  )
+
 ;;;;;  Edit Node Functions
 
 ;; TEST
