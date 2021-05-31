@@ -259,11 +259,14 @@
      (message "xob is not on.")))
 
 (defmacro org-xob-with-xob-buffer (&rest body)
-  `(progn (or (org-xob-buffer-p (current-buffer))
-              (and (org-xob-buffer-p org-xob-last-buffer)
+  `(progn (or (org-xob-edit-buffer-p (current-buffer))
+              (and (org-xob-edit-buffer-p org-xob-last-buffer)
                    (switch-to-buffer org-xob-last-buffer))
               (switch-to-buffer (setq org-xob-last-buffer
-                                      (org-xob--new-buffer))))
+                                      (org-xob-new-buffer))))
+          (if (eq org-xob--display 'dual)
+              (org-xob--dual-pane (selected-window))
+            (org-xob--single-pane (selected-window)))
           ,@body))
 
 ;;;; Commands
