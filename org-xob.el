@@ -744,22 +744,39 @@ the buffer."
 (defun org-xob--single-pane ()
   "Use single pane interface. If dual-pane is open, then kill
 the windows."
-  )
+  (if (window-atom-root win)
+      (when-let* ((buf (current-buffer))
+                  (oldwin (selected-window))
+                  (winnew (split-window-right)))
+        (delete-window oldwin)
+        (selected-window winnew)
+        (set-buffer buf))))
 
-(defun org-xob--dual-pane ()
+;; todo maybe redo macro for dual buffer creation
+(defun org-xob--dual-pane (win)
   "Use dual-pane interface"
-  )
+  (unless (window-atom-root win)
+    (when-let* ((buf1 (switch-to-buffer
+                       (org-xob-new-buffer)))
+                (buf2 (buffer-local-value org-xob--pair-buf
+                                          buf1))
+                (win1 (selected-window))
+                (win2 (split-window-right)))
+      (window-make-atom (window-parent win2))
+      (set-window-buffer win2 buf2))))
 
-;;;;;  Edit Node Functions
+;;;;; Edit Node Functions
 
 ;; TEST
 (defun org-xob--edit-node (ID title)
-  "Open node for editing."
-   ;; check if already open
+  "Open node for editing. Selects the last current xob buffer, if none are
+found, then create a new one. Defaults to dual-pane display, with C-u opens node
+in a single-pane display format."
+   ;; check if node already open
   (if (org-xob--id-goto ID)
       (unless (get-buffer-window)
         (set-window-buffer (current-buffer)))
-    (org-xob-with-xob-buffer
+    (org-xob-with-xob-buffer ;; todo replace 
      (goto-char (point-max))
      (insert
       (org-xob--select-content ID
