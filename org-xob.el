@@ -748,12 +748,12 @@ the buffer."
   "Use single pane interface. If dual-pane is open, then kill
 the windows."
   (if (window-atom-root win)
-      (when-let* ((buf (current-buffer))
+      (when-let* ((buf (window-buffer win))
                   (oldwin (selected-window))
                   (winnew (split-window-right)))
         (delete-window oldwin)
         (selected-window winnew)
-        (set-buffer buf))))
+        (set-buffer buf)))) ;; TODO modify contents for single pane view
 
 ;; todo maybe redo macro for dual buffer creation
 (defun org-xob--dual-pane (win)
