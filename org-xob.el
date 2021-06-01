@@ -659,7 +659,7 @@ If ID is given, then convert todo with that ID."
     (org-super-links--insert-link)))
 
 ;;;; Backend
-;;;;; Buffer Functions MOSTLY
+;;;;; Buffer Functions
 
 (defun org-xob-buffer-p (buf)
   (if (buffer-live-p buf)
@@ -766,7 +766,7 @@ the windows."
                 (win1 (selected-window))
                 (win2 (split-window-right)))
       (window-make-atom (window-parent win2))
-      (set-window-buffer win2 buf2))))
+      (set-window-buffer win2 buf2)))) ;; TODO modify contents for dual pane view
 
 ;;;;; Edit Node Functions
 
@@ -810,13 +810,14 @@ ID should be buffer local in a xob edit buffer."
 
 ;;;;; TODO propogate edits
 
+;; do I need this?
 (defun org-xob-update-copies (ID)
   ;; get state
   ;; redo state
   )
 
+;; skip diffs, just replace whole thing
 (defun org-xob-sync-edit ()
-  ;; make diff
   ;; apply diff OR replace original
   ;; record diff
   ;; update-copies
