@@ -842,7 +842,8 @@ Deepcheck only works on heading at point, any ID argument is ignored."
           (if (gethash temp org-xob--id-title) t nil)))))
 
 (defun org-xob--is-edit-node-p ()
-  (let ((id (org-entry-get (point) "EDIT")))
+  "Is point on a node that is in an edit state? Return it's ID if true, nil otherwise."
+  (when-let ((id (org-entry-get (point) "EDIT")))
     (and (string= "t" (org-entry-get (point) "xob"))
          (eq 0 (org-uuidgen-p id))
          (member "edit" (org-get-tags))
