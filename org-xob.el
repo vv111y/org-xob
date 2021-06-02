@@ -663,32 +663,32 @@ If ID is given, then convert todo with that ID."
        (with-current-buffer buf
          (eq org-xob--buf 'parent))))
 
+;;;###autoload
 (defun org-xob-new-buffer ()
   "Create new xob buffer. Defaults to dual-pane buffer pair."
   (interactive)
-  (let ((numbufs (number-to-string
-                  (length org-xob-buffers)))
-        buf1 buf2)
-    (with-current-buffer
-        (setq buf1 (get-buffer-create
-                    (concat "xob-E-" numbufs)))
+  (when-let ((numbufs (number-to-string
+                       (length org-xob-buffers)))
+             (buf1 (get-buffer-create
+                         (concat "xob-E-" numbufs)))
+             (buf2 (get-buffer-create
+                         (concat "xob-C-" numbufs))))
+    (with-current-buffer buf1
       (org-mode)
       (org-xob-mode 1)
       (setq-local org-xob--buf 'parent)
       (setq-local org-xob--pair-buf buf2)
       (setq-local org-xob--display 'dual))
-    (with-current-buffer
-        (setq buf2 (get-buffer-create
-                    (concat "xob-C-" numbufs)))
+    (with-current-buffer buf2
       (org-mode)
       (org-xob-mode 1)
       (setq-local org-xob--buf 'child)
-      (setq-local org-xob--pair-buf buf1))   
+      (setq-local org-xob--pair-buf buf1))
     (setq org-xob-last-buffer buf1)
     (push buf1 org-xob-buffers)
     buf1))
 
-;;;;; Buffer Navigation
+;;;;; Buffer Navigation TODO org-ql syntax right?
 
 ;; no change
 (defun org-xob--id-create ()
