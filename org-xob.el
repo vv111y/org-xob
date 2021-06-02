@@ -1237,15 +1237,16 @@ to all source items."
 (defun org-xob--select-content (id selector)
   "Sets point to beginning of kb node with id and uses the function argument selector to mark the content to return.
 Returns content as a string with properties."
-  (let str
-    (save-excursion
-      ;; todo replace with copy
-      (org-id-goto id)
-      (org-with-wide-buffer
-       (org-save-outline-visibility
-           (org-narrow-to-subtree)
-         (setq str (funcall selector))
-         (deactivate-mark 'force))))
+  (let (str)
+    (save-window-excursion
+      (save-excursion
+        ;; todo replace with copy
+        (org-id-goto id)
+        (org-with-wide-buffer
+         (org-save-outline-visibility
+             (org-narrow-to-subtree)
+           (setq str (eval selector))
+           (deactivate-mark 'force)))))
     str))
 
 ;;;;; org-ql predicates TODO test
