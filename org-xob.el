@@ -598,22 +598,13 @@ sQuery Form: ")
                   (setq end (- (point) 1))
                   (buffer-substring beg end)))))
 
+
 ;;;###autoload
 (defun org-xob-to-full-node ()
   "Show the full KB node, excepting properties drawer, planning & clocking information."
   (interactive)
   (org-xob--context-copy-paste
-   #'(lambda ()
-       (let ((org-yank-folded-subtrees nil)
-             (org-yank-adjusted-subtrees t))
-         (org-copy-subtree)
-         (with-temp-buffer
-           (org-mode)
-           (org-paste-subtree 2)
-           (goto-char (point-min))
-           (org-mark-subtree)
-           (org-end-of-meta-data t)
-           (buffer-substring (point) (mark)))))
+   #'(org-xob--get-full-node 3 nil)
    #'(lambda (str) (insert str))))
 
 ;;;;; Activity Commands DONE
@@ -883,6 +874,22 @@ Deepcheck only works on heading at point, any ID argument is ignored."
            :immediate-finish t
            )
           )))
+
+(defun org-xob--get-full-node (level &optional meta)
+  "Used for both edit node and context presentation. Returns the full node as a string,
+but with adjusted specified level. If meta option is selected, then include both the
+node heading and the properties drawer, otherwise just the body."
+  (let ((org-yank-folded-subtrees nil)
+        (org-yank-adjusted-subtrees t))
+    (org-copy-subtree)
+    (with-temp-buffer
+      (org-mode)
+      (org-paste-subtree level)
+      (goto-char (point-min))
+      (org-mark-subtree)
+      (unless meta
+        (org-end-of-meta-data t))
+      (buffer-substring (point) (mark)))))
 
 ;; --new nodes and links--
 (defun org-xob--get-create-node ()
