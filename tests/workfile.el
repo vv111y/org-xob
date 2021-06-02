@@ -3001,12 +3001,6 @@ org-xob--node-sources
   (format "%s" a))
 
 
-;;; windows
-(window-left (selected-window))
-(window-right (selected-window))
-(window-)
-
-(if nil "hi" (concat "bee" "boo"))
 ;;; org cut paste
 (org-kill-is-subtree-p)
 ;;; v0.9 edit buffer

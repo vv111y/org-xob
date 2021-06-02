@@ -264,7 +264,6 @@
                    (switch-to-buffer org-xob-last-buffer))
               (switch-to-buffer (setq org-xob-last-buffer
                                       (org-xob-new-buffer))))
-          ;; TODO will keep open new windows for each call, need state info
           (if (eq org-xob--display 'dual)
               (org-xob--dual-pane (selected-window))
             (org-xob--single-pane (selected-window)))
@@ -651,7 +650,7 @@ If ID is given, then convert todo with that ID."
     (org-super-links--insert-link)))
 
 ;;;; Backend
-;;;;; Buffer Functions
+;;;;; Buffer Functions DONE
 
 (defun org-xob-buffer-p (buf)
   (if (buffer-live-p buf)
@@ -703,11 +702,11 @@ Returns ID if successful, nil otherwise."
                ID)
       ID)))
 
-(defun org-xob--id-goto (sID)
-  (when (org-not-nil sID)
+(defun org-xob--id-goto (ID)
+  (when (org-not-nil ID)
     (let m
       (org-ql-select org-xob-buffers
-        `("ID" sID)
+        `("ID" ID)
         :action (setq m (point-marker)))
       (when m
         (set-buffer (marker-buffer m))
@@ -723,7 +722,7 @@ Returns ID if successful, nil otherwise."
       (goto-char m)
       (point))))
 
-;;;;; Windows
+;;;;; Windows TODO ??? check
 
 (defun org-xob--single-pane ()
   "Use single pane interface. If dual-pane is open, then kill
@@ -759,7 +758,7 @@ the windows."
 (defun org-xob--2pane-edit (ID title)
   )
 
-;; TEST
+;; TODO redo pane select
 (defun org-xob--edit-node (ID title arg)
   "Open node for editing. Selects the last current xob buffer, if none are
 found, then create a new one. Defaults to dual-pane display, with C-u opens node
@@ -771,7 +770,7 @@ in a single-pane display format."
     (org-xob-with-xob-buffer ;; todo replace? 
      (goto-char (point-max))
      (if (eq arg '(4))
-         ;; singel pane 
+         ;; singel pane
          (progn
            (insert "* " title "  :edit:")
            (insert (org-xob--select-content ID
@@ -812,7 +811,7 @@ ID should be buffer local in a xob edit buffer."
   ;; update-copies
   )
 
-;;;;; Node Functions UNCHANGED
+;;;;; Node Functions DONE UNCHANGED
 
 (defun org-xob--is-node-p (&optional ID DEEPCHECK)
   "Check if a heading is a xob node. Called interactively it defaults to heading at point.
@@ -1030,7 +1029,7 @@ arguments are supplied, then check the associated heading."
              (member temp (org-xob--this-node-sources PID)))
         t nil)))
 
-;; TODO in flux, partially redone 
+;; TODO in flux, partially redone
 (defun org-xob-show-source (source source-type &optional arg)
   "Show context source for opened node at point. The second argument
 source-type is the data structure defining the source. If necessary will
@@ -1055,7 +1054,7 @@ make"
             (org-with-wide-buffer ;; here or in write files?
              ;; TODO also check for node context over-heading?
              (if (goto-char (org-xob--goto-buffer-heading src))
-                 (org-xob--source-refresh source) 
+                 (org-xob--source-refresh source)
                ;; not found, then write src
                (org-xob--source-write source)))))
         ;; not in list, make new src, add to srcs
@@ -1139,7 +1138,7 @@ Otherwise apply to source at point."
                (outline-get-next-sibling)))
        (message "XOB: map-source, nothing to do here.") nil))))
 
-;;;;; KB Context Functions UNCHANGED
+;;;;; KB Context Functions DONE UNCHANGED
 
 (defun org-xob--node-get-link-entries (source)
   "Populates source item list from the node. The items are represented by their
@@ -1233,7 +1232,7 @@ Returns content as a string with properties."
          (deactivate-mark 'force))))
     str))
 
-;;;;; org-ql predicates test
+;;;;; org-ql predicates TODO test
 (org-ql-defpred is-deep-xob-node ()
   "Deepcheck xob nodes."
   :body (and (property "xob" t)
@@ -1273,7 +1272,7 @@ Returns content as a string with properties."
   :body (and (not (set-difference (org-get-tags) org-xob-available-sources))
              (property "PID" ID)))
 
-;;;;; org-ql mapping functions test
+;;;;; org-ql mapping functions TODO test
 
 (defun org-xob-map-all-nodes (func)
   (org-ql-select org-xob-buffers
@@ -1306,7 +1305,7 @@ Returns content as a string with properties."
           (tags source))
     :action func))
 
-;;;;; Activity UNCHANGED
+;;;;; Activity DONE UNCHANGED
 
 (defun org-xob--open-today ()
   "Open today node for logging."
@@ -1315,7 +1314,7 @@ Returns content as a string with properties."
    (and (or (setq org-xob-today (gethash org-xob-today-string
                                       org-xob--title-id))
             (setq org-xob-today
-                  (save-window-excursion 
+                  (save-window-excursion
                     (save-excursion
                       (find-file org-xob--log-file)
                       (org-with-wide-buffer
@@ -1336,7 +1335,7 @@ Returns content as a string with properties."
 ;;;;;; Clocking
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
-;;;;; xob Management UNCHANGED?
+;;;;; xob Management DONE UNCHANGED?
 
 ;;;###autoload
 (defun org-xob-info ()
