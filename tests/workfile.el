@@ -3026,3 +3026,45 @@ org-xob--node-sources
 
 (let ((r 'bee))
   (eq r 'bee))
+;;; buffer navigation old
+
+(defun org-xob--id-goto (sID)
+  "Search buffers for org heading with ID and place point there.
+Return point position if found, nil otherwise. This does not display
+the buffer."
+  (let (place)
+    (when (org-not-nil sID)
+      (or (and (string= sID (org-entry-get (point) "ID"))
+               (org-back-to-heading)
+               (point))
+          (and (setq place (org-find-entry-with-id sID))
+               (goto-char place))
+          (dolist (buf org-xob-buffers)
+            (when (setq place (with-current-buffer buf
+                                (org-find-entry-with-id sID)))
+              (set-buffer buf)
+              (goto-char place)
+              (return place)))))))
+
+;; TODO redo with org-ql
+(defun org-xob--goto-buffer-heading (ID)
+  "Go to heading in current buffer with ID. Does not require org-id."
+  (let ((m (point)))
+    (org-with-wide-buffer
+     (goto-char (point-min))
+     (if (re-search-forward ID nil t)
+         (org-back-to-heading 'invisible-ok)
+       (progn
+         (goto-char m)
+         (message "%s not found." ID))))))
+
+
+;; TODO ??? probably not
+(defun org-xob--write-context-tree (ID title)
+  "For dual pane display."
+  (with-current-buffer org-xob--pair-buf
+    (goto-char (point-max))
+    (insert
+     (concat "* " title "  :context:"))
+    ())
+  )

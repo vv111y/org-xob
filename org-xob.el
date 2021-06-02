@@ -264,6 +264,7 @@
                    (switch-to-buffer org-xob-last-buffer))
               (switch-to-buffer (setq org-xob-last-buffer
                                       (org-xob-new-buffer))))
+          ;; TODO will keep open new windows for each call, need state info
           (if (eq org-xob--display 'dual)
               (org-xob--dual-pane (selected-window))
             (org-xob--single-pane (selected-window)))
@@ -508,10 +509,10 @@ specified, then use that buffer."
     (goto-char (point-max))
     (org-paste-subtree 1 nil nil 'remove)))
 
-;;;;; KB Context Commands DONE
+;;;;; KB Context Commands TODO
 
 ;;;###autoload
-(defun org-xob-show-backlinks (source &optional arg)
+(defun org-xob-show-backlinks (&optional arg)
   "Add backlinks contents to the context buffer."
   (interactive)
   (org-xob-with-xob-buffer
@@ -797,14 +798,7 @@ ID should be buffer local in a xob edit buffer."
                                  (concat "[" (format-time-string "%F %a %R") "]"))))))
       nil)))
 
-;;;;; TODO propogate edits
-
-;; do I need this?
-(defun org-xob-update-copies (ID)
-  ;; get state
-  ;; redo state
-  )
-
+;; TODO propogate edits
 ;; skip diffs, just replace whole thing
 (defun org-xob-sync-edit ()
   ;; apply diff OR replace original
