@@ -110,7 +110,7 @@
 
 (defvar org-xob-last-buffer "" "Last xob buffer used.")
 
-(defvar org-xob--open-nodes ()
+(defvar org-xob--open-nodes nil
   "List of all nodes that are opened for editing.")
 
 ;; "associate list of displayed context items for an opened node ID."
@@ -706,15 +706,17 @@ Returns ID if successful, nil otherwise."
       ID)))
 
 (defun org-xob--id-goto (ID)
-  (when (org-not-nil ID)
-    (let m
-      (org-ql-select org-xob-buffers
-        `("ID" ID)
-        :action (setq m (point-marker)))
-      (when m
-        (set-buffer (marker-buffer m))
-        (goto-char m)
-        (point)))))
+  (when (and (org-not-nil ID)
+             org-xob-buffers)
+    (setq m
+          (org-ql-select org-xob-buffers
+            `(or (property "ID" ,ID)
+                 (property "EDIT" ,ID)
+                 (property "PID" ,ID))
+            :action '(point-marker)))
+    (when m
+      (goto-char m)
+      (point))))
 
 (defun org-xob--goto-buffer-heading (ID)
   (let m
