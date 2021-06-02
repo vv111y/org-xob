@@ -766,8 +766,8 @@ in a single-pane display format."
   ;; check if node already open
   (if (org-xob--id-goto ID)
       (unless (get-buffer-window)
-        (set-window-buffer (current-buffer)))
-    (org-xob-with-xob-buffer ;; todo replace? 
+        (pop-to-buffer (current-buffer)))
+    (org-xob-with-xob-buffer ;; todo replace?
      (goto-char (point-max))
      (if (eq arg '(4))
          ;; singel pane
