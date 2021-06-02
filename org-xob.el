@@ -749,7 +749,14 @@ the windows."
       (set-window-buffer win2 buf2)))) ;; TODO modify contents for dual pane view
 
 
-;;;;; Edit Node Functions
+;;;###autoload
+(defun org-xob-toggle-display ()
+  (interactive)
+  (if (window-atom-root)
+      (org-xob--single-pane (selected-window))
+    (org-xob--dual-pane (selected-window))))
+
+;;;;; Edit Node Functions TODO
 ;; TODO ?
 (defun org-xob--1pane-edit (ID title)
   )
