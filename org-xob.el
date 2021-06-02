@@ -344,12 +344,12 @@ Calling with C-u will force a restart."
      (error (message "todays day node missing.")))))
 
 ;;;###autoload
-(defun org-xob-get-node ()
+(defun org-xob-get-node (&optional arg)
   "Focus on a node for editing. If it does not exist, create it."
-  (interactive)
+  (interactive "P")
   (org-xob-with-xob-on
    (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-     (org-xob--edit-node ID title))))
+     (org-xob--edit-node ID title arg))))
 
 ;;;###autoload
 (defun org-xob-remove-node (&optional ID)
@@ -749,23 +749,38 @@ the windows."
       (window-make-atom (window-parent win2))
       (set-window-buffer win2 buf2)))) ;; TODO modify contents for dual pane view
 
+
 ;;;;; Edit Node Functions
+;; TODO ?
+(defun org-xob--1pane-edit (ID title)
+  )
+
+;; TODO ?
+(defun org-xob--2pane-edit (ID title)
+  )
 
 ;; TEST
-(defun org-xob--edit-node (ID title)
+(defun org-xob--edit-node (ID title arg)
   "Open node for editing. Selects the last current xob buffer, if none are
 found, then create a new one. Defaults to dual-pane display, with C-u opens node
 in a single-pane display format."
-   ;; check if node already open
+  ;; check if node already open
   (if (org-xob--id-goto ID)
       (unless (get-buffer-window)
         (set-window-buffer (current-buffer)))
-    (org-xob-with-xob-buffer ;; todo replace 
+    (org-xob-with-xob-buffer ;; todo replace? 
      (goto-char (point-max))
-     (insert
-      (org-xob--select-content ID
-                               #'(lambda () (org-copy-subtree))))
-     (org-back-to-heading)
+     (if (eq arg '(4))
+         ;; singel pane 
+         (progn
+           (insert "* " title "  :edit:")
+           (insert (org-xob--select-content ID
+                    #'(org-xob--get-full-node 2 'meta)))
+           (setq orb-xob--display 'single))
+       ;; dual pane
+       (insert (org-xob--select-content ID
+                #'(org-xob--get-full-node 1 'meta)))
+       (setq orb-xob--display 'dual))
      (org-toggle-tag "edit" 'ON)
      (org-entry-put (point) "EDIT" (org-entry-get "ID"))
      (org-entry-put (point) "ID" (uuidgen-4))
