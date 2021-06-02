@@ -1030,85 +1030,86 @@ arguments are supplied, then check the associated heading."
              (member temp (org-xob--this-node-sources PID)))
         t nil)))
 
-;; TEST
+;; TODO in flux, partially redone 
 (defun org-xob-show-source (source source-type &optional arg)
   "Show context source for opened node at point. The second argument
 source-type is the data structure defining the source. If necessary will
 make"
-  ;; in an edit node? get id, name
+  ;; in an edit node? get id, name, and which buffer is the context buffer
   (if-let ((eid (org-xob--is-edit-node-p))
            (title (truncate-string-to-width
-                   (nth 4 (org-heading-components) 25))))
+                   (nth 4 (org-heading-components) 25)))
+           (bufc (if (eq org-xob--display 'dual)
+                     (org-xob--pair-buf)
+                   (current-buffer))))
       ;; get src list, get src if in list
-        (if-let* ((srcs (org-xob--this-node-sources eid))
-                  (src (mapcar '(lambda (x)
-                                  (if (equal source (car-safe (cdr-safe x)))
-                                      x)) srcs)))
-            ;; if src in list then it is prepped, find it
-            (let (m)
-              (when (eq '(4) arg) ;; if arg then repopulate items
-                (funcall (plist-get newsrc :getfn) newsrc))
-              (if (org-xob-map-node-sources eid src
-                                            (lambda () (setq m (point-marker))))
-                  ;; if found, maybe pop its buffer, pulse it
-                  (progn
-                    (unless (get-buffer-window (marker-buffer m) t)
-                      (pop-to-buffer (marker-buffer m)))
-                    (save-excursion
-                      (goto-char m)
-                      (if (pulse-available-p)
-                          (pulse-momentary-highlight-one-line (point)))))
-                ;; not found, then write src
-                (org-xob--source-write source)))
-          ;; not in list, make new src, add to srcs
-          (let ((newsrc (copy-tree source-type)))
-            (plist-put newsrc :ID (setq ID (org-xob--id-create)))
-            (plist-put newsrc :PID eid)
-            (plist-put newsrc :title title)
-            (funcall (plist-get newsrc :getfn) newsrc)
-            (push newsrc srcs)))))
+      (if-let* ((srcs (org-xob--this-node-sources eid))
+                (src (mapcar #'(lambda (x)
+                                 (if (equal source (car-safe (cdr-safe x)))
+                                     x)) srcs)))
+          (when (eq '(4) arg) ;; if arg then repopulate items
+            (funcall (plist-get newsrc :getfn) newsrc))
+        ;; if src in list then it is prepped, find it
+        (save-window-excursion
+          (with-current-buffer bufc
+            (org-with-wide-buffer ;; here or in write files?
+             ;; TODO also check for node context over-heading?
+             (if (goto-char (org-xob--goto-buffer-heading src))
+                 (org-xob--source-refresh source) 
+               ;; not found, then write src
+               (org-xob--source-write source)))))
+        ;; not in list, make new src, add to srcs
+        (let ((newsrc (copy-tree source-type)))
+          (plist-put newsrc :ID (setq ID (org-xob--id-create)))
+          (plist-put newsrc :PID eid)
+          (plist-put newsrc :title title)
+          (funcall (plist-get newsrc :getfn) newsrc)
+          (push newsrc srcs))
+        (if (pulse-available-p)
+            (pulse-momentary-highlight-one-line (point))))
+    (message "Not on a xob node.")))
 
 (defun org-xob--this-node-sources (id)
   (cl-remove nil
              (mapcar '(lambda (x) (when (string= id (open-node-ID x))
                                     (open-node-sources x))) org-xob--open-nodes)))
 
-;; TODO where? below node, side?
 ;; TODO replace pid with copy
+;; TODO need over-heading both dual and single pane
 (defun org-xob--source-write (source)
   "Open a source tree into the context buffer. If it is already there,
 then refresh it. source items are shown as org headings.
 source is a plist that describes the content source."
-  (org-xob-with-context-buffer ;; remove
-    (org-with-wide-buffer
-     (unless (org-xob--id-goto (plist-get source :ID))
-       (goto-char (point-max))
-       (org-insert-heading '(4) 'invisible-ok 'TOP)
-       (org-edit-headline (plist-get source :title))
-       (dolist (el (plist-get source :tags))
-         (org-toggle-tag el 'ON))
-       (org-entry-put (point) "ID" (plist-get source :ID))
-       (org-entry-put (point) "PID" (plist-get source :PID)))
-     (org-xob--source-refresh source))))
+  (org-with-wide-buffer ;; todo needed?
+   (unless (org-xob--id-goto (plist-get source :ID))
+     (goto-char (point-max)) ;; TODO goto super-heading, then to end of tree
+     (org-insert-heading '(4) 'invisible-ok 'TOP) ;; TODO insert sub-tree
+     (org-edit-headline (plist-get source :title))
+     (dolist (el (plist-get source :tags))
+       (org-toggle-tag el 'ON))
+     (org-entry-put (point) "ID" (plist-get source :ID))
+     (org-entry-put (point) "PID" (plist-get source :PID)))
+   (org-xob--source-refresh source)))
+
 
 ;; TODO check state type, lookup + call
 (defun org-xob--source-refresh (source)
   "Remake source tree. Check if items need to be added or removed."
-  (org-xob-with-context-buffer ;; remove
-   (if (org-xob--id-goto (plist-get source :ID))
-       (let ((temp (copy-tree (plist-get source :items))))
-         (org-xob--map-source
-          (lambda ()
-            ;; todo replace pid with copy
-            (let ((pid (org-entry-get (point) "PID")))
-              (if (member pid temp)
-                  (setq temp (delete pid temp))
-                (progn
-                  (org-mark-subtree)
-                  (call-interactively 'delete-region))))))
-         (if temp
-             (dolist (el temp)
-               (org-xob--source-add-item el)))))))
+  (if (string= (org-entry-get (point) "ID") ;; TODO new, test
+               (plist-get source :ID))
+      (let ((temp (copy-tree (plist-get source :items))))
+        (org-xob--map-source
+         (lambda ()
+           (let ((pid (org-entry-get (point) "PID")))
+             (if (member pid temp)
+                 (setq temp (delete pid temp))
+               (progn
+                 (org-mark-subtree)
+                 (call-interactively 'delete-region))))))
+        (if temp
+            (dolist (el temp)
+              (org-xob--source-add-item el))))
+    (message "xob: can't refresh context here, something's wrong.")))
 
 (defun org-xob--source-add-item (ID)
   "Appends a single entry to the end of the source subtree.
