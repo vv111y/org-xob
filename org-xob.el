@@ -797,9 +797,9 @@ in a single-pane display format."
                 #'(org-xob--get-full-node 1 'meta)))
        (setq orb-xob--display 'dual))
      (org-toggle-tag "edit" 'ON)
-     (org-entry-put (point) "EDIT" (org-entry-get "ID"))
+     (org-entry-put (point) "EDIT" (org-entry-get (point) "ID"))
      (org-entry-put (point) "ID" (uuidgen-4))
-     (push (make-open-node :ID id :sources ())
+     (push (make-open-node :ID ID :sources ())
            'org-xob--open-nodes)
      (outline-hide-entry))))
 
