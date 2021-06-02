@@ -750,7 +750,7 @@ the windows."
   (unless (window-atom-root win)
     (when-let* ((buf1 (switch-to-buffer
                        org-xob-last-buffer))
-                (buf2 (buffer-local-value org-xob--pair-buf
+                (buf2 (buffer-local-value 'org-xob--pair-buf
                                           buf1))
                 (win1 (selected-window))
                 (win2 (split-window-right)))
