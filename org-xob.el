@@ -652,16 +652,19 @@ If ID is given, then convert todo with that ID."
 ;;;; Backend
 ;;;;; Buffer Functions DONE
 
-(defun org-xob-buffer-p (buf)
-  (if (buffer-live-p buf)
-      (with-current-buffer buf
-        (and (bound-and-true-p org-xob-mode)
-             (if (eq major-mode 'org-mode) t nil)))))
+(defun org-xob-buffer-p (&optional buffer)
+  (let ((buf (if buffer buffer (current-buffer))))
+    (if (buffer-live-p buf)
+        (with-current-buffer buf
+          (and (bound-and-true-p org-xob-mode)
+               (eq major-mode 'org-mode)
+               (member buf org-xob-buffers))))))
 
-(defun org-xob-edit-buffer-p (buf)
-  (and (org-xob-buffer-p buf)
-       (with-current-buffer buf
-         (eq org-xob--buf 'parent))))
+(defun org-xob-edit-buffer-p (&optional buffer)
+  (let ((buf (if buffer buffer (current-buffer))))
+    (and (org-xob-buffer-p buf)
+         (with-current-buffer buf
+           (eq org-xob--buf 'parent)))))
 
 ;;;###autoload
 (defun org-xob-new-buffer ()
