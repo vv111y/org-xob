@@ -724,29 +724,33 @@ Returns ID if successful, nil otherwise."
 
 ;;;;; Windows TODO ??? check
 
-(defun org-xob--single-pane ()
+;; TODO will keep open new windows for each call, need state info?
+(defun org-xob--single-pane (win)
   "Use single pane interface. If dual-pane is open, then kill
 the windows."
   (if (window-atom-root win)
-      (when-let* ((buf (window-buffer win))
+      (when-let* ((buf (if (org-xob--buffer-p)
+                           (window-buffer win)
+                         org-xob-last-buffer))
                   (oldwin (selected-window))
                   (winnew (split-window-right)))
         (delete-window oldwin)
-        (selected-window winnew)
+        (select-window winnew)
         (set-buffer buf)))) ;; TODO modify contents for single pane view
 
+;; TODO will keep open new windows for each call, need state info?
 ;; todo maybe redo macro for dual buffer creation
 (defun org-xob--dual-pane (win)
   "Use dual-pane interface"
   (unless (window-atom-root win)
     (when-let* ((buf1 (switch-to-buffer
-                       (org-xob-new-buffer)))
+                       org-xob-last-buffer))
                 (buf2 (buffer-local-value org-xob--pair-buf
                                           buf1))
                 (win1 (selected-window))
                 (win2 (split-window-right)))
       (window-make-atom (window-parent win2))
-      (set-window-buffer win2 buf2)))) ;; TODO modify contents for dual pane view
+      (set-window-buffer win2 buf2)))) ;; TODO modify contents for dual pane view?
 
 
 ;;;###autoload
