@@ -827,6 +827,24 @@ ID should be buffer local in a xob edit buffer."
   ;; update-copies
   )
 
+;; TODO test
+;;;###autoload
+(defun org-xob-ediff-edit ()
+  "Run ediff on the edit node at point with the original node."
+  (interactive)
+  (save-window-excursion
+    (save-excursion
+      (let (bufe bufo)
+        (when (org-xob--is-edit-node-p)
+          (setq bufe (current-buffer))
+          (org-mark-subtree)
+          (org-end-of-meta-data t)
+          (org-xob--id-goto (org-entry-get (point) "EDIT"))
+          (setq bufo (current-buffer))
+          (org-mark-subtree)
+          (org-end-of-meta-data t)
+          (ediff-regions-wordwise bufe bufo))))))
+
 ;;;;; Node Functions DONE UNCHANGED
 
 (defun org-xob--is-node-p (&optional ID DEEPCHECK)
