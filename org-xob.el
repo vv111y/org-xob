@@ -803,21 +803,12 @@ in a single-pane display format."
            'org-xob--open-nodes)
      (outline-hide-entry))))
 
-;; TODO redo with org-ql
 (defun org-xob--update-modified-time ()
-  "Hook to update the modified timestamp of all nodes that are being edited when saving.
-ID should be buffer local in a xob edit buffer."
-  (save-window-excursion
-    (save-excursion
-      (dolist (buf org-xob--edit-buffers)
-        (if (buffer-live-p buf)
-            (with-current-buffer buf
-              (goto-char (point-min))
-              (re-search-forward bufID)
-              (if (org-entry-get (point) "MODIFIED")
-                  (org-entry-put (point) "MODIFIED"
-                                 (concat "[" (format-time-string "%F %a %R") "]"))))))
-      nil)))
+  "Update the modified timestamp for KB node at point."
+  (if (org-entry-get (point) "MODIFIED")
+      (org-entry-put (point) "MODIFIED"
+                     (concat "[" (format-time-string "%F %a %R") "]")))
+  nil)
 
 ;; TODO propogate edits
 ;; skip diffs, just replace whole thing
