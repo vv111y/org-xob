@@ -810,13 +810,45 @@ in a single-pane display format."
                      (concat "[" (format-time-string "%F %a %R") "]")))
   nil)
 
-;; TODO propogate edits
-;; skip diffs, just replace whole thing
-(defun org-xob-sync-edit ()
-  ;; apply diff OR replace original
-  ;; record diff
-  ;; update-copies
-  )
+(defun org-xob--update-node (clip)
+  "update contents of node at point with string ~clip~.
+Note, requires that all KB nodes are stored at level 1."
+  (when (org-xob--is-node-p)
+    (org-with-wide-buffer
+     (org-save-outline-visibility
+         (org-narrow-to-subtree)
+       (outline-show-all)
+       (org-mark-subtree)
+       (org-end-of-meta-data t)
+       (call-interactively #'delete-region)
+       (deactivate-mark 'force)
+       (org-end-of-meta-data t)
+       (insert clip)))))
+
+
+;; TODO record diff
+;;;###autoload
+(defun org-xob-sync-edit (&optional arg sID)
+  "Update original xob node with any edits. With optional arg sID
+update node with that ID. With universal arg C-u, update all open edit nodes.
+Current version performs simple, blunt, whole content replacement."
+  (interactive "P")
+  (save-window-excursion
+    (save-excursion))
+  (let ((updater #'(lambda (ID)
+                     (progn
+                       (org-xob--id-goto ID)
+                       (if (org-xob--is-edit-node-p)
+                           (when-let ((oID (org-entry-get (point) "EDIT"))
+                                      (clip (org-xob--get-full-node 1 nil)))
+                             (org-xob--id-goto oID)
+                             (org-xob--update-node clip)
+                             (org-xob--update-modified-time))))))))
+  (if (eq current-prefix-arg '(4))
+      (dolist (ID org-xob--open-nodes)
+        (funcall #'updater ID))
+    (if sID (funcall #'updater sID)
+      (funcall #'updater (org-entry-get (point) "EDIT")))))
 
 ;; TODO test
 ;;;###autoload
