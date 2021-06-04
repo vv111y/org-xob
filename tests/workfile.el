@@ -3062,3 +3062,15 @@ the buffer."
      (concat "* " title "  :context:"))
     ())
   )
+
+(defun vv/u (&optional arg n)
+  (interactive "P")
+  (print current-prefix-arg)
+  ;; (if (eq current-prefix-arg 4)
+  ;;     (print "wee"))
+  ;; (if arg
+  ;;     (print (concat "fee" (int-to-string arg)))
+  ;;   (print (concat "n" n)))
+  )
+
+(let ((current-prefix-arg 4)) (call-interactively 'vv/u))

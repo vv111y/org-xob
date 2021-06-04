@@ -946,6 +946,25 @@ Deepcheck only works on heading at point, any ID argument is ignored."
            )
           )))
 
+(defun org-xob--select-content (id selector)
+  "Sets point to beginning of kb node with id and uses the function argument selector to mark the content to return.
+Returns content as a string with properties."
+  (let (str)
+    (save-window-excursion
+      (save-excursion
+        ;; todo replace with copy
+        (org-id-goto id)
+        (org-with-wide-buffer 	;; TODO maybe remove
+         (org-save-outline-visibility
+             (org-narrow-to-subtree)
+           (outline-show-all)
+           (setq str (eval selector))
+           (deactivate-mark 'force)))))
+    str))
+
+;; NOTE written for org-xob--select-content,
+;; for syncing to xob kb, requires all source nodes
+;; to be at level one - NO nested nodes
 (defun org-xob--get-full-node (level &optional meta)
   "Used for both edit node and context presentation. Returns the full node as a string,
 but with adjusted specified level. If meta option is selected, then include both the
@@ -1274,21 +1293,6 @@ to all source items."
     (org-end-of-meta-data)
     (call-interactively #'delete-region)
     (deactivate-mark 'force)))
-
-(defun org-xob--select-content (id selector)
-  "Sets point to beginning of kb node with id and uses the function argument selector to mark the content to return.
-Returns content as a string with properties."
-  (let (str)
-    (save-window-excursion
-      (save-excursion
-        ;; todo replace with copy
-        (org-id-goto id)
-        (org-with-wide-buffer
-         (org-save-outline-visibility
-             (org-narrow-to-subtree)
-           (setq str (eval selector))
-           (deactivate-mark 'force)))))
-    str))
 
 ;;;;; org-ql predicates TODO test
 (org-ql-defpred is-deep-xob-node ()
