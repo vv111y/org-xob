@@ -351,6 +351,21 @@ Calling with C-u will force a restart."
      (org-xob--edit-node ID title arg))))
 
 ;;;###autoload
+(defun org-xob-close-node (&optional ID)
+  "Delete a node that has been open for editing. If argument ID
+is supplied, then close that node, otherwise close node at point."
+  (interactive)
+  (save-window-excursion
+    (save-excursion
+      (when-let (ID (if ID (progn (org-xob--id-goto ID)
+                                  ID)
+                      (org-entry-get (point) "ID")))
+        (if (org-xob--is-edit-node-p)
+            (dolist (node org-xob--open-nodes)
+              (if (string= ID (open-node-ID node))
+                  (cl-delete node 'org-xob--open-nodes))))))))
+
+;;;###autoload
 (defun org-xob-remove-node (&optional ID)
   "Removes node at point from xob system, but does not delete the node itself.
 Removes node from the hash tables, and any backlinks in other nodes referencing it.
@@ -1060,21 +1075,6 @@ Returns mark for the link subheader."
           (newline)
           (org-back-to-heading))
         (point-marker)))))
-
-;;;###autoload
-(defun org-xob-close-node (&optional ID)
-  "Delete a node that has been open for editing. If argument ID
-is supplied, then close that node, otherwise close node at point."
-  (interactive)
-  (save-window-excursion
-    (save-excursion
-      (when-let (ID (if ID (progn (org-xob--id-goto ID)
-                                  ID)
-                      (org-entry-get (point) "ID")))
-        (if (org-xob--is-edit-node-p)
-            (dolist (node org-xob--open-nodes)
-              (if (string= ID (open-node-ID node))
-                  (cl-delete node 'org-xob--open-nodes))))))))
 
 ;; --- Node Versioning ---
 
