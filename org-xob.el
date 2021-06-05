@@ -1061,6 +1061,21 @@ Returns mark for the link subheader."
           (org-back-to-heading))
         (point-marker)))))
 
+;;;###autoload
+(defun org-xob-close-node (&optional ID)
+  "Delete a node that has been open for editing. If argument ID
+is supplied, then close that node, otherwise close node at point."
+  (interactive)
+  (save-window-excursion
+    (save-excursion
+      (when-let (ID (if ID (progn (org-xob--id-goto ID)
+                                  ID)
+                      (org-entry-get (point) "ID")))
+        (if (org-xob--is-edit-node-p)
+            (dolist (node org-xob--open-nodes)
+              (if (string= ID (open-node-ID node))
+                  (cl-delete node 'org-xob--open-nodes))))))))
+
 ;; --- Node Versioning ---
 
 ;; (defun org-xob--sync-node (node)
