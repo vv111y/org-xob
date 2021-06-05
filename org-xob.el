@@ -127,7 +127,7 @@
 
 ;;;;; knowledge base sources
 
-(defvar org-xob-available-sources
+(defvar org-xob-available-sources nil
   "List of context information sources that are available in the xob system.")
 
 (defvar org-xob--source-backlinks
@@ -828,6 +828,7 @@ Note, requires that all KB nodes are stored at level 1."
 
 
 ;; TODO record diff
+;; TODO check if deleted open nodes
 ;;;###autoload
 (defun org-xob-sync-edit (&optional arg sID)
   "Update original xob node with any edits. With optional arg sID
@@ -1146,6 +1147,7 @@ make"
     (message "Not on a xob node.")))
 
 (defun org-xob--this-node-sources (id)
+  "Returns all node sources"
   (cl-remove nil
              (mapcar '(lambda (x) (when (string= id (open-node-ID x))
                                     (open-node-sources x))) org-xob--open-nodes)))

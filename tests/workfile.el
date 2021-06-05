@@ -3074,3 +3074,23 @@ the buffer."
   )
 
 (let ((current-prefix-arg 4)) (call-interactively 'vv/u))
+
+(setq vv/bb (make-open-node :ID "blen" :sources () ))
+()
+(add-to-list 'vvl (make-open-node :ID "peen" :sources (list)))
+(add-to-list 'vvl (make-open-node :ID "fruar" :sources (list)))
+
+vvl
+(print (open-node-ID (car vvl)))
+
+;; (cl-pushnew (make-open-node :ID "peen" :sources (list)))
+
+vv/bb
+(open-node-ID vv/bb)
+(open-node-sources vv/bb)
+(open-node-p vv/bb)
+
+(setq org-xob--open-nodes nil )
+(setq vv/s '(1 2 3 4 5 8 0))
+
+(cl-remove '0 vv/s)
