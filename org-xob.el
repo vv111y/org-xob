@@ -783,8 +783,9 @@ in a single-pane display format."
   (if (org-xob--id-goto ID)
       (unless (get-buffer-window)
         (pop-to-buffer (current-buffer)))
-    (org-xob-with-xob-buffer ;; todo replace?
+    (org-xob-with-xob-buffer
      (goto-char (point-max))
+     (newline)
      (if (eq arg '(4))
          ;; singel pane
          (progn
@@ -799,8 +800,8 @@ in a single-pane display format."
      (org-toggle-tag "edit" 'ON)
      (org-entry-put (point) "EDIT" (org-entry-get (point) "ID"))
      (org-entry-put (point) "ID" (uuidgen-4))
-     (push (make-open-node :ID ID :sources ())
-           'org-xob--open-nodes)
+     (add-to-list 'org-xob--open-nodes
+                  (make-open-node :ID ID :sources (list)))
      (outline-hide-entry))))
 
 (defun org-xob--update-modified-time ()
@@ -1380,7 +1381,7 @@ to all source items."
                     (save-excursion
                       (find-file org-xob--log-file)
                       (org-with-wide-buffer
-                       (if (re-search-forward org-xob-today-string)
+                       (if (re-search-forward org-xob-today-string nil t nil)
                            (let (id)
                              (setq id (org-entry-get (point) "ID"))
                              (puthash id org-xob-today-string org-xob--id-title)
