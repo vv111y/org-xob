@@ -729,7 +729,7 @@ Returns ID if successful, nil otherwise."
                  (property "EDIT" ,ID)
                  (property "PID" ,ID))
             :action '(point-marker)))
-    (when m
+    (when (markerp m)
       (goto-char m)
       (point))))
 
@@ -852,20 +852,20 @@ Current version performs simple, blunt, whole content replacement."
   (interactive "P")
   (save-window-excursion
     (save-excursion))
-  (let ((updater #'(lambda (ID)
-                     (progn
-                       (org-xob--id-goto ID)
-                       (if (org-xob--is-edit-node-p)
-                           (when-let ((oID (org-entry-get (point) "EDIT"))
-                                      (clip (org-xob--get-full-node 1 nil)))
-                             (org-xob--id-goto oID)
-                             (org-xob--update-node clip)
-                             (org-xob--update-modified-time))))))))
-  (if (eq current-prefix-arg '(4))
-      (dolist (ID org-xob--open-nodes)
-        (funcall #'updater ID))
-    (if sID (funcall #'updater sID)
-      (funcall #'updater (org-entry-get (point) "EDIT")))))
+  (let ((updater (lambda (ID)
+                   (progn
+                     (org-xob--id-goto ID)
+                     (if (org-xob--is-edit-node-p)
+                         (when-let ((oID (org-entry-get (point) "EDIT"))
+                                    (clip (org-xob--get-full-node 1 nil)))
+                           (org-xob--id-goto oID)
+                           (org-xob--update-node clip)
+                           (org-xob--update-modified-time)))))))
+    (if (eq current-prefix-arg '(4))
+        (dolist (ID org-xob--open-nodes)
+          (funcall updater ID))
+      (if sID (funcall updater sID)
+        (funcall updater (org-entry-get (point) "EDIT"))))))
 
 ;; TODO test
 ;;;###autoload
