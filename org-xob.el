@@ -807,22 +807,27 @@ in a single-pane display format."
     (org-xob-with-xob-buffer
      (goto-char (point-max))
      (newline)
-     (if (eq arg '(4))
-         ;; singel pane
-         (progn
-           (insert "* " title "  :edit:")
-           (insert (org-xob--select-content ID
-                    #'(org-xob--get-full-node 2 'meta)))
-           (setq orb-xob--display 'single))
-       ;; dual pane
-       (insert (org-xob--select-content ID
-                #'(org-xob--get-full-node 1 'meta)))
-       (setq orb-xob--display 'dual))
+     (let ((m (point-marker)))
+       (if (eq arg '(4))
+           ;; singel pane
+           (progn
+             (insert "* " title "  :edit:")
+             (insert (org-xob--select-content ID
+                                              #'(org-xob--get-full-node 2 'meta)))
+             (setq orb-xob--display 'single))
+         ;; dual pane
+         (insert (org-xob--select-content ID
+                                          #'(org-xob--get-full-node 1 'meta)))
+         (setq orb-xob--display 'dual))
+       (goto-char m)
+       (set-marker m nil))
      (org-toggle-tag "edit" 'ON)
      (org-entry-put (point) "EDIT" (org-entry-get (point) "ID"))
      (org-entry-put (point) "ID" (uuidgen-4))
-     (add-to-list 'org-xob--open-nodes
-                  (make-open-node :ID ID :sources (list)))
+     (let ((node (make-open-node :ID ID :title tile :sources nil)))
+       (add-to-list 'org-xob--open-nodes node)
+       (org-xob--add-source node org-xob--source-backlinks)
+       (org-xob--add-source node org-xob--source-forlinks))
      (outline-hide-entry))))
 
 (defun org-xob--update-modified-time ()
