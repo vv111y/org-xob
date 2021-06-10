@@ -699,23 +699,26 @@ Returns ID if successful, nil otherwise."
                ID)
       ID)))
 
+;; TODO org-ql syntax right?
 (defun org-xob--id-goto (ID)
   (when (and (org-not-nil ID)
              org-xob-buffers)
     (setq m
-          (org-ql-select org-xob-buffers
-            `(or (property "ID" ,ID)
-                 (property "EDIT" ,ID)
-                 (property "PID" ,ID))
-            :action '(point-marker)))
+          (car
+           (org-ql-select org-xob-buffers
+             `(or (property "ID" ,ID)
+                  (property "EDIT" ,ID)
+                  (property "PID" ,ID))
+             :action '(point-marker))))
     (when (markerp m)
+      (set-buffer (marker-buffer))
       (goto-char m)
       (point))))
 
 (defun org-xob--goto-buffer-heading (ID)
-  (let m
+  (let (m)
     (org-ql-select (current-buffer)
-      `("ID" ID)
+      `(property "ID" ,ID)
       :action (setq m (point)))
     (when m
       (goto-char m)
