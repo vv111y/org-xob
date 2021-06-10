@@ -1319,36 +1319,27 @@ to all source items."
     (deactivate-mark 'force)))
 
 ;;;;; org-ql predicates TODO test
-(org-ql-defpred is-deep-xob-node ()
-  "Deepcheck xob nodes."
+(org-ql-defpred is-xob-node-deep ()
+  "Deepcheck if heading is a xob node."
   :body (and (property "xob" t)
              (member (org-entry-get (point) "TYPE")
                      org-xob--node-types)
              (eq 0 (org-uuidgen-p (or (org-entry-get (point) "ID")
-                                      (org-entry-get (point) "COPY")
+                                      (org-entry-get (point) "PID")
                                       (org-entry-get (point) "EDIT"))))))
 
-(org-ql-defpred is-xob-node (ID)
-  "Is xob node in the system."
-  :body (if (gethash ID org-xob--id-title) t nil))
-
-(org-ql-defpred is-xob-copy (ID)
-  "need"
-  :body (property "COPY" ID))
-
-(org-ql-defpred is-xob-edit (&optional ID)
-  "need"
-  :body (and (property "EDIT" ID)
-             (tags "EDIT")))
+(org-ql-defpred is-xob-node ()
+  "Quick check if the heading is in the xob system."
+  :body  (gethash (property "ID") org-xob--id-title))
 
 (org-ql-defpred is-xob-id (&optional ID)
-  "need"
+  "Like is-xob-node-deep, but only checks for ID property."
   :body (and (property "xob" "t")
              (member (org-entry-get (point) "TYPE") org-xob--node-types)
              (eq 0 (org-uuidgen-p (property "ID" ID)))))
 
 (org-ql-defpred is-xob-original (&optional ID)
-  "need"
+  "Quick check if heading has an ID, but no edit tag."
   :body (and (property "ID" ID)
              (not (tags "EDIT"))))
 
