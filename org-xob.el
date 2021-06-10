@@ -1338,13 +1338,38 @@ to all source items."
              (member (org-entry-get (point) "TYPE") org-xob--node-types)
              (eq 0 (org-uuidgen-p (property "ID" ID)))))
 
+(org-ql-defpred is-xob-edit (&optional ID)
+  "Checks for edit tag and that EDIT property is not empty. If argument ID is given,
+then also check if EDIT is equal to it."
+  :body (and (tags "edit")
+             (when-let ((eid (property "EDIT")))
+               (if ID
+                   (string= ID eid)
+                 eid))))
+
+(org-ql-defpred is-xob-edit-deep (&optional ID)
+  "Checks if heading has EDIT with optional ID,
+then checks using org-xob--is-edit-node-p."
+  :body (and (if ID (string= ID (property "EDIT")))
+             (org-xob--is-edit-node-p)))
+
 (org-ql-defpred is-xob-original (&optional ID)
   "Quick check if heading has an ID, but no edit tag."
   :body (and (property "ID" ID)
              (not (tags "EDIT"))))
 
+(org-ql-defpred is-xob-original-deep ()
+  "Deepcheck if heading is a xob original node."
+  :body (and (not (tags "EDIT"))
+             (not (property "PID"))
+             (not (property "EDIT"))
+             (property "xob" t)
+             (member (org-entry-get (point) "TYPE")
+                     org-xob--node-types)
+             (eq 0 (org-uuidgen-p (org-entry-get (point) "ID")))))
+
 (org-ql-defpred is-xob-source (&optional ID)
-  "doc"
+  "Checks if heading has a valid tag (registered sources), and has a PID property."
   :normalizers ((`(set-difference (org-get-tags) ,org-xob-available-sources)))
   :body (and (not (set-difference (org-get-tags) org-xob-available-sources))
              (property "PID" ID)))
