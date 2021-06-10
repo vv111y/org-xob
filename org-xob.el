@@ -114,7 +114,9 @@
   "List of all nodes that are opened for editing.")
 
 ;; "associate list of displayed context items for an opened node ID."
-(cl-defstruct open-node ID sources)
+(cl-defstruct open-node
+  "State information about nodes that have been opened for viewing/editing."
+  ID title sources)
 
 ;;;;; hash tables
 
