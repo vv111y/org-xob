@@ -767,7 +767,30 @@ the windows."
 ;; TODO ?
 (defun org-xob--2pane-edit (ID title)
   )
+;; TODO fails if there are other edit buffers open
+;;;###autoload
+(defun org-xob-refresh-open-nodes ()
+  "Clear out any incorrect or closed entries of open nodes."
+  (interactive)
+  (let ((onodes (org-xob-map-all-edits
+                      #'(lambda ()
+                          (org-entry-get (point) "EDIT")))))
+    (setq org-xob--open-nodes
+          (remove nil
+                  (mapcar #'(lambda (x)
+                              (if (and (open-node-p x)
+                                       (member (open-node-ID x)
+                                               onodes))
+                                  x))
+                          org-xob--open-nodes)))))
 
+(defun org-xob--get-open-node (id)
+  "Return the open node object associated with id or nil if it is not found."
+  (cl-find-if #'(lambda (x) (string= x id))
+              org-xob--open-nodes
+              :key #'(lambda (x) (open-node-ID x))))
+
+;; TODO prep and add kb sources
 ;; TODO redo pane select
 (defun org-xob--edit-node (ID title arg)
   "Open node for editing. Selects the last current xob buffer, if none are
