@@ -1408,6 +1408,32 @@ then checks using org-xob--is-edit-node-p."
 
 ;;;;; org-ql mapping functions TODO test
 
+(defun org-xob-map-buffers (func)
+  "Apply func in all xob buffers."
+  (mapc #'(lambda (win) (with-current-buffer win
+                          (funcall func)))))
+
+(defun org-xob-map-headings-in-buffers (func)
+  "Apply func to all headings with an ID property in all xob buffers."
+  (org-ql-select org-xob-buffers
+    `(property "ID")
+    :action func))
+
+(defun org-xob-find-in-buffers (prop val)
+  "Find all open headings with property prop that has value val."
+  (org-ql-select org-xob-buffers
+    `(property ,prop ,val)))
+
+(defun org-xob-find-any-in-buffers ())
+
+(defun org-xob-find-all-in-buffers (ID))
+
+(defun org-xob-map-if-in-buffers (pred func)
+  "Apply func to all headings that satisfy paredicate pred in all xob buffers."
+  (org-ql-select org-xob-buffers
+    `(,pred)
+    :action func))
+
 (defun org-xob-map-all-nodes (func)
   (org-ql-select org-xob-buffers
     '(is-xob-node)
