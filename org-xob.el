@@ -1128,50 +1128,59 @@ arguments are supplied, then check the associated heading."
              (member temp (org-xob--this-node-sources PID)))
         t nil)))
 
+(defun org-xob--add-source (node source-type)
+  "Create a new source of source-type for the given node."
+  (let ((newsrc (copy-tree source-type)))
+    (plist-put newsrc :ID (org-xob--id-create))
+    (plist-put newsrc :PID (open-node-ID node))
+    (plist-put newsrc :title (open-node-title node))
+    (funcall (plist-get newsrc :getfn) newsrc)
+    ;; (setq srcs (add-to-list srcs newsrc))
+    (push newsrc (open-node-sources node))
+    newsrc))
+
 ;; TODO in flux, partially redone
-(defun org-xob-show-source (source source-type &optional arg)
+;; see org-xob--refresh-open-nodes,
+(defun org-xob-show-source (source &optional arg)
   "Show context source for opened node at point. The second argument
 source-type is the data structure defining the source. If necessary will
 make"
   ;; in an edit node? get id, name, and which buffer is the context buffer
-  (if-let ((eid (org-xob--is-edit-node-p))
-           (title (truncate-string-to-width
-                   (nth 4 (org-heading-components) 25)))
-           (bufc (if (eq org-xob--display 'dual)
-                     (org-xob--pair-buf)
-                   (current-buffer))))
-      ;; get src list, get src if in list
-      (if-let* ((srcs (org-xob--this-node-sources eid))
-                (src (mapcar #'(lambda (x)
-                                 (if (equal source (car-safe (cdr-safe x)))
-                                     x)) srcs)))
-          (when (eq '(4) arg) ;; if arg then repopulate items
-            (funcall (plist-get newsrc :getfn) newsrc))
-        ;; if src in list then it is prepped, find it
-        (save-window-excursion
-          (with-current-buffer bufc
-            (org-with-wide-buffer ;; here or in write files?
-             ;; TODO also check for node context over-heading?
-             (if (goto-char (org-xob--goto-buffer-heading src))
-                 (org-xob--source-refresh source)
-               ;; not found, then write src
-               (org-xob--source-write source)))))
-        ;; not in list, make new src, add to srcs
-        (let ((newsrc (copy-tree source-type)))
-          (plist-put newsrc :ID (setq ID (org-xob--id-create)))
-          (plist-put newsrc :PID eid)
-          (plist-put newsrc :title title)
-          (funcall (plist-get newsrc :getfn) newsrc)
-          (push newsrc srcs))
-        (if (pulse-available-p)
-            (pulse-momentary-highlight-one-line (point))))
-    (message "Not on a xob node.")))
+  (if-let* ((eid (org-xob--is-edit-node-p))
+            (node (org-xob--get-open-node eid))
+            (srcs (open-node-sources node))
+            (src (mapcar
+                  #'(lambda (x)
+                      (if (equal source (car-safe (cdr-safe x)))
+                          x))
+                  srcs))
+            (title (truncate-string-to-width
+                    (nth 4 (org-heading-components)) 25))
+            (bufc (if (eq org-xob--display 'dual)
+                      org-xob--pair-buf
+                    (current-buffer))))
+      (save-window-excursion
+        (with-current-buffer bufc
+          (org-with-wide-buffer
+           (when (eq '(4) arg) 			;; if arg then repopulate items
+             (funcall (plist-get newsrc :getfn) newsrc))
+           ;; TODO also check for node context over-heading?
+           (if (goto-char (org-xob--goto-buffer-heading src)) ;; TODO  forward-sexp: Wrong type argument: listp, m
+               (org-xob--source-refresh source)		;; found, refresh
+             (org-xob--source-write source))		;; not found, then write src
+           (if (pulse-available-p)
+               (pulse-momentary-highlight-one-line (point))))))
+    (message "Source is not available.")))
 
 (defun org-xob--this-node-sources (id)
-  "Returns all node sources"
-  (cl-remove nil
-             (mapcar '(lambda (x) (when (string= id (open-node-ID x))
-                                    (open-node-sources x))) org-xob--open-nodes)))
+  "Returns node context sources as a list."
+  ;; (cl-remove nil)
+  ;; (mapcar #'(lambda (x) (when (string= id (open-node-ID x))
+  ;;                         (open-node-sources x))) org-xob--open-nodes))
+  (dolist (node org-xob--open-nodes)
+    (when (string= id (open-node-ID node))
+      (or (open-node-sources node)
+          nil))))
 
 ;; TODO replace pid with copy
 ;; TODO need over-heading both dual and single pane
