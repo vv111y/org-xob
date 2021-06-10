@@ -3094,3 +3094,177 @@ vv/bb
 (setq vv/s '(1 2 3 4 5 8 0))
 
 (cl-remove '0 vv/s)
+
+(let ((setq vv/s (point-marker)))
+  (assert (markerp m)))
+
+(setq vv/s (point-marker))
+(goto-char vv/s)
+(markerp vv/s)
+(markerp (car vv/s))
+(progn
+  (pop-to-buffer
+   (marker-buffer vv/s))
+  (goto-char vv/s))
+(org-ql-select (current-buffer)
+  `(property "M" "em"))
+
+;; v0.5 version
+(defun org-xob-show-source (source source-type &optional arg)
+  "Show context source for opened node at point. The second argument
+source-type is the data structure defining the source. If necessary will
+make"
+  ;; in an edit node? get id, name
+  (if-let ((eid (org-xob--is-edit-node-p))
+           (title (truncate-string-to-width
+                   (nth 4 (org-heading-components) 25))))
+      ;; get src list, get src if in list
+        (if-let* ((srcs (org-xob--this-node-sources eid))
+                  (src (mapcar '(lambda (x)
+                                  (if (equal source (car-safe (cdr-safe x)))
+                                      x)) srcs)))
+            ;; if src in list then it is prepped, find it
+            (let (m)
+              (when (eq '(4) arg) ;; if arg then repopulate items
+                (funcall (plist-get newsrc :getfn) newsrc))
+              (if (org-xob-map-node-sources eid src
+                                            (lambda () (setq m (point-marker))))
+                  ;; if found, maybe pop its buffer, pulse it
+                  (progn
+                    (unless (get-buffer-window (marker-buffer m) t)
+                      (pop-to-buffer (marker-buffer m)))
+                    (save-excursion
+                      (goto-char m)
+                      (if (pulse-available-p)
+                          (pulse-momentary-highlight-one-line (point)))))
+                ;; not found, then write src
+                (org-xob--source-write source)))
+          ;; not in list, make new src, add to srcs
+          (let ((newsrc (copy-tree source-type)))
+            (plist-put newsrc :ID (setq ID (org-xob--id-create)))
+            (plist-put newsrc :PID eid)
+            (plist-put newsrc :title title)
+            (funcall (plist-get newsrc :getfn) newsrc)
+            (push newsrc srcs)))))
+
+
+
+(org-xob--this-node-sources "974c8278-b670-4877-9fed-67a06cd5ee37")
+(let ((id "974c8278-b670-4877-9fed-67a06cd5ee37"))
+  (mapcar #'(lambda (x) (print (open-node-ID x)
+                          (open-node-sources x))) org-xob--open-nodes))
+
+(mapcar #'(lambda (x) (print (open-node-ID x)
+                             (open-node-sources x)))
+        org-xob--open-nodes)
+
+(dolist (x org-xob--open-nodes)
+  (print
+   ;; (open-node-ID x)
+   (print x)
+   ))
+
+(length org-xob--open-nodes)
+
+(cl-remove-duplicates org-xob--open-nodes
+                      :test #'(lambda (x y)
+                                (progn
+                                  (print x)
+                                  (print y)
+                                  (and (cl-struct-p x)
+                                       (cl-struct-p y)
+                                       (string= (open-node-ID x)
+                                                (open-node-ID y))))))
+(cl-remove "58987B88-C945-4DE4-84F2-31189ECB8860"
+           org-xob--open-nodes
+           :test (lambda (x y) (string= x (open-node-ID y))))
+
+
+(remove nil org-xob--open-nodes)
+
+(setq vv/temp org-xob--open-nodes)
+(open-node-ID
+ (car org-xob--open-nodes))
+
+(delete (nth 0 org-xob--open-nodes) org-xob--open-nodes)
+
+(cl-struct-p "58987B88-C945-4DE4-84F2-31189ECB8860")
+
+(nconc org-xob--open-nodes '("58987B88-C945-4DE4-84F2-31189ECB8860"))
+(print (org-ql-select org-xob-buffers
+          `(tags "edit")
+          :action '(org-entry-get (point) "EDIT")))
+
+(setq vv/temp (remove nil
+                      (org-ql-select org-xob-buffers
+                        `(tags "edit")
+                        :action '(org-entry-get (point) "EDIT"))))
+
+(dolist (x org-xob--open-nodes)
+  (print x)
+  (and (cl-struct-p x)
+       (message "id: %s" (open-node-ID x)))
+  )
+(mapcar #'(lambda (x)
+            (if (and (cl-struct-p x)
+                     (member (open-node-ID x)
+                             vv/temp))
+                x
+                ;; (message "node: %s" x)
+              ;; (message "not: %s" x)
+              ))
+        org-xob--open-nodes)
+(when-let ((onodes (org-xob-map-all-edits #'(lambda ()
+                                              (org-entry-get (point) "EDIT")))))
+  (setq org-xob--open-nodes
+        (remove nil
+                (mapcar #'(lambda (x)
+                            (if (and (cl-struct-p x)
+                                     (member (open-node-ID x)
+                                             onodes))
+                                (print "node: %s" x))
+                            )
+                        org-xob--open-nodes))))
+
+(dolist (el org-xob--open-nodes)
+(if (cl-struct-p el)
+    (message (open-node-ID el))
+  ))
+
+(plistp )
+(setq vvp (copy-tree org-xob--source-backlinks))
+;; (print vvp)
+;; (plist-get vvp :name)
+(plist-put vvp :ID (org-xob--id-create))
+(plist-get vvp :ID)
+
+(let ((newsrc (copy-tree org-xob--source-backlinks)))
+(plist-put newsrc :ID (org-xob--id-create))
+(plist-put newsrc :PID "pid")
+(plist-put newsrc :title "ttttt")
+;; (funcall (plist-get newsrc :getfn) newsrc)
+;; (push newsrc srcs)
+(setq vvp newsrc)
+)
+
+(setq vvss (make-open-node :ID (org-xob--id-create) :sources (list)))
+(push vvp (open-node-sources vvss))
+
+(defun org-xob--prepare-kb-source (source &optional arg)
+"fill in material for a node context source."
+(org-xob-with-context-buffer
+ (let (ID name)
+   (if arg
+       (funcall (plist-get source :getfn) source))
+   (unless (org-xob--id-goto (plist-get source :ID))
+     (plist-put source :ID (setq ID (org-xob--id-create))))
+   (setq name (plist-get source :name))
+   (plist-put source :PID parent-ID)
+   (plist-put source :title parent-title)
+   (make-local-variable name)
+   (nconc (assoc parent-ID org-xob--open-nodes) (list ID))
+   (push (cons name ID) org-xob--node-sources)
+   (funcall (plist-get source :getfn) source)
+   source)))
+
+(setf (open-node-sources (car org-xob--open-nodes)) (list))

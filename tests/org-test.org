@@ -63,7 +63,22 @@ CLOCK: [2021-01-08 Fri 06:44]--[2021-01-08 Fri 06:44] =>  0:00
 *** df
 :PROPERTIES:
 :xob:      t
+:M: em 
 :END:
+
+#+begin_src elisp
+  (setq vv/s (car
+              (org-ql-select (current-buffer)
+                `(property "M" "em")
+                :action #'(point-marker))))
+#+end_src
+
+#+RESULTS:
+: #<marker at 2327 in org-test.org>
+
+#+begin_src elisp
+  (goto-char vv/s)
+#+end_src
 
 (equal "t" (org-entry-get (point) "xob"))
 (org-entry-get (point) "xob")

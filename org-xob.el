@@ -404,7 +404,7 @@ If called with optional ID argument, then remove the node with that ID."
          (org-entry-delete (point) "xob")
          (org-xob--save-state))))))
 
-;; TODO some macro expansion error
+;; TODO some macro expansion error?
 ;;;###autoload
 (defun org-xob-insert-link ()
   "Inserts a properly formatted xob node link at point. If we are in a xob buffer,
@@ -531,6 +531,31 @@ sQuery Form: ")
    ;; send it through to display
    ;; list of saved queries / persist too
    nil))
+
+;; TODO redo with new regime
+;;;###autoload
+;; (defun org-xob-to-side-window (side buf)
+;;   "Move subtree at point to window on side of current one. If there is no window
+;; then make one. If no xob buffer is there, make a new one. If optional buf is
+;; specified, then use that buffer."
+;;   (interactive (list (completing-read "side:" '(left right))
+;;                      ;; don't select
+;;                      (completing-read "buffer:" (cons "[?]" org-xob-buffers))))
+;;   ;; check if dual-pane
+;;   ;; check if proper node tree
+;;   ;; cut context, goto side buf, paste at end
+;;   (org-cut-subtree)
+;;   (save-excursion
+;;     (if-let ((if (eq side 'left)		;; TODO maybe not right form
+;;                  (win (window-left (selected-window)))
+;;                (win (window-right (selected-window)))))
+;;         (select-window win)
+;;       (select-window (split-window nil nil side)))
+;;     (if (string= buf "[?]")
+;;         (org-xob-new-buffer)
+;;       (set-buffer buf))
+;;     (goto-char (point-max))
+;;     (org-paste-subtree 1 nil nil 'remove)))
 
 ;;;;; Context Presentation Commands DONE
 
@@ -687,8 +712,6 @@ If ID is given, then convert todo with that ID."
     (push buf1 org-xob-buffers)
     buf1))
 
-;;;;; Buffer Navigation TODO org-ql syntax right?
-
 ;; no change
 (defun org-xob--id-create ()
   "Create a UUID formatted ID. org-id will not work with buffers that are
@@ -765,13 +788,7 @@ the windows."
     (org-xob--dual-pane (selected-window))))
 
 ;;;;; Edit Node Functions TODO
-;; TODO ?
-(defun org-xob--1pane-edit (ID title)
-  )
 
-;; TODO ?
-(defun org-xob--2pane-edit (ID title)
-  )
 ;; TODO fails if there are other edit buffers open
 ;;;###autoload
 (defun org-xob-refresh-open-nodes ()
