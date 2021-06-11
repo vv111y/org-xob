@@ -730,7 +730,7 @@ Returns ID if successful, nil otherwise."
                   (property "PID" ,ID))
              :action '(point-marker))))
     (when (markerp m)
-      (set-buffer (marker-buffer))
+      (set-buffer (marker-buffer m))
       (goto-char m)
       (point))))
 
@@ -738,7 +738,7 @@ Returns ID if successful, nil otherwise."
   (let (m)
     (org-ql-select (current-buffer)
       `(property "ID" ,ID)
-      :action (setq m (point)))
+      :action '(setq m (point)))
     (when m
       (goto-char m)
       (point))))
@@ -836,7 +836,7 @@ in a single-pane display format."
      (org-toggle-tag "edit" 'ON)
      (org-entry-put (point) "EDIT" (org-entry-get (point) "ID"))
      (org-entry-put (point) "ID" (uuidgen-4))
-     (let ((node (make-open-node :ID ID :title tile :sources nil)))
+     (let ((node (make-open-node :ID ID :title title :sources nil)))
        (add-to-list 'org-xob--open-nodes node)
        (org-xob--add-source node org-xob--source-backlinks)
        (org-xob--add-source node org-xob--source-forlinks))
