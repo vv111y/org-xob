@@ -404,7 +404,6 @@ If called with optional ID argument, then remove the node with that ID."
          (org-entry-delete (point) "xob")
          (org-xob--save-state))))))
 
-;; TODO some macro expansion error?
 ;;;###autoload
 (defun org-xob-insert-link ()
   "Inserts a properly formatted xob node link at point. If we are in a xob buffer,
@@ -440,12 +439,7 @@ then also update the forlinks source."
                     (forward-line -1))
                 (org-end-of-subtree)
                 (newline))
-              ;; todo refactor out, for reuse
-              (if (org-kill-is-subtree-p)
-                  (org-paste-subtree
-                   (+ 1 (org-current-level)) nil t t)
-                (yank)
-                (org-xob--modify-time)))))))))
+              (org-xob--smart-paste))))))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
@@ -849,11 +843,19 @@ in a single-pane display format."
      (outline-hide-entry))))
 
 (defun org-xob--update-modified-time ()
-  "Update the modified timestamp for KB node at point."
+  "Update the modified timestamp for xob node at point."
   (if (org-entry-get (point) "MODIFIED")
       (org-entry-put (point) "MODIFIED"
                      (concat "[" (format-time-string "%F %a %R") "]")))
   nil)
+
+(defun org-xob--smart-paste ()
+  "If the paste is an org subtree, then properly adjust levels for the current heading.
+Otherwise just yank. If heading is a xob node, then update modified time property."
+  (if (org-kill-is-subtree-p)
+      (org-paste-subtree nil t t)
+    (yank)
+    (org-xob--update-modified-time)))
 
 (defun org-xob--update-node (clip)
   "update contents of node at point with string ~clip~.
@@ -869,7 +871,6 @@ Note, requires that all KB nodes are stored at level 1."
        (deactivate-mark 'force)
        (org-end-of-meta-data t)
        (insert clip)))))
-
 
 ;; TODO record diff
 ;; TODO check if deleted open nodes
