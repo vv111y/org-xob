@@ -1172,11 +1172,9 @@ make"
   (if-let* ((eid (org-xob--is-edit-node-p))
             (node (org-xob--get-open-node eid))
             (srcs (open-node-sources node))
-            (src (mapcar
-                  #'(lambda (x)
-                      (if (equal source (car-safe (cdr-safe x)))
-                          x))
-                  srcs))
+            (src (cl-find-if #'(lambda (x) (if (equal source x) x))
+                             srcs
+                             :key #'(lambda (x) car-safe (cdr-safe x)))) ;; maybe getf
             (title (truncate-string-to-width
                     (nth 4 (org-heading-components)) 25))
             (bufc (if (eq org-xob--display 'dual)
