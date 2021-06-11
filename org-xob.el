@@ -498,7 +498,7 @@ then also update the forlinks source."
                         :action (lambda (c)
                                   (org-entry-put (point) "TYPE" c)))))))
 
-;;;;; Display Commands TODO redo again
+;;;;; Display Commands
 
 ;;;###autoload
 (defun org-xob-show-backlinks (&optional arg)
@@ -540,7 +540,7 @@ sQuery Form: ")
 ;;   ;; cut context, goto side buf, paste at end
 ;;   (org-cut-subtree)
 ;;   (save-excursion
-;;     (if-let ((if (eq side 'left)		;; TODO maybe not right form
+;;     (if-let ((if (eq side 'left)
 ;;                  (win (window-left (selected-window)))
 ;;                (win (window-right (selected-window)))))
 ;;         (select-window win)
@@ -1175,23 +1175,25 @@ make"
             (srcs (open-node-sources node))
             (src (cl-find-if #'(lambda (x) (if (equal source x) x))
                              srcs
-                             :key #'(lambda (x) car-safe (cdr-safe x)))) ;; maybe getf
+                             :key #'(lambda (x) (car-safe (cdr-safe x)))))
             (title (truncate-string-to-width
                     (nth 4 (org-heading-components)) 25))
             (bufc (if (eq org-xob--display 'dual)
                       org-xob--pair-buf
                     (current-buffer))))
       (save-window-excursion
-        (with-current-buffer bufc
-          (org-with-wide-buffer
-           (when (eq '(4) arg) 			;; if arg then repopulate items
-             (funcall (plist-get newsrc :getfn) newsrc))
-           ;; TODO also check for node context over-heading?
-           (if (goto-char (org-xob--goto-buffer-heading src)) ;; TODO  forward-sexp: Wrong type argument: listp, m
-               (org-xob--source-refresh source)		;; found, refresh
-             (org-xob--source-write source))		;; not found, then write src
-           (if (pulse-available-p)
-               (pulse-momentary-highlight-one-line (point))))))
+        (save-excursion
+          (with-current-buffer bufc
+            (org-with-wide-buffer
+             (when (eq '(4) arg) 										;; if arg then repop items
+               (funcall (plist-get newsrc :getfn) newsrc))
+             ;; TODO redo for overheading
+             (if (org-xob--goto-buffer-heading
+                  (plist-get src :ID))
+                 (org-xob--source-refresh src)		;; found, refresh
+               (org-xob--source-write src))			;; not found, then write src
+             (if (pulse-available-p)
+                 (pulse-momentary-highlight-one-line (point)))))))
     (message "Source is not available.")))
 
 (defun org-xob--this-node-sources (id)
@@ -1210,16 +1212,15 @@ make"
   "Open a source tree into the context buffer. If it is already there,
 then refresh it. source items are shown as org headings.
 source is a plist that describes the content source."
-  (org-with-wide-buffer ;; todo needed?
-   (unless (org-xob--id-goto (plist-get source :ID))
-     (goto-char (point-max)) ;; TODO goto super-heading, then to end of tree
-     (org-insert-heading '(4) 'invisible-ok 'TOP) ;; TODO insert sub-tree
-     (org-edit-headline (plist-get source :title))
-     (dolist (el (plist-get source :tags))
-       (org-toggle-tag el 'ON))
-     (org-entry-put (point) "ID" (plist-get source :ID))
-     (org-entry-put (point) "PID" (plist-get source :PID)))
-   (org-xob--source-refresh source)))
+  (unless (org-xob--goto-buffer-heading (plist-get source :ID))
+    (goto-char (point-max)) ;; TODO goto super-heading, then to end of tree
+    (org-insert-heading '(4) 'invisible-ok 'TOP) ;; TODO insert sub-tree
+    (org-edit-headline (plist-get source :title))
+    (dolist (el (plist-get source :tags))
+      (org-toggle-tag el 'ON))
+    (org-entry-put (point) "ID" (plist-get source :ID))
+    (org-entry-put (point) "PID" (plist-get source :PID)))
+  (org-xob--source-refresh source))
 
 
 ;; TODO check state type, lookup + call
