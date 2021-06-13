@@ -370,12 +370,12 @@ Requires that point be under the node top heading, not a subheading."
                          (progn (org-xob--id-goto ID) ID)
                        (org-entry-get (point) "EDIT"))))
         (when (org-xob--is-edit-node-p)
-            (progn (setq org-xob--open-nodes
-                         (cl-delete-if #'(lambda (x) (string= x ID))
-                                       org-xob--open-nodes
-                                       :key #'(lambda (x) (open-node-ID x))))
-                   (org-mark-subtree)
-                   (call-interactively #'delete-region)))))))
+          (setq org-xob--open-nodes
+                        (cl-delete-if #'(lambda (x) (string= x ID))
+                                      org-xob--open-nodes
+                                      :key #'(lambda (x) (open-node-ID x))))
+          (org-mark-subtree)
+          (call-interactively #'delete-region))))))
 
 ;;;###autoload
 (defun org-xob-remove-node (&optional ID)
