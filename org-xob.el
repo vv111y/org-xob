@@ -1143,13 +1143,16 @@ Maybe useful for syncing."
   "Check if heading at point is a valid xob source. If PID and ID
 arguments are supplied, then check the associated heading."
   (interactive)
-  (let ((temp (if ID ID
-                (org-entry-get (point) "ID")))
-        (pid (if PID PID
-               (org-entry-get (point) "PID"))))
-    (if (and temp pid
-             (member temp (org-xob--this-node-sources PID)))
-        t nil)))
+  (if-let ((temp (if ID ID
+                   (org-entry-get (point) "ID")))
+           (pid (if PID PID
+                  (org-entry-get (point) "PID")))
+           (node (org-xob--get-open-node pid))
+           (srcs (open-node-sources node))
+           ((cl-find-if #'(lambda (x) (string= temp x))
+                        srcs
+                        :key #'(lambda (s) (plist-get s :ID)))))
+      t nil))
 
 (defun org-xob--add-source (node source-type)
   "Create a new source of source-type for the given node."
