@@ -618,8 +618,7 @@ sQuery Form: ")
   "Show the full KB node, excepting properties drawer, planning & clocking information."
   (interactive)
   (org-xob--context-copy-paste
-   #'(org-xob--get-full-node 3 nil)
-   #'(lambda (str) (insert str))))
+   #'(lambda () (org-xob--get-full-node 3 nil))))  ;; TODO change from hard code 3
 
 ;;;;; Activity Commands DONE
 ;;;###autoload
@@ -1005,7 +1004,7 @@ Returns content as a string with properties."
          (org-save-outline-visibility
              (org-narrow-to-subtree)
            (outline-show-all)
-           (setq str (eval selector))
+           (setq str (funcall selector))
            (deactivate-mark 'force)))))
     str))
 
@@ -1321,7 +1320,7 @@ updated. If called on a context source heading, then the update is applied
 to all source items."
   (let ((func #'(lambda ()
                   ;; todo replace with copy
-                  (when-let ((pid (org-entry-get (point) "PID")) str)
+                  (let ((pid (org-entry-get (point) "PID")) str)
                     (when (org-uuidgen-p pid)
                      (org-xob--clear-node)
                      (and selector
