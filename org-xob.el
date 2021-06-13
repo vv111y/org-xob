@@ -803,11 +803,11 @@ in a single-pane display format."
            (progn
              (insert "* " title "  :edit:")
              (insert (org-xob--select-content ID
-                                              #'(org-xob--get-full-node 2 'meta)))
+                                              #'(lambda () (org-xob--get-full-node 2 'meta))))
              (setq orb-xob--display 'single))
          ;; dual pane
          (insert (org-xob--select-content ID
-                                          #'(org-xob--get-full-node 1 'meta)))
+                                          #'(lambda () (org-xob--get-full-node 1 'meta))))
          (setq orb-xob--display 'dual))
        (goto-char m)
        (set-marker m nil))
@@ -860,15 +860,15 @@ Current version performs simple, blunt, whole content replacement."
   (interactive "P")
   (save-window-excursion
     (save-excursion))
-  (let ((updater (lambda (ID)
-                   (progn
-                     (org-xob--id-goto ID)
-                     (if (org-xob--is-edit-node-p)
-                         (when-let ((oID (org-entry-get (point) "EDIT"))
-                                    (clip (org-xob--get-full-node 1 nil)))
-                           (org-xob--id-goto oID)
-                           (org-xob--update-node clip)
-                           (org-xob--update-modified-time)))))))
+  (let ((updater #'(lambda (ID)
+                     (progn
+                       (org-xob--id-goto ID)
+                       (if (org-xob--is-edit-node-p)
+                           (when-let ((oID (org-entry-get (point) "EDIT"))
+                                      (clip (org-xob--get-full-node 1 nil)))
+                             (org-xob--id-goto oID)
+                             (org-xob--update-node clip)
+                             (org-xob--update-modified-time)))))))
     (if (eq current-prefix-arg '(4))
         (dolist (ID org-xob--open-nodes)
           (funcall updater ID))
