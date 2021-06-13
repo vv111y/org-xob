@@ -526,31 +526,6 @@ sQuery Form: ")
    ;; list of saved queries / persist too
    nil))
 
-;; TODO redo with new regime
-;;;###autoload
-;; (defun org-xob-to-side-window (side buf)
-;;   "Move subtree at point to window on side of current one. If there is no window
-;; then make one. If no xob buffer is there, make a new one. If optional buf is
-;; specified, then use that buffer."
-;;   (interactive (list (completing-read "side:" '(left right))
-;;                      ;; don't select
-;;                      (completing-read "buffer:" (cons "[?]" org-xob-buffers))))
-;;   ;; check if dual-pane
-;;   ;; check if proper node tree
-;;   ;; cut context, goto side buf, paste at end
-;;   (org-cut-subtree)
-;;   (save-excursion
-;;     (if-let ((if (eq side 'left)
-;;                  (win (window-left (selected-window)))
-;;                (win (window-right (selected-window)))))
-;;         (select-window win)
-;;       (select-window (split-window nil nil side)))
-;;     (if (string= buf "[?]")
-;;         (org-xob-new-buffer)
-;;       (set-buffer buf))
-;;     (goto-char (point-max))
-;;     (org-paste-subtree 1 nil nil 'remove)))
-
 ;;;;; Context Presentation Commands DONE
 
 ;; todo test
