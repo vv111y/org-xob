@@ -502,6 +502,13 @@ then also update the forlinks source."
                         :action (lambda (c)
                                   (org-entry-put (point) "TYPE" c)))))))
 
+;;;###autoload
+(defun org-xob-goto-original ()
+  "Go to the original node entry in the knowledge base."
+  (interactive)
+  (when (org-xob--is-edit-node-p)
+    (org-id-goto (org-entry-get (point) "EDIT"))))
+
 ;;;;; Display Commands
 
 ;;;###autoload
