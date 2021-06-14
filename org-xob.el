@@ -1429,10 +1429,15 @@ then checks using org-xob--is-edit-node-p."
              (eq 0 (org-uuidgen-p (org-entry-get (point) "ID")))))
 
 (org-ql-defpred is-xob-source (&optional ID)
-  "Checks if heading has a valid tag (registered sources), and has a PID property."
+  "Checks if heading has a valid tag (registered sources), and has a PID property.
+Further, if optional ID is given, then check if this source comes from node with ID."
   :normalizers ((`(set-difference (org-get-tags) ,org-xob-available-sources)))
   :body (and (not (set-difference (org-get-tags) org-xob-available-sources))
              (property "PID" ID)))
+
+(org-ql-defpred is-xob-source-alt (pid)
+  "Just uses the PID property to find source headings."
+  :body (property "PID" pid))
 
 ;;;;; org-ql mapping functions TODO test
 
@@ -1483,8 +1488,13 @@ then checks using org-xob--is-edit-node-p."
     :action func))
 
 (defun org-xob-map-node-sources (ID func)
-  (org-ql-select org-xob-buffers
+  (org-ql-select (list (current-buffer) org-xob--pair-buf)
     `(is-xob-source ,ID)
+    :action func))
+
+(defun org-xob-map-node-sources-2 (ID func)
+  (org-ql-select (list (current-buffer) org-xob--pair-buf)
+    `(is-xob-source-alt ,ID)
     :action func))
 
 (defun org-xob-node-source (ID source func)
