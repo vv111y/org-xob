@@ -618,6 +618,13 @@ sQuery Form: ")
   (org-xob--context-copy-paste
    #'(lambda () (org-xob--get-full-node 3 nil))))  ;; TODO change from hard code 3
 
+;;;###autoload
+(defun org-xob-to-edit ()
+  "If context entry is a xob node, then open the xob node in edit mode."
+  (interactive)
+  (when-let ((id (org-entry-get (point) "PID")))
+    (org-xob--edit-node id (gethash id org-xob--id-title))))
+
 ;;;;; Activity Commands DONE
 ;;;###autoload
 (defun org-xob-log-done (&optional ID)
