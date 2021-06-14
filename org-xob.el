@@ -513,6 +513,16 @@ then also update the forlinks source."
 ;;;;; Display Commands
 
 ;;;###autoload
+(defun org-xob-toggle-display ()
+  "Switch between single or dual pane display."
+  (interactive)
+  (if (window-atom-root)
+      (org-xob--single-pane (selected-window))
+    (org-xob--dual-pane (selected-window))))
+
+;;;;; Context Presentation Commands
+
+;;;###autoload
 (defun org-xob-show-backlinks (&optional arg)
   "Add backlinks contents to the context buffer."
   (interactive)
@@ -668,7 +678,7 @@ If ID is given, then convert todo with that ID."
            (eq org-xob--buf 'parent)))))
 
 ;;;###autoload
-(defun org-xob-new-buffer ()
+(defun org-xob-new-buffer (&optional single)
   "Create new xob buffer. Defaults to dual-pane buffer pair."
   (interactive)
   (when-let ((numbufs (number-to-string
@@ -682,7 +692,9 @@ If ID is given, then convert todo with that ID."
       (org-xob-mode 1)
       (setq-local org-xob--buf 'parent)
       (setq-local org-xob--pair-buf buf2)
-      (setq-local org-xob--display 'dual))
+      (if single
+          (setq-local org-xob--display 'single)
+        (setq-local org-xob--display 'dual)))
     (with-current-buffer buf2
       (org-mode)
       (org-xob-mode 1)
@@ -743,7 +755,7 @@ knowledge base."
 (defun org-xob--single-pane (win)
   "Use single pane interface. If dual-pane is open, then kill
 the windows."
-  (if (window-atom-root win)
+  (when (window-atom-root win)
       (when-let* ((buf (if (org-xob--buffer-p)
                            (window-buffer win)
                          org-xob-last-buffer))
@@ -751,7 +763,8 @@ the windows."
                   (winnew (split-window-right)))
         (delete-window oldwin)
         (select-window winnew)
-        (set-buffer buf)))) ;; TODO modify contents for single pane view
+        (set-buffer buf)
+        (setq org-xob--display 'single)))) ;; TODO modify contents for single pane view
 
 ;; TODO will keep open new windows for each call, need state info?
 ;; todo maybe redo macro for dual buffer creation
@@ -765,15 +778,9 @@ the windows."
                 (win1 (selected-window))
                 (win2 (split-window-right)))
       (window-make-atom (window-parent win2))
-      (set-window-buffer win2 buf2)))) ;; TODO modify contents for dual pane view?
+      (set-window-buffer win2 buf2)
+      (setq org-xob--display 'dual)))) ;; TODO modify contents for dual pane view?
 
-
-;;;###autoload
-(defun org-xob-toggle-display ()
-  (interactive)
-  (if (window-atom-root)
-      (org-xob--single-pane (selected-window))
-    (org-xob--dual-pane (selected-window))))
 
 ;;;;; Edit Node Functions TODO
 
