@@ -791,9 +791,39 @@ the windows."
               org-xob--open-nodes
               :key #'(lambda (x) (open-node-ID x))))
 
-;; TODO prep and add kb sources
-;; TODO redo pane select
-(defun org-xob--edit-node (ID title arg)
+(defun org-xob--edit-write-single-pane (ID title)
+  "write a node for editing in single pane mode. Point is assumed to be in
+the correct location."
+  (org-xob--edit-write
+   #'(lambda ()
+       (insert "* " title "  :edit:")
+       (insert (org-xob--select-content
+                ID
+                #'(lambda () (org-xob--get-full-node 2 'meta)))))))
+
+(defun org-xob--edit-write-dual-pane (ID title)
+  "write a node for editing in dual pane mode. Point is assumed to be in
+the correct location."
+  (org-xob--edit-write
+   #'(lambda ()
+       (insert (org-xob--select-content
+                ID
+                #'(lambda () (org-xob--get-full-node 1 'meta)))))))
+
+(defun org-xob--edit-write (func)
+  "change tag and properties for newly written edit node."
+  (goto-char (point-max))
+  (newline)
+  (let ((m (point-marker)))
+    (funcall func)
+    (goto-char m)
+    (set-marker m nil))
+  (org-toggle-tag "edit" 'ON)
+  (org-entry-put (point) "EDIT" (org-entry-get (point) "ID"))
+  (org-entry-put (point) "ID" (uuidgen-4))
+  (outline-hide-entry))
+
+(defun org-xob--edit-node (ID title)
   "Open node for editing. Selects the last current xob buffer, if none are
 found, then create a new one. Defaults to dual-pane display, with C-u opens node
 in a single-pane display format."
@@ -801,31 +831,15 @@ in a single-pane display format."
   (if (org-xob--id-goto ID)
       (unless (get-buffer-window)
         (pop-to-buffer (current-buffer)))
-    (org-xob-with-xob-buffer
-     (goto-char (point-max))
-     (newline)
-     (let ((m (point-marker)))
-       (if (eq arg '(4))
-           ;; singel pane
-           (progn
-             (insert "* " title "  :edit:")
-             (insert (org-xob--select-content ID
-                                              #'(lambda () (org-xob--get-full-node 2 'meta))))
-             (setq orb-xob--display 'single))
-         ;; dual pane
-         (insert (org-xob--select-content ID
-                                          #'(lambda () (org-xob--get-full-node 1 'meta))))
-         (setq orb-xob--display 'dual))
-       (goto-char m)
-       (set-marker m nil))
-     (org-toggle-tag "edit" 'ON)
-     (org-entry-put (point) "EDIT" (org-entry-get (point) "ID"))
-     (org-entry-put (point) "ID" (uuidgen-4))
-     (let ((node (make-open-node :ID ID :title title :sources nil)))
-       (add-to-list 'org-xob--open-nodes node)
-       (org-xob--add-source node org-xob--source-backlinks)
-       (org-xob--add-source node org-xob--source-forlinks))
-     (outline-hide-entry))))
+    (atomic-change-group
+      (org-xob-with-xob-buffer
+       (if (eq org-xob--display 'single)
+           (org-xob--edit-write-single-pane ID title)
+         (org-xob--edit-write-dual-pane ID title))
+       (let ((node (make-open-node :ID ID :title title :sources nil)))
+         (add-to-list 'org-xob--open-nodes node)
+         (org-xob--add-source node org-xob--source-backlinks)
+         (org-xob--add-source node org-xob--source-forlinks))))))
 
 (defun org-xob--update-modified-time ()
   "Update the modified timestamp for xob node at point."
