@@ -553,9 +553,6 @@ sQuery Form: ")
    ;; list of saved queries / persist too
    nil))
 
-;;;;; Context Presentation Commands DONE
-
-;; todo test
 ;;;###autoload
 (defun org-xob-refresh-node-context ()
   "Refresh all displayed sources for node at point."
@@ -613,7 +610,6 @@ sQuery Form: ")
                   (outline-next-heading)
                   (setq end (- (point) 1))
                   (buffer-substring beg end)))))
-
 
 ;;;###autoload
 (defun org-xob-to-full-node ()
@@ -892,8 +888,7 @@ Note, requires that all KB nodes are stored at level 1."
        (org-end-of-meta-data t)
        (insert clip)))))
 
-;; TODO record diff
-;; TODO check if deleted open nodes
+;; TODO record diff, check if deleted open nodes
 ;;;###autoload
 (defun org-xob-sync-edit (&optional arg sID)
   "Update original xob node with any edits. With optional arg sID
