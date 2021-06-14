@@ -1261,16 +1261,19 @@ Assumes point is on the source heading."
   "Apply the function func to every child-item of a xob source.
 If the optional ID of a xob source is given, then apply func to that source.
 Otherwise apply to source at point."
-  (save-excursion
-    (if ID (org-xob--id-goto ID))
-    (org-with-wide-buffer
+  (if ID (org-xob--id-goto ID))
+  (org-with-wide-buffer
+   (org-save-outline-visibility
+       (org-narrow-to-subtree)
+     (outline-show-all)
      (if (and (org-xob--is-source-p)
               (org-goto-first-child))
-         (while
-             (progn
-               (funcall func)
-               (outline-get-next-sibling)))
-       (message "XOB: map-source, nothing to do here.") nil))))
+         (while (progn
+                  (save-excursion (funcall func))
+                  (outline-get-next-sibling)))
+       (message "XOB: map-source, nothing to do here.") nil)
+     (org-up-heading-safe)
+     (outline-hide-subtree))))
 
 ;;;;; KB Context Functions DONE UNCHANGED
 
