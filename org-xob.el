@@ -318,6 +318,7 @@ Calling with C-u will force a restart."
   (if org-xob-on-p
       (progn
         (org-xob--save-state)
+        (org-xob--close-buffers)
         (with-current-buffer org-xob-today-buffer
           (save-buffer)
           (kill-buffer))
@@ -728,7 +729,15 @@ Returns ID if successful, nil otherwise."
       (goto-char m)
       (point))))
 
-;;;;; Windows TODO ??? check
+(defun org-xob--close-buffers ()
+  "Close all open xob buffers. First sync any outstanding edits to the
+knowledge base."
+  (let ((current-prefix-arg 4))
+    (funcall-interactively #'org-xob-sync-edit))
+  (dolist (buf org-xob-buffers)
+    (kill-buffer buf)))
+
+;;;;; Windows
 
 ;; TODO will keep open new windows for each call, need state info?
 (defun org-xob--single-pane (win)
