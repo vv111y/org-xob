@@ -357,26 +357,31 @@ Calling with C-u will force a restart."
   (interactive "P")
   (org-xob-with-xob-on
    (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-     (org-xob--edit-node ID title arg))))
+     (org-xob--edit-node ID title))))
 
+;; TODO buggy source deletions
 ;;;###autoload
 (defun org-xob-close-node (&optional ID)
   "Delete a node that has been open for editing. If argument ID
 is supplied, then close that node, otherwise close node at point.
-Requires that point be under the node top heading, not a subheading."
+All displayed contextual material will also be deleted. Requires
+that point be under the nodes top heading, not a subheading."
   (interactive)
   (save-window-excursion
     (save-excursion
-      (when-let ((ID (if ID
-                         (progn (org-xob--id-goto ID) ID)
-                       (org-entry-get (point) "EDIT"))))
-        (when (org-xob--is-edit-node-p)
-          (setq org-xob--open-nodes
-                        (cl-delete-if #'(lambda (x) (string= x ID))
-                                      org-xob--open-nodes
-                                      :key #'(lambda (x) (open-node-ID x))))
-          (org-mark-subtree)
-          (call-interactively #'delete-region))))))
+      (when-let ((ID (progn (when ID (org-xob--id-goto ID))
+                            (org-entry-get (point) "EDIT")))
+                 ((org-xob--is-edit-node-p)))
+        (org-xob-map-node-sources-2
+         ID
+         #'(lambda () (progn (org-mark-subtree)
+                             (call-interactively 'delete-region))))
+        (setq org-xob--open-nodes
+              (cl-delete-if #'(lambda (x) (string= x ID))
+                            org-xob--open-nodes
+                            :key #'(lambda (x) (open-node-ID x))))
+        (org-mark-subtree)
+        (call-interactively #'delete-region)))))
 
 ;;;###autoload
 (defun org-xob-remove-node (&optional ID)
