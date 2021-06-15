@@ -521,9 +521,14 @@ then also update the forlinks source."
 (defun org-xob-toggle-display ()
   "Switch between single or dual pane display."
   (interactive)
-  (if (window-atom-root)
-      (org-xob--single-pane (selected-window))
-    (org-xob--dual-pane (selected-window))))
+  (if (and (boundp org-xob--display)
+           (eq 'dual org-xob--display))
+      (atomic-change-group
+        (org-xob--single-pane (selected-window))
+        (org-xob--rewrite-buffer-1-pane))
+    (atomic-change-group
+      (org-xob--dual-pane (selected-window))
+      (org-xob--rewrite-buffer-2-pane))))
 
 ;;;;; Context Presentation Commands
 
@@ -757,9 +762,18 @@ knowledge base."
   (dolist (buf org-xob-buffers)
     (kill-buffer buf)))
 
+;; TODO
+(defun org-xob--rewrite-buffer-1-pane ()
+  "Rewrites all open nodes in single pane format."
+  )
+
+;; TODO
+(defun org-xob--rewrite-buffer-2-pane ()
+  "Rewrites all open nodes in dual pane format."
+  )
+
 ;;;;; Windows
 
-;; TODO will keep open new windows for each call, need state info?
 (defun org-xob--single-pane (win)
   "Use single pane interface. If dual-pane is open, then kill
 the windows."
@@ -772,10 +786,8 @@ the windows."
         (delete-window oldwin)
         (select-window winnew)
         (set-buffer buf)
-        (setq org-xob--display 'single)))) ;; TODO modify contents for single pane view
+        (setq org-xob--display 'single))))
 
-;; TODO will keep open new windows for each call, need state info?
-;; todo maybe redo macro for dual buffer creation
 (defun org-xob--dual-pane (win)
   "Use dual-pane interface"
   (unless (window-atom-root win)
