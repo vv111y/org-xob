@@ -796,10 +796,10 @@ the windows."
                 (buf2 (buffer-local-value 'org-xob--pair-buf
                                           buf1))
                 (win1 (selected-window))
-                (win2 (split-window-right)))
-      (window-make-atom (window-parent win2))
-      (set-window-buffer win2 buf2)
-      (setq org-xob--display 'dual)))) ;; TODO modify contents for dual pane view?
+                (win2 (display-buffer-in-atom-window
+                       buf2
+                       `((window . ,(selected-window)) (side . right)))))
+      (setq org-xob--display 'dual))))
 
 
 ;;;;; Edit Node Functions TODO
