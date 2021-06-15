@@ -3268,3 +3268,6 @@ make"
    source)))
 
 (setf (open-node-sources (car org-xob--open-nodes)) (list))
+
+(org-get-tags nil t)
+(org-entry-get (point) "EDIT")

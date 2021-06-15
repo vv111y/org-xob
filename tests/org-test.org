@@ -96,3 +96,15 @@ CLOCK: [2021-01-08 Fri 06:44]--[2021-01-08 Fri 06:44] =>  0:00
 
 (org-element-at-point)
   (paragraph (:begin 2316 :end 2439 :contents-begin 2316 :contents-end 2438 :post-blank 1 :post-affiliated 2316 :parent nil))
+* mmmm
+:PROPERTIES:
+:ID:       43ece2a6-e7f3-450f-aef5-607f3c159a4a
+:END:
+#+begin_src elisp
+  (let ((ID (uuidgen-4)))
+    (org-entry-put (point) "ID" ID)
+    ID)
+#+end_src
+
+#+RESULTS:
+: 43ece2a6-e7f3-450f-aef5-607f3c159a4a

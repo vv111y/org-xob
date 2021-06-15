@@ -889,6 +889,8 @@ Otherwise just yank. If heading is a xob node, then update modified time propert
     (yank)
     (org-xob--update-modified-time)))
 
+;; -- SYNC --
+
 (defun org-xob--update-node (clip)
   "update contents of node at point with string ~clip~.
 Note, requires that all KB nodes are stored at level 1."
@@ -928,7 +930,6 @@ Current version performs simple, blunt, whole content replacement."
       (if sID (funcall updater sID)
         (funcall updater (org-entry-get (point) "EDIT"))))))
 
-;; TODO test
 ;;;###autoload
 (defun org-xob-ediff-edit ()
   "Run ediff on the edit node at point with the original node."
