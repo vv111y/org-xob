@@ -77,6 +77,7 @@
 (require 'cl)
 (require 'cl-lib)
 (require 'org-super-links)
+(require 'hydra)
 
 (declare-function org-super-links-link "org-super-links.el")
 (declare-function org-super-links-store-link "org-super-links.el")
@@ -242,7 +243,7 @@ n.b  -- bibliographic entries")
                   (define-key map key fn)))
     map))
 
-;;;; Minor Mode
+;;;; Minor Mode & Keybindings
 
 ;;;###autoload
 (define-minor-mode org-xob-mode
@@ -257,6 +258,51 @@ n.b  -- bibliographic entries")
         ;; (evil-define-key 'normal 'local (kbd "t") 'org-xob-to-node-tree)
         )
     ))
+
+;;;###autoload
+(defhydra org-xob-hydra (:columns 4)
+  ("h" (org-xob--up-heading) "up")
+  ("j" (org-goto-sibling) "next")
+  ("k" (org-goto-sibling 'previous) "previous")
+  ("l" (org-xob--down-heading) "down")
+  ("L" (org-show-children) "children")
+  ("s" (org-xob-to-summary) "summary")
+  ("S" (org-xob-to-section) "section")
+  ("t" (org-xob-to-node-tree) "tree")
+  ("T" (org-xob-to-full-node) "full")
+  ("q" nil "Quit" :exit t)
+  )
+
+(defun org-xob--up-heading ()
+  (if (or (org-folded-p)
+          (org-empty-entry-p))
+      (org-up-heading-safe)
+    (outline-hide-subtree)))
+
+(defun org-xob--down-heading ()
+  (if (org-folded-p)
+      (progn (org-show-entry)
+             (org-show-children))
+    (org-goto-first-child)))
+
+(defun org-folded-p ()
+  "Returns non-nil if point is on a folded headline or plain list
+item. (credit https://emacs.stackexchange.com/a/26840)"
+  (and (or (org-at-heading-p)
+           (org-at-item-p))
+       (invisible-p (point-at-eol))))
+
+(defun org-empty-entry-p ()
+  "Returns true if this entry is empty."
+  (when (org-at-heading-p)
+    (let (a b)
+      (save-excursion
+        (org-end-of-subtree)
+        (setq a (point)))
+      (save-excursion
+        (end-of-line)
+        (setq b (point)))
+      (= a b))))
 
 ;;;; Macros DONE
 (defmacro org-xob-with-xob-on (&rest body)
