@@ -717,17 +717,14 @@ If ID is given, then convert todo with that ID."
     (push buf1 org-xob-buffers)
     buf1))
 
-;; no change
 (defun org-xob--id-create ()
   "Create a UUID formatted ID. org-id will not work with buffers that are
 not visiting a file. This function is meant for such a case. Use in conjunction
 with org-xob--id-goto to return to this heading.
 Returns ID if successful, nil otherwise."
   (let ((ID (uuidgen-4)))
-    (if (org-at-heading-p)
-        (progn (org-entry-put (point) "ID" ID)
-               ID)
-      ID)))
+    (org-entry-put (point) "ID" ID)
+    ID))
 
 ;; TODO org-ql syntax right?
 (defun org-xob--id-goto (ID)
