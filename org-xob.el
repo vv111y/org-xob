@@ -677,8 +677,10 @@ sQuery Form: ")
 (defun org-xob-to-edit ()
   "If context entry is a xob node, then open the xob node in edit mode."
   (interactive)
-  (when-let ((id (org-entry-get (point) "PID")))
-    (org-xob--edit-node id (gethash id org-xob--id-title))))
+  (save-window-excursion
+    (save-excursion
+      (when-let ((id (org-entry-get (point) "PID")))
+        (org-xob--edit-node id (gethash id org-xob--id-title))))))
 
 ;;;;; Activity Commands DONE
 ;;;###autoload
