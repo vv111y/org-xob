@@ -988,16 +988,27 @@ Current version performs simple, blunt, whole content replacement."
   (interactive)
   (save-window-excursion
     (save-excursion
-      (let (bufe bufo)
+      (let ((oid (org-entry-get (point) "EDIT")) bufe bufo frm)
         (when (org-xob--is-edit-node-p)
-          (setq bufe (current-buffer))
-          (org-mark-subtree)
-          (org-end-of-meta-data t)
-          (org-xob--id-goto (org-entry-get (point) "EDIT"))
-          (setq bufo (current-buffer))
-          (org-mark-subtree)
-          (org-end-of-meta-data t)
-          (ediff-regions-wordwise bufe bufo))))))
+          (save-restriction
+            (setq bufe (current-buffer))
+            (org-mark-subtree)
+            (org-end-of-meta-data t)
+            (narrow-to-region (point) (mark))
+            (save-restriction
+              (org-id-goto oid)
+              (setq bufo (current-buffer))
+              (org-mark-subtree)
+              (org-end-of-meta-data t)
+              (narrow-to-region (point) (mark))
+              (select-frame (setq
+                             frm (make-frame)))
+              (ediff-buffers bufe bufo)
+              (delete-frame)
+              (with-current-buffer bufo
+                (widen))
+              (with-current-buffer bufe
+                (widen)))))))))
 
 ;;;;; Node Functions DONE UNCHANGED
 
