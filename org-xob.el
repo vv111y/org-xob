@@ -633,8 +633,7 @@ sQuery Form: ")
                    (if p
                        (buffer-substring-no-properties
                         (org-element-property :contents-begin p)
-                        (org-element-property :contents-end p))))))
-   ))
+                        (org-element-property :contents-end p))))))))
 
 ;;;###autoload
 (defun org-xob-to-node-tree ()
@@ -1368,8 +1367,8 @@ Otherwise apply to source at point."
   (if ID (org-xob--id-goto ID))
   (org-with-wide-buffer
    (org-save-outline-visibility
-       (org-narrow-to-subtree)
-     (outline-show-all)
+       ;; (org-narrow-to-subtree)
+     ;; (outline-show-all)
      (if (and (org-xob--is-source-p)
               (org-goto-first-child))
          (while (progn
@@ -1442,7 +1441,9 @@ to all source items."
                             (newline)
                             (if insertor
                                 (funcall insertor str)
-                              (insert str)))))))))
+                              (insert str)
+                              (outline-hide-subtree)
+                              (org-show-entry)))))))))
     (save-window-excursion
       (org-with-wide-buffer
        (if (pulse-available-p)
