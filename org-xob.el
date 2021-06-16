@@ -795,13 +795,13 @@ Returns ID if successful, nil otherwise."
       (point))))
 
 (defun org-xob--goto-buffer-heading (ID)
-  (let (m)
-    (org-ql-select (current-buffer)
-      `(property "ID" ,ID)
-      :action '(setq m (point)))
-    (when m
-      (goto-char m)
-      (point))))
+  "Find heading with ID in current buffer. If found then return point at
+heading beginning, else nil."
+  (goto-char (point-min))
+  (if (re-search-forward ID nil t nil)
+      (progn (org-back-to-heading)
+             (point))
+    nil))
 
 (defun org-xob--close-buffers ()
   "Close all open xob buffers. First sync any outstanding edits to the
