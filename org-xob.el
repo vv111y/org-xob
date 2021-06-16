@@ -1006,7 +1006,8 @@ Current version performs simple, blunt, whole content replacement."
 If an ID argument is supplied, then check the heading associated with it.
 With option DEEPCHECK, do not use any table lookup, but check whether the heading
 has valid UUID formatted ID and xob TYPE properties in the property drawer.
-Deepcheck only works on heading at point, any ID argument is ignored."
+Deepcheck only works on heading at point, any ID argument is ignored.
+Returns the ID if true, nil otherwise."
   (interactive)
   (let ((temp (if ID ID (org-id-get nil))))
     (if temp
@@ -1014,8 +1015,10 @@ Deepcheck only works on heading at point, any ID argument is ignored."
             (and
              (string= "t" (org-entry-get (point) "xob"))
              (member (org-entry-get (point) "TYPE") org-xob--node-types)
-             (eq 0 (org-uuidgen-p temp)))
-          (if (gethash temp org-xob--id-title) t nil)))))
+             (eq 0 (org-uuidgen-p temp))
+             (not (org-entry-get (point) "EDIT"))
+             temp)
+          (if (gethash temp org-xob--id-title) temp)))))
 
 (defun org-xob--is-edit-node-p ()
   "Is point on a node that is in an edit state? Return it's ID if true, nil otherwise."
