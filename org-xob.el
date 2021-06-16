@@ -619,26 +619,29 @@ sQuery Form: ")
 (defun org-xob-clear-heading ()
   "Clears contents of context entry at point, or for whole context source."
   (interactive)
-  (org-xob--context-copy-paste))
+  (org-xob--context-copy-paste ""))
 
 ;;;###autoload
 (defun org-xob-to-summary ()
   "Show KB node summary. This is defined as the first paragraph if it exists."
   (interactive)
   (org-xob--context-copy-paste
+   "sum"
    #'(lambda () (progn
                  (org-end-of-meta-data t)
                  (let ((p (org--paragraph-at-point)))
                    (if p
                        (buffer-substring-no-properties
                         (org-element-property :contents-begin p)
-                        (org-element-property :contents-end p))))))))
+                        (org-element-property :contents-end p))))))
+   ))
 
 ;;;###autoload
 (defun org-xob-to-node-tree ()
   "Show only subheadings of KB node."
   (interactive)
   (org-xob--context-copy-paste
+   "tree"
    #'(lambda ()
        (let (lines)
          (org-map-tree
@@ -659,6 +662,7 @@ sQuery Form: ")
   "Show the top section of KB node, no subheadings."
   (interactive)
   (org-xob--context-copy-paste
+   "sec"
    #'(lambda () (let ((beg) (end))
                   (org-end-of-meta-data t)
                   (setq beg (point))
@@ -671,6 +675,7 @@ sQuery Form: ")
   "Show the full KB node, excepting properties drawer, planning & clocking information."
   (interactive)
   (org-xob--context-copy-paste
+   "full"
    #'(lambda () (org-xob--get-full-node 3 nil))))  ;; TODO change from hard code 3
 
 ;;;###autoload
@@ -1414,7 +1419,7 @@ then return all other links."
                            (message "XOB: invalid link %s" ID) nil)))))))))))
 
 ;; TODO test with new sources packaging
-(defun org-xob--context-copy-paste (&optional selector insertor)
+(defun org-xob--context-copy-paste (&optional tag selector insertor)
   "Wrapper function to display new content in a context item from the
 knowledge base. Executes function selector while point is at the heading
 of the origin node in the KB. selector must be a lambda that returns
@@ -1428,6 +1433,7 @@ to all source items."
                   (let ((pid (org-entry-get (point) "PID")) str)
                     (when (org-uuidgen-p pid)
                      (org-xob--clear-node)
+                     (org-set-tags-to tag)
                      (and selector
                           (stringp
                            (setq str (org-xob--select-content pid selector)))
