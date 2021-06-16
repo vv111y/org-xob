@@ -560,8 +560,10 @@ then also update the forlinks source."
 (defun org-xob-goto-original ()
   "Go to the original node entry in the knowledge base."
   (interactive)
-  (when (org-xob--is-edit-node-p)
-    (org-id-goto (org-entry-get (point) "EDIT"))))
+  (cond ((org-xob--is-node-p nil 'deepcheck))
+        ((org-xob--is-edit-node-p)
+         (org-id-goto (org-entry-get (point) "EDIT")))
+        ((org-id-goto (org-entry-get (point) "PID")))))
 
 ;;;;; Display Commands
 
