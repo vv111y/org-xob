@@ -339,6 +339,7 @@ Calling with C-u will force a restart."
        (and
         (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+        (add-hook 'ediff-quit-hook #'org-xob--ediff-quit-hook)
         (message "XOB: hooks enabled."))
        (not (setq org-xob--open-nodes nil))
        (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
@@ -384,6 +385,7 @@ Calling with C-u will force a restart."
         (org-xob--clear-file-variables)
         (remove-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (remove-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+        (remove-hook 'ediff-quit-hook #'org-xob--ediff-quit-hook)
         (cancel-timer org-xob-new-day-timer)
         (setq org-xob-on-p nil)
         (message "XOB: stopped."))))
@@ -992,27 +994,36 @@ Current version performs simple, blunt, whole content replacement."
   (interactive)
   (save-window-excursion
     (save-excursion
-      (let ((oid (org-entry-get (point) "EDIT")) bufe bufo frm)
+      (let ((oid (org-entry-get (point) "EDIT"))
+            bege ende bego endo)
         (when (org-xob--is-edit-node-p)
-          (save-restriction
-            (setq bufe (current-buffer))
-            (org-mark-subtree)
-            (org-end-of-meta-data t)
-            (narrow-to-region (point) (mark))
-            (save-restriction
-              (org-id-goto oid)
-              (setq bufo (current-buffer))
-              (org-mark-subtree)
-              (org-end-of-meta-data t)
-              (narrow-to-region (point) (mark))
-              (select-frame (setq
-                             frm (make-frame)))
-              (ediff-buffers bufe bufo)
-              (delete-frame)
-              (with-current-buffer bufo
-                (widen))
-              (with-current-buffer bufe
-                (widen)))))))))
+          (setq org-xob--ediff-bufe (current-buffer))
+          (org-narrow-to-subtree)
+          (setq bege (point-min) ende (point-max))
+          (deactivate-mark 'force)
+          (org-id-goto oid)
+          (setq org-xob--ediff-bufo (current-buffer))
+          (org-narrow-to-subtree)
+          (setq bego (point-min) endo (point-max))
+          (deactivate-mark 'force)
+          (select-frame (setq
+                         org-xob--ediff-frm (make-frame)))
+          (ediff-regions-internal org-xob--ediff-bufe bege ende
+                                  org-xob--ediff-bufo bego endo
+                                  nil 'xob-ediff nil nil))))))
+
+(defun org-xob--ediff-quit-hook ()
+  "returns buffers to previous state and closes frame."
+  (dolist (buf '(org-xob--ediff-bufo org-xob--ediff-bufe))
+    (when buf
+      (with-current-buffer (symbol-value buf)
+        (goto-char (point-min))
+        (outline-hide-subtree)
+        (widen))))
+  (when org-xob--ediff-frm (delete-frame org-xob--ediff-frm))
+  (setq org-xob--ediff-bufo nil)
+  (setq org-xob--ediff-bufe nil)
+  (setq org-xob--ediff-frm nil))
 
 ;;;;; Node Functions DONE UNCHANGED
 

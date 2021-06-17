@@ -3271,3 +3271,46 @@ make"
 
 (org-get-tags nil t)
 (org-entry-get (point) "EDIT")
+
+;;; old-org-xob-ediff-edit - didn't work well
+(defun old-org-xob-ediff-edit ()
+  "Run ediff on the edit node at point with the original node."
+  (interactive)
+  (save-window-excursion
+    (save-excursion
+      (let ((oid (org-entry-get (point) "EDIT"))
+            bege ende bego endo)
+        (when (org-xob--is-edit-node-p)
+          ;; (save-restriction)
+          (setq org-xob--ediff-bufe (current-buffer))
+          (org-narrow-to-subtree)
+          ;; (org-mark-subtree)
+          ;; (org-end-of-meta-data t)
+          (setq bege (point-min) ende (point-max))
+          ;; (setq bege (point) ende (mark))
+          (deactivate-mark 'force)
+          ;; (narrow-to-region (point) (mark))
+          ;; (save-restriction)
+          (org-id-goto oid)
+          (setq org-xob--ediff-bufo (current-buffer))
+          (org-narrow-to-subtree)
+          ;; (org-mark-subtree)
+          ;; (org-end-of-meta-data t)
+          (setq bego (point-min) endo (point-max))
+          ;; (setq bego (point) endo (mark))
+          (deactivate-mark 'force)
+          ;; (narrow-to-region (point) (mark))
+          (select-frame (setq
+                         org-xob--ediff-frm (make-frame)))
+          (ediff-regions-internal org-xob--ediff-bufe bege ende
+                                  org-xob--ediff-bufo bego endo
+                                  nil 'xob-ediff nil nil)
+          ;; (delete-frame)
+          ;; (with-current-buffer org-xob--ediff-bufo
+          ;;   (widen))
+          ;; (with-current-buffer org-xob--ediff-bufe
+          ;;   (widen))
+          )))))
+
+;;; ---
+
