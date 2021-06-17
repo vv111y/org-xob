@@ -939,10 +939,22 @@ in a single-pane display format."
 
 (defun org-xob--update-modified-time ()
   "Update the modified timestamp for xob node at point."
-  (if (org-entry-get (point) "MODIFIED")
+  (if (org-xob--is-node-p)
       (org-entry-put (point) "MODIFIED"
                      (concat "[" (format-time-string "%F %a %R") "]")))
   nil)
+
+(defun org-xob--compare-modified-time ()
+  "If on an edit node, check if the modified time of the original has
+changed since opening this copy."
+  (when (org-xob--is-edit-node-p)
+    (let ((etime (org-entry-get (point) "MODIFIED"))
+          otime)
+      (save-window-excursion
+        (save-excursion
+          (org-xob-goto-original)
+          (setq otime (org-entry-get (point) "MODIFIED"))
+          (not (org-time= etime otime)))))))
 
 (defun org-xob--smart-paste ()
   "If the paste is an org subtree, then properly adjust levels for the current heading.
