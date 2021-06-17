@@ -974,21 +974,26 @@ update node with that ID. With universal arg C-u, update all open edit nodes.
 Current version performs simple, blunt, whole content replacement."
   (interactive "P")
   (save-window-excursion
-    (save-excursion))
-  (let ((updater #'(lambda (ID)
-                     (progn
-                       (org-xob--id-goto ID)
-                       (if (org-xob--is-edit-node-p)
-                           (when-let ((oID (org-entry-get (point) "EDIT"))
+    (save-excursion
+      (let ((updater #'(lambda (ID)
+                         (progn
+                           (org-xob--id-goto ID)
+                           (when-let ((org-xob--is-edit-node-p)
                                       (clip (org-xob--get-full-node 1 nil)))
-                             (org-xob--id-goto oID)
-                             (org-xob--update-node clip)
-                             (org-xob--update-modified-time)))))))
-    (if (eq current-prefix-arg '(4))
-        (dolist (ID org-xob--open-nodes)
-          (funcall updater ID))
-      (if sID (funcall updater sID)
-        (funcall updater (org-entry-get (point) "EDIT"))))))
+                             (catch 'nochange
+                               (if (org-xob--compare-modified-time)
+                                   (if (y-or-n-p "Original node has changed. Run ediff?")
+                                       (org-xob-ediff-edit)
+                                     (unless (y-or-n-p "Really change?")
+                                       (throw 'nochange))))
+                               (org-xob-goto-original)
+                               (org-xob--update-original clip)))))))
+        (if (eq current-prefix-arg '(4))
+            (dolist (ID (org-xob--get-open-node-ids))
+              (funcall updater ID))
+          (if sID (funcall updater sID)
+            (funcall updater (org-entry-get (point) "ID"))))))))
+
 (defun org-xob--update-original (clip)
   "update contents of node at point with string ~clip~.
 Note, requires that all KB nodes are stored at level 1."
