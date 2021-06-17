@@ -966,21 +966,6 @@ Otherwise just yank. If heading is a xob node, then update modified time propert
 
 ;; -- SYNC --
 
-(defun org-xob--update-node (clip)
-  "update contents of node at point with string ~clip~.
-Note, requires that all KB nodes are stored at level 1."
-  (when (org-xob--is-node-p)
-    (org-with-wide-buffer
-     (org-save-outline-visibility
-         (org-narrow-to-subtree)
-       (outline-show-all)
-       (org-mark-subtree)
-       (org-end-of-meta-data t)
-       (call-interactively #'delete-region)
-       (deactivate-mark 'force)
-       (org-end-of-meta-data t)
-       (insert clip)))))
-
 ;; TODO record diff, check if deleted open nodes
 ;;;###autoload
 (defun org-xob-sync-edit (&optional arg sID)
@@ -1004,6 +989,21 @@ Current version performs simple, blunt, whole content replacement."
           (funcall updater ID))
       (if sID (funcall updater sID)
         (funcall updater (org-entry-get (point) "EDIT"))))))
+(defun org-xob--update-original (clip)
+  "update contents of node at point with string ~clip~.
+Note, requires that all KB nodes are stored at level 1."
+  (when (org-xob--is-node-p)
+    (org-with-wide-buffer
+     (org-save-outline-visibility
+         (org-narrow-to-subtree)
+       (org-show-subtree)
+       (org-mark-subtree)
+       (org-end-of-meta-data t)
+       (call-interactively #'delete-region)
+       (deactivate-mark 'force)
+       (org-end-of-meta-data t)
+       (insert clip)
+       (org-xob--update-modified-time)))))
 
 ;;;###autoload
 (defun org-xob-ediff-edit ()
