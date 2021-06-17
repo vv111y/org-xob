@@ -1000,7 +1000,7 @@ Current version performs simple, blunt, whole content replacement."
   (save-window-excursion
     (save-excursion
       (let ((oid (org-entry-get (point) "EDIT"))
-            bege ende bego endo)
+            bege ende bego endo frmw frmh)
         (when (org-xob--is-edit-node-p)
           (setq org-xob--ediff-bufe (current-buffer))
           (org-narrow-to-subtree)
@@ -1011,8 +1011,11 @@ Current version performs simple, blunt, whole content replacement."
           (org-narrow-to-subtree)
           (setq bego (point-min) endo (point-max))
           (deactivate-mark 'force)
-          (select-frame (setq
-                         org-xob--ediff-frm (make-frame)))
+          (setq frmw (frame-width))
+          (setq frmh (frame-height))
+          (select-frame
+           (setq org-xob--ediff-frm (make-frame `((width . ,frmw)
+                                                  (height . ,frmh)))))
           (ediff-regions-internal org-xob--ediff-bufe bege ende
                                   org-xob--ediff-bufo bego endo
                                   nil 'xob-ediff nil nil))))))
@@ -1284,8 +1287,6 @@ arguments are supplied, then check the associated heading."
     (push newsrc (open-node-sources node))
     newsrc))
 
-;; TODO in flux, partially redone
-;; see org-xob--refresh-open-nodes,
 (defun org-xob-show-source (source &optional arg)
   "Show context source for opened node at point. The second argument
 source-type is the data structure defining the source. If necessary will
