@@ -882,6 +882,11 @@ the windows."
               org-xob--open-nodes
               :key #'(lambda (x) (open-node-ID x))))
 
+(defun org-xob--get-open-node-ids ()
+  "Return list of open node ids."
+  (mapcar #'(lambda (x) (open-node-ID x))
+              org-xob--open-nodes))
+
 (defun org-xob--edit-write-single-pane (ID title)
   "write a node for editing in single pane mode. Point is assumed to be in
 the correct location."
