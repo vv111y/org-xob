@@ -1010,20 +1010,26 @@ Current version performs simple, blunt, whole content replacement."
             (funcall updater (org-entry-get (point) "ID"))))))))
 
 (defun org-xob--update-original (clip)
-  "update contents of node at point with string ~clip~.
-Note, requires that all KB nodes are stored at level 1."
+  "update contents of KB node at point with string ~clip~.
+Note, requires that all KB nodes are stored at level 1.
+Does not use the kill-ring."
   (when (org-xob--is-node-p)
-    (org-with-wide-buffer
-     (org-save-outline-visibility
-         (org-narrow-to-subtree)
-       (org-show-subtree)
-       (org-mark-subtree)
-       (org-end-of-meta-data t)
-       (call-interactively #'delete-region)
-       (deactivate-mark 'force)
-       (org-end-of-meta-data t)
-       (insert clip)
-       (org-xob--update-modified-time)))))
+    (org-xob--update-node clip)
+    (org-xob--update-modified-time)))
+
+(defun org-xob--update-node (clip &optional meta)
+  "Update any node with the given string ~clip~. If optional argument
+meta is selected, then update the meta section as well (whole subtree)."
+  (org-with-wide-buffer
+   (org-save-outline-visibility
+       (org-narrow-to-subtree)
+     (org-show-subtree)
+     (org-mark-subtree)
+     (unless meta (org-end-of-meta-data t))
+     (call-interactively #'delete-region)
+     (deactivate-mark 'force)
+     (unless meta (org-end-of-meta-data t))
+     (insert clip))))
 
 ;;;###autoload
 (defun org-xob-ediff-edit ()
