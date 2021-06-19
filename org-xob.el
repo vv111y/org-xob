@@ -406,8 +406,11 @@ Calling with C-u will force a restart."
   "Focus on a node for editing. If it does not exist, create it."
   (interactive "P")
   (org-xob-with-xob-on
-   (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-     (org-xob--edit-node ID title))))
+   (pcase-let ((`(,ID ,title) (if arg
+                                  (org-xob--get-node-by-type)
+                                (org-xob--get-create-node))))
+     (when (and ID title)
+       (org-xob--edit-node ID title)))))
 
 ;; TODO buggy source deletions
 ;;;###autoload
