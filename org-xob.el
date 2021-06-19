@@ -972,13 +972,17 @@ changed since opening this copy."
           (setq otime (org-entry-get (point) "MODIFIED"))
           (not (org-time= etime otime)))))))
 
-(defun org-xob--smart-paste ()
+(defun org-xob--smart-paste (&optional clip)
   "If the paste is an org subtree, then properly adjust levels for the current heading.
 Otherwise just yank. If heading is a xob node, then update modified time property."
-  (if (org-kill-is-subtree-p)
-      (org-paste-subtree nil t t)
-    (yank)
-    (org-xob--update-modified-time)))
+  (save-excursion
+    (if clip
+        (org-paste-subtree nil clip nil nil)
+      (if (org-kill-is-subtree-p)
+          (org-paste-subtree nil clip t t)
+        ;; (insert clip)
+        (yank))))
+  (org-xob--update-modified-time))
 
 ;; -- SYNC --
 
