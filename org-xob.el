@@ -669,6 +669,7 @@ sQuery Form: ")
    "sec"
    #'(lambda () (let ((beg) (end))
                   (org-end-of-meta-data t)
+                  (org-back-over-empty-lines)
                   (setq beg (point))
                   (outline-next-heading)
                   (setq end (- (point) 1))
