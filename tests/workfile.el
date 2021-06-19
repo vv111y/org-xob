@@ -3320,3 +3320,37 @@ make"
  ;; "[2021-05-25 Tue 14:41]"
  "[2021-05-25 Tue 14:45]"
  )
+
+;; tighten marked tree
+(progn
+  (org-mark-subtree)
+  (org-end-of-meta-data t)
+  (org-back-over-empty-lines)
+  (exchange-point-and-mark)
+  (org-back-over-empty-lines)
+  (exchange-point-and-mark)
+  )
+
+(require 'helm-org-ql)
+
+(let ((type "bib.article"))
+  (helm-org-ql org-xob--KB-files
+   :property "TYPE" "n.bib.article"
+    ))
+
+
+(defun org-xob--goto-buffer-heading (ID)
+  "Find heading with ID in current buffer. If found then return point at
+heading beginning, else nil."
+  (goto-char (point-min))
+  (if (re-search-forward ID nil t nil)
+      (progn (org-back-to-heading)
+             (point))
+    nil))
+
+(org-forward-element)
+
+(progn
+  (org-end-of-meta-data t)
+  (org-back-over-empty-lines)
+  )

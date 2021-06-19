@@ -326,7 +326,7 @@ item. (credit https://emacs.stackexchange.com/a/26840)"
           ,@body))
 
 ;;;; Commands
-;;;;; Main Commands DONE
+;;;;; Main Commands
 ;;;###autoload
 (defun org-xob-start (&optional arg)
   "Start the xob system: load state or initialize new. Open new day node.
@@ -918,7 +918,7 @@ the correct location."
     (funcall func)
     (goto-char m)
     (set-marker m nil))
-  (org-toggle-tag "edit" 'ON)
+  (org-set-tags-to "edit")
   (org-entry-put (point) "EDIT" (org-entry-get (point) "ID"))
   (org-entry-put (point) "ID" (uuidgen-4))
   (outline-hide-entry))
@@ -960,7 +960,7 @@ in a single-pane display format."
                      (concat "[" (format-time-string "%F %a %R") "]")))
   nil)
 
-(defun org-xob--compare-modified-time ()
+(defun org-xob--modified-time= ()
   "If on an edit node, check if the modified time of the original has
 changed since opening this copy."
   (when (org-xob--is-edit-node-p)
@@ -1381,7 +1381,6 @@ make"
       (or (open-node-sources node)
           nil))))
 
-;; TODO replace pid with copy
 ;; TODO need over-heading both dual and single pane
 (defun org-xob--source-write (source)
   "Open a source tree into the context buffer. If it is already there,
@@ -1392,7 +1391,7 @@ source is a plist that describes the content source."
     (org-insert-heading '(4) 'invisible-ok 'TOP) ;; TODO insert sub-tree
     (org-edit-headline (plist-get source :title))
     (dolist (el (plist-get source :tags))
-      (org-toggle-tag el 'ON))
+      (org-set-tags-to el))
     (org-entry-put (point) "ID" (plist-get source :ID))
     (org-entry-put (point) "PID" (plist-get source :PID)))
   (org-xob--source-refresh source))
