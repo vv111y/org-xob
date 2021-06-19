@@ -1402,18 +1402,20 @@ source is a plist that describes the content source."
   "Remake source tree. Check if items need to be added or removed."
   (if (string= (org-entry-get (point) "ID") ;; TODO new, test
                (plist-get source :ID))
-      (let ((temp (copy-tree (plist-get source :items))))
-        (org-xob--map-source
-         (lambda ()
-           (let ((pid (org-entry-get (point) "PID")))
-             (if (member pid temp)
-                 (setq temp (delete pid temp))
-               (progn
-                 (org-mark-subtree)
-                 (call-interactively 'delete-region))))))
-        (if temp
-            (dolist (el temp)
-              (org-xob--source-add-item el))))
+      (save-restriction
+        (org-narrow-to-subtree)
+        (let ((temp (copy-tree (plist-get source :items))))
+          (org-xob--map-source
+           (lambda ()
+             (let ((pid (org-entry-get (point) "PID")))
+               (if (member pid temp)
+                   (setq temp (delete pid temp))
+                 (progn
+                   (org-mark-subtree)
+                   (call-interactively 'delete-region))))))
+          (if temp
+              (dolist (el temp)
+                (org-xob--source-add-item el)))))
     (message "xob: can't refresh context here, something's wrong.")))
 
 (defun org-xob--source-add-item (ID)
