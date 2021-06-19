@@ -998,10 +998,10 @@ Current version performs simple, blunt, whole content replacement."
       (let ((updater #'(lambda (ID)
                          (progn
                            (org-xob--id-goto ID)
-                           (when-let ((org-xob--is-edit-node-p)
+                           (when-let (((org-xob--is-edit-node-p))
                                       (clip (org-xob--get-full-node 1 nil)))
                              (catch 'nochange
-                               (if (org-xob--compare-modified-time)
+                               (unless (org-xob--modified-time=)
                                    (if (y-or-n-p "Original node has changed. Run ediff?")
                                        (org-xob-ediff-edit)
                                      (unless (y-or-n-p "Really change?")
