@@ -1171,10 +1171,14 @@ Returns content as a string with properties."
 ;; NOTE written for org-xob--select-content,
 ;; for syncing to xob kb, requires all source nodes
 ;; to be at level one - NO nested nodes
-(defun org-xob--get-full-node (level &optional meta)
-  "Used for both edit node and context presentation. Returns the full node as a string,
-but with adjusted specified level. If meta option is selected, then include both the
-node heading and the properties drawer, otherwise just the body."
+(defun org-xob--get-full-node (level &optional meta trimtop trimend)
+  "Return a full node as a string (with properties). Used for both edit
+node and context presentation. Returns the full node as a string, but with
+adjusted specified level. Options:
+meta - include all contents. Adds the heading and all drawers at the top.
+			 Otherwise just the body is returned.
+trimtop - exclude any empty space between the heading and the first content.
+trimend - exclude empty lines at the bottom."
   (let ((org-yank-folded-subtrees nil)
         (org-yank-adjusted-subtrees t))
     (org-copy-subtree)
@@ -1184,7 +1188,13 @@ node heading and the properties drawer, otherwise just the body."
       (goto-char (point-min))
       (org-mark-subtree)
       (unless meta
-        (org-end-of-meta-data t))
+        (org-end-of-meta-data t)
+        (unless trimtop
+          (org-back-over-empty-lines)))
+      (when trimend
+        (exchange-point-and-mark)
+        (org-back-over-empty-lines)
+        (exchange-point-and-mark))
       (buffer-substring (point) (mark)))))
 
 ;; --new nodes and links--
