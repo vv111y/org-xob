@@ -1218,6 +1218,30 @@ trimend - exclude empty lines at the bottom."
                                                (setq ID (org-xob--capture title)))
                                              (list ID title))))))
 
+(defun org-xob--get-node-by-type ()
+  "Find a node by type."
+  (unless org-xob-on-p
+    (org-xob-start))
+  (if-let ((type (org-xob--select-node-type)))
+      (helm :buffer "*xob get paper*"
+            :sources (helm-build-sync-source "xob-papers"
+                       :candidates (org-xob--find-nodes-by-type type)
+                       :volatile t
+                       :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
+                                                 (list ID title)))))))
+
+(defun org-xob--select-node-type ()
+  (helm :buffer "xob types"
+        :sources (helm-build-sync-source "xob-types"
+                   :candidates org-xob--node-types
+                   :action (lambda (c) c))))
+
+(defun org-xob--find-nodes-by-type (type)
+  (org-ql-select org-xob--KB-files
+    `(and (is-xob-node)
+          (property "TYPE" ,type))
+    :action #'(nth 4 (org-heading-components))))
+
 (defun org-xob--new-node (&optional heading)
   "Both a hook function and for general node creation. If orgmode 'heading' is given,
 then convert it into a new node in place. Otherwise it is assumed to be called
