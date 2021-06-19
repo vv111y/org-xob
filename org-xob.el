@@ -940,6 +940,18 @@ in a single-pane display format."
          (org-xob--add-source node org-xob--source-backlinks)
          (org-xob--add-source node org-xob--source-forlinks))))))
 
+;;;###autoload
+(defun org-xob-revert-edit ()
+  "Revert the edit node at point back to the original."
+  (interactive)
+  (when (org-xob--is-edit-node-p)
+    (let (clip)
+      (save-window-excursion
+        (save-excursion
+          (org-xob-goto-original)
+          (setq clip (org-xob--get-full-node 1 'meta))))
+      (org-xob--update-node clip 'meta))))
+
 (defun org-xob--update-modified-time ()
   "Update the modified timestamp for xob node at point."
   (if (org-xob--is-node-p)
