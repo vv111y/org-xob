@@ -1065,16 +1065,17 @@ meta is selected, then update the meta section as well (whole subtree)."
 
 (defun org-xob--ediff-quit-hook ()
   "returns buffers to previous state and closes frame."
-  (dolist (buf '(org-xob--ediff-bufo org-xob--ediff-bufe))
-    (when buf
-      (with-current-buffer (symbol-value buf)
-        (goto-char (point-min))
-        (outline-hide-subtree)
-        (widen))))
-  (when org-xob--ediff-frm (delete-frame org-xob--ediff-frm))
-  (setq org-xob--ediff-bufo nil)
-  (setq org-xob--ediff-bufe nil)
-  (setq org-xob--ediff-frm nil))
+  (when (eq 'xob-ediff ediff-job-name)
+    (dolist (buf (list org-xob--ediff-bufo org-xob--ediff-bufe))
+      (when buf
+        (with-current-buffer buf
+          (goto-char (point-min))
+          (outline-hide-subtree)
+          (widen))))
+    (when org-xob--ediff-frm (delete-frame org-xob--ediff-frm))
+    (setq org-xob--ediff-bufo nil)
+    (setq org-xob--ediff-bufe nil)
+    (setq org-xob--ediff-frm nil)))
 
 ;;;;; Node Functions DONE UNCHANGED
 
