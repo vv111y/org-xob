@@ -765,6 +765,7 @@ If ID is given, then convert todo with that ID."
     (with-current-buffer buf1
       (org-mode)
       (org-xob-mode 1)
+      (add-hook 'kill-buffer-hook #'org-xob--close-buffer-hook nil 'local)
       (setq-local org-xob--buf 'parent)
       (setq-local org-xob--pair-buf buf2)
       (if single
@@ -778,6 +779,17 @@ If ID is given, then convert todo with that ID."
     (setq org-xob-last-buffer buf1)
     (push buf1 org-xob-buffers)
     buf1))
+
+(defun org-xob--close-buffer-hook ()
+  "Properly close xob buffer: remove it from orb-xob-buffers, kill context buffer."
+  (let ((buf (current-buffer)))
+    (setq org-xob-buffers (cl-delete buf org-xob-buffers))
+    (if (eq buf org-xob-last-buffer)
+        (setq org-xob-last-buffer (car-safe org-xob-buffers)))
+    (kill-buffer org-xob--pair-buf)
+    (when (eq 'dual org-xob--display)
+      (split-window-right)
+      (delete-window))))
 
 (defun org-xob--id-create ()
   "Create a UUID formatted ID. org-id will not work with buffers that are
