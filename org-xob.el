@@ -109,6 +109,8 @@
 
 (defvar org-xob-buffers nil "List of active xob buffers.")
 
+(defvar org-xob-all-buffers nil "List of active xob buffers, including context buffers.")
+
 (defvar org-xob-last-buffer "" "Last xob buffer used.")
 
 (defvar org-xob--open-nodes nil
@@ -778,6 +780,8 @@ If ID is given, then convert todo with that ID."
       (setq-local org-xob--pair-buf buf1))
     (setq org-xob-last-buffer buf1)
     (push buf1 org-xob-buffers)
+    (push buf1 org-xob-all-buffers)
+    (push buf2 org-xob-all-buffers)
     buf1))
 
 (defun org-xob--close-buffer-hook ()
@@ -803,10 +807,10 @@ Returns ID if successful, nil otherwise."
 ;; TODO org-ql syntax right?
 (defun org-xob--id-goto (ID)
   (when (and (org-not-nil ID)
-             org-xob-buffers)
+             org-xob-all-buffers)
     (setq m
           (car
-           (org-ql-select org-xob-buffers
+           (org-ql-select org-xob-all-buffers
              `(or (property "ID" ,ID)
                   (property "EDIT" ,ID)
                   (property "PID" ,ID))
