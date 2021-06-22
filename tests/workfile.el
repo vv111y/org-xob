@@ -3313,6 +3313,9 @@ make"
           )))))
 
 ;;; ---
+    :PROPERTIES:
+    :ID: e982a4a0-05ad-4d64-a0cd-0816e194c37b
+    :END:
 
 (org-time-subtract
  "[2021-05-25 Tue 14:41]"
@@ -3354,3 +3357,78 @@ heading beginning, else nil."
   (org-end-of-meta-data t)
   (org-back-over-empty-lines)
   )
+
+(setq vv/l '("a" "b" "c" "d"))
+(pcase-let ((`(,x ,y) (org-xob--get-create-node)))
+  ;; (print x)
+  ;; (print y)
+  (print (bound-and-true-p x))
+  (print (bound-and-true-p y))
+  (when (bound-and-true-p x)
+    (message "id: %s ||  t: %s" x y))
+  )
+
+(defun org-xob-refile-region ()
+  (interactive)
+  (org-xob-with-xob-on
+   (if (use-region-p)
+       (pcase-let ((`(,x ,y) (org-xob--get-create-node)))
+         ;; (when (bound-and-true-p x)
+         ;;   (message "id: %s ||  t: %s" x y)
+         ;;   )
+         (when (bound-and-true-p x)
+           (kill-region (point) (mark))
+           (save-window-excursion
+             (org-with-wide-buffer
+              (org-id-goto x)
+              (if (org-goto-first-child)
+                  (progn
+                    (newline 2)
+                    (forward-line -1))
+                (org-end-of-subtree)
+                (newline)
+                )
+              (org-xob--smart-paste))))
+         ))))
+
+(pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+  ;; (print ID)
+  ;; (print title)
+  ;; (print (boundp 'ID))
+  ;; (print (boundp 'title))
+  ;; (print (bound-and-true-p ID))
+  ;; (print (bound-and-true-p title))
+  nil
+  ;; (when (bound-and-true-p ID)
+    ;; (message "yes")
+    ;; )
+  )
+
+(when (bound-and-true-p vv-sw)
+  (message "yes")
+)
+
+
+
+org-xob--open-nodes
+(setq org-xob--open-nodes nil)
+
+(setq org-xob-buffers nil)
+(setq org-xob-last-buffer nil)
+(buffer-live-p
+ org-xob-last-buffer)
+
+(cl-delete (current-buffer) org-xob-buffers)
+
+(org-xob--this-node-sources "ba157228-ff3a-49ea-9363-d16150697474")
+
+(uuidgen-4)
+(org-xob--id-create)
+
+
+#s(open-node "e63be15f-45c2-40c4-b6a1-cc8f8c49ea3c" "Software Testing"
+             ((:name forlinks :tags ("KB" "forlinks") :title "Software Testing" :ID "a25cd304-66bf-498b-938b-d162694a74ab" :PID "e63be15f-45c2-40c4-b6a1-cc8f8c49ea3c" :getfn org-xob--node-get-link-entries :items nil)
+              (:name backlinks :tags ("KB" "backlinks") :title "Software Testing" :ID "c78db72f-c7fa-4da6-ae3f-e6b0957a897e" :PID "e63be15f-45c2-40c4-b6a1-cc8f8c49ea3c" :getfn org-xob--node-get-link-entries :items ("e5493fc8-f051-4163-9c01-946b63a0b462"))))
+
+
+(setq vv/v (org-entry-put (point) "TEE" (uuidgen-4)))

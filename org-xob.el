@@ -256,10 +256,12 @@ n.b  -- bibliographic entries")
   :require 'org-xob
   (if org-xob-mode
       (progn
-        (unless org-xob-on-p (org-xob-start))
-        ;; (evil-define-key 'normal 'local (kbd "t") 'org-xob-to-node-tree)
+        ;; (remove-hook 'kill-buffer-hook #'org-xob--close-buffer-hook 'local)
         )
-    ))
+    (progn
+      ;; (unless org-xob-on-p (org-xob-start))
+      ;; (add-hook 'kill-buffer-hook #'org-xob--close-buffer-hook nil 'local)
+      )))
 
 ;;;###autoload
 (defhydra org-xob-hydra (:columns 4)
@@ -741,7 +743,7 @@ If ID is given, then convert todo with that ID."
 ;;;;; Buffer Functions DONE
 
 (defun org-xob-buffer-p (&optional buffer)
-  (let ((buf (if buffer buffer (current-buffer))))
+  (let ((buf (or buffer (current-buffer))))
     (if (buffer-live-p buf)
         (with-current-buffer buf
           (and (bound-and-true-p org-xob-mode)
@@ -749,7 +751,7 @@ If ID is given, then convert todo with that ID."
                (member buf org-xob-buffers))))))
 
 (defun org-xob-edit-buffer-p (&optional buffer)
-  (let ((buf (if buffer buffer (current-buffer))))
+  (let ((buf (or buffer (current-buffer))))
     (and (org-xob-buffer-p buf)
          (with-current-buffer buf
            (eq org-xob--buf 'parent)))))
@@ -1197,10 +1199,11 @@ Returns content as a string with properties."
   "Return a full node as a string (with properties). Used for both edit
 node and context presentation. Returns the full node as a string, but with
 adjusted specified level. Options:
-meta - include all contents. Adds the heading and all drawers at the top.
+meta - Include all contents. Adds the heading and all drawers at the top.
 			 Otherwise just the body is returned.
-trimtop - exclude any empty space between the heading and the first content.
-trimend - exclude empty lines at the bottom."
+trimtop - Exclude any empty space between the heading and the first content.
+					Only relevant if meta is excluded (nil).
+trimend - Exclude empty lines at the bottom."
   (let ((org-yank-folded-subtrees nil)
         (org-yank-adjusted-subtrees t))
     (org-copy-subtree)
@@ -1527,7 +1530,7 @@ then return all other links."
                          (if (org-xob--is-node-p
                               (setq ID (org-element-property :path link)))
                              ID
-                           (message "XOB: invalid link %s" ID) nil)))))))))))
+                           nil)))))))))))
 
 ;; TODO test with new sources packaging
 (defun org-xob--context-copy-paste (&optional tag selector insertor)
