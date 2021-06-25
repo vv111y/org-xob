@@ -424,21 +424,21 @@ is supplied, then close that node, otherwise close node at point.
 All displayed contextual material will also be deleted. Requires
 that point be under the nodes top heading, not a subheading."
   (interactive)
-  (save-window-excursion
-    (save-excursion
-      (when-let ((ID (progn (when ID (org-xob--id-goto ID))
-                            (org-entry-get (point) "EDIT")))
-                 ((org-xob--is-edit-node-p)))
-        (org-xob-map-node-sources-2
-         ID
-         #'(lambda () (progn (org-mark-subtree)
-                             (call-interactively 'delete-region))))
-        (setq org-xob--open-nodes
-              (cl-delete-if #'(lambda (x) (string= x ID))
-                            org-xob--open-nodes
-                            :key #'(lambda (x) (open-node-ID x))))
-        (org-mark-subtree)
-        (call-interactively #'delete-region)))))
+  (when-let ((ID (or (and (org-xob--id-goto ID)
+                          ID)
+                     (org-entry-get (point) "EDIT")))
+             ((org-xob--is-edit-node-p)))
+    (with-current-buffer org-xob--c-buff
+      (mapc #'(lambda (src) (progn (when (org-xob--id-goto src)
+                                     (org-mark-subtree)
+                                     (call-interactively 'delete-region))))
+            (org-xob--this-node-sources ID)))
+    (setq org-xob--open-nodes
+          (cl-delete-if #'(lambda (x) (string= x ID))
+                        org-xob--open-nodes
+                        :key #'(lambda (x) (open-node-ID x))))
+    (org-mark-subtree)
+    (call-interactively #'delete-region)))
 
 ;;;###autoload
 (defun org-xob-remove-node (&optional ID)
