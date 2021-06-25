@@ -1728,7 +1728,19 @@ Further, if optional ID is given, then check if this source comes from node with
             (setq org-xob-today-buffer (current-buffer))))
         (message "XOB: Todays log entry opened.") t)))
 
-;;;;;; Clocking
+(defun org-xob--log-event (event id &optional description)
+  "General log function used to send activity entries to the log."
+  ;; timestamp
+  ;; event
+  ;; node
+  ;; description
+  (save-window-excursion
+    (save-excursion
+      (save-restriction
+        (org-xob--id-goto org-xob-today)
+        (org-narrow-to-subtree)
+        ()))))
+
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
 ;;;;; xob Management DONE UNCHANGED?
