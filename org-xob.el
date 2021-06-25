@@ -1196,7 +1196,9 @@ Returns content as a string with properties."
          (org-save-outline-visibility
              (org-narrow-to-subtree)
            (outline-show-all)
-           (setq str (funcall selector))
+           (condition-case err
+               (setq str (funcall selector))
+             (t (message "xob: failed to select for %s" id)))
            (deactivate-mark 'force)))))
     str))
 
@@ -1370,10 +1372,10 @@ Maybe useful for syncing."
   "Check if heading at point is a valid xob source. If PID and ID
 arguments are supplied, then check the associated heading."
   (interactive)
-  (if-let ((temp (if ID ID
-                   (org-entry-get (point) "ID")))
-           (pid (if PID PID
-                  (org-entry-get (point) "PID")))
+  (if-let ((temp (or ID
+                     (org-entry-get (point) "ID")))
+           (pid (or PID
+                    (org-entry-get (point) "PID")))
            (node (org-xob--get-open-node pid))
            (srcs (open-node-sources node))
            ((cl-find-if #'(lambda (x) (string= temp x))
@@ -1412,41 +1414,42 @@ make"
         (save-excursion
           (with-current-buffer bufc
             (org-with-wide-buffer
-             (when (eq '(4) arg) 										;; if arg then repop items
-               (funcall (plist-get newsrc :getfn) newsrc))
-             ;; TODO redo for overheading
-             (if (org-xob--goto-buffer-heading
-                  (plist-get src :ID))
-                 (org-xob--source-refresh src)		;; found, refresh
-               (org-xob--source-write src))			;; not found, then write src
-             (if (pulse-available-p)
-                 (pulse-momentary-highlight-one-line (point)))))))
+             (evil-save-state
+               (when (eq '(4) arg) 										;; if arg then repop items
+                 (funcall (plist-get newsrc :getfn) newsrc))
+               ;; TODO redo for overheading
+               (if (org-xob--goto-buffer-heading
+                    (plist-get src :ID))
+                   (org-xob--source-refresh src)		;; found, refresh
+                 (org-xob--source-write src))			;; not found, then write src
+               (if (pulse-available-p)
+                   (pulse-momentary-highlight-one-line (point))))))))
     (message "Source is not available.")))
 
 (defun org-xob--this-node-sources (id)
   "Returns node context sources as a list."
-  ;; (cl-remove nil)
-  ;; (mapcar #'(lambda (x) (when (string= id (open-node-ID x))
-  ;;                         (open-node-sources x))) org-xob--open-nodes))
-  (dolist (node org-xob--open-nodes)
-    (when (string= id (open-node-ID node))
-      (or (open-node-sources node)
-          nil))))
+  (when-let* ((node (org-xob--get-open-node id))
+              (srcs (open-node-sources node)))
+    (mapcar #'(lambda (x) (plist-get x :ID))
+            srcs)))
 
 ;; TODO need over-heading both dual and single pane
 (defun org-xob--source-write (source)
   "Open a source tree into the context buffer. If it is already there,
 then refresh it. source items are shown as org headings.
 source is a plist that describes the content source."
-  (unless (org-xob--goto-buffer-heading (plist-get source :ID))
-    (goto-char (point-max)) ;; TODO goto super-heading, then to end of tree
-    (org-insert-heading '(4) 'invisible-ok 'TOP) ;; TODO insert sub-tree
-    (org-edit-headline (plist-get source :title))
-    (dolist (el (plist-get source :tags))
-      (org-set-tags-to el))
-    (org-entry-put (point) "ID" (plist-get source :ID))
-    (org-entry-put (point) "PID" (plist-get source :PID)))
-  (org-xob--source-refresh source))
+  (let (m)
+    (unless (org-xob--goto-buffer-heading (plist-get source :ID))
+      (goto-char (point-max)) ;; TODO goto super-heading, then to end of tree
+      (org-insert-heading '(4) 'invisible-ok 'TOP) ;; TODO insert sub-tree
+      (org-edit-headline (plist-get source :title))
+      (dolist (el (plist-get source :tags))
+        (org-set-tags-to el))
+      (org-entry-put (point) "ID" (plist-get source :ID))
+      (org-entry-put (point) "PID" (plist-get source :PID)))
+    (org-xob--source-refresh source)
+    (org-flag-subtree t)
+    (org-show-children 1)))
 
 
 ;; TODO check state type, lookup + call
