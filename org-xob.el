@@ -777,8 +777,10 @@ If ID is given, then convert todo with that ID."
       (setq-local org-xob--buf 'parent)
       (setq-local org-xob--pair-buf buf2)
       (if single
-          (setq-local org-xob--display 'single)
-        (setq-local org-xob--display 'dual)))
+          (progn (setq-local org-xob--display 'single)
+                 (setq-local org-xob--c-buff (current-buffer)))
+        (setq-local org-xob--display 'dual)
+        (setq-local org-xob--c-buff buf2)))
     (with-current-buffer buf2
       (org-mode)
       (org-xob-mode 1)
@@ -791,9 +793,11 @@ If ID is given, then convert todo with that ID."
     buf1))
 
 (defun org-xob--close-buffer-hook ()
-  "Properly close xob buffer: remove it from orb-xob-buffers, kill context buffer."
+  "Properly close xob buffer: remove it from org-xob-buffers, kill context buffer."
   (let ((buf (current-buffer)))
     (setq org-xob-buffers (cl-delete buf org-xob-buffers))
+    (setq org-xob-all-buffers (cl-delete buf org-xob-all-buffers))
+    (setq org-xob-all-buffers (cl-delete org-xob--pair-buf org-xob-all-buffers))
     (if (eq buf org-xob-last-buffer)
         (setq org-xob-last-buffer (car-safe org-xob-buffers)))
     (kill-buffer org-xob--pair-buf)
