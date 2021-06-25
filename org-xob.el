@@ -643,8 +643,10 @@ sQuery Form: ")
                  (let ((p (org--paragraph-at-point)))
                    (if p
                        (buffer-substring-no-properties
-                        (org-element-property :contents-begin p)
-                        (org-element-property :contents-end p))))))))
+                        (or (print (org-element-property :contents-begin p))
+                            (print (org-element-property :begin p)))
+                        (or (print (org-element-property :contents-end p))
+                            (print (org-element-property :end p))))))))))
 
 ;;;###autoload
 (defun org-xob-to-node-tree ()
