@@ -1375,7 +1375,7 @@ arguments are supplied, then check the associated heading."
 (defun org-xob--add-source (node source-type)
   "Create a new source of source-type for the given node."
   (let ((newsrc (copy-tree source-type)))
-    (plist-put newsrc :ID (org-xob--id-create))
+    (plist-put newsrc :ID (uuidgen-4))
     (plist-put newsrc :PID (open-node-ID node))
     (plist-put newsrc :title (open-node-title node))
     (funcall (plist-get newsrc :getfn) newsrc)
