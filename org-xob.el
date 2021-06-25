@@ -1812,21 +1812,26 @@ C-u only ids are returned. Used mostly for debugging purposes."
   (interactive "P")
   (save-window-excursion
     (save-excursion
-      (org-xob-goto-original)
-      (when-let ((id (org-entry-get (point) "ID"))
-                 (bl (org-xob--node-get-links 'backlinks))
-                 (fl (org-xob--node-get-links 'forlinks))
-                 (bb (list "a" "b" "c")))
-        (unless (equal arg '(4))
-          (setq bl (mapcar (lambda (s) (gethash s org-xob--id-title)) bl))
-          (setq fl (mapcar (lambda (s) (gethash s org-xob--id-title)) fl)))
-        (setq bl (mapconcat (lambda (s) s) bl " || "))
-        (setq fl (mapconcat (lambda (s) s) fl " || "))
-        (display-message-or-buffer
-         (concat
-          "Node Info:  " id "\n"
-          "BACKLINKS:  " bl "\n"
-          "FORLINKS:   " fl "\n"))))))
+      (let* ((eiid (org-entry-get (point) "ID"))
+             (node (org-xob--get-open-node (org-entry-get (point) "EDIT")))
+            (srcs (open-node-sources node))
+            (blid (plist-get (nth 1 srcs) :ID))
+            (flid (plist-get (car srcs) :ID)))
+        (org-xob-goto-original)
+        (let ((id (org-entry-get (point) "ID"))
+              (bl (org-xob--node-get-links 'backlinks))
+              (fl (org-xob--node-get-links 'forlinks)))
+          (unless (equal arg '(4))
+            (setq bl (mapcar (lambda (s) (gethash s org-xob--id-title)) bl))
+            (setq fl (mapcar (lambda (s) (gethash s org-xob--id-title)) fl)))
+          (setq bl (mapconcat (lambda (s) s) bl " || "))
+          (setq fl (mapconcat (lambda (s) s) fl " || "))
+          (print node)
+          (display-message-or-buffer
+           (concat
+            "Node Info:  " id " || eiid: " eiid " || fl.id: " flid " || bl.id: " blid "\n"
+            "BACKLINKS:  " bl "\n"
+            "FORLINKS:   " fl "\n")))))))
 
 ;; --- persistent objects ---
 (defun org-xob--save-state ()
