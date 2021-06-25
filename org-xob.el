@@ -953,11 +953,12 @@ the correct location."
 found, then create a new one. Defaults to dual-pane display, with C-u opens node
 in a single-pane display format."
   ;; check if node already open
-  (if (org-xob--id-goto ID)
-      (unless (get-buffer-window)
-        (pop-to-buffer (current-buffer)))
-    (atomic-change-group
-      (org-xob-with-xob-buffer
+  (if (member ID (org-xob--get-open-node-ids))
+      (progn (org-xob--id-goto ID)
+             (unless (get-buffer-window)
+               (pop-to-buffer (current-buffer))))
+    (org-xob-with-xob-buffer
+     (atomic-change-group
        (if (eq org-xob--display 'single)
            (org-xob--edit-write-single-pane ID title)
          (org-xob--edit-write-dual-pane ID title))
