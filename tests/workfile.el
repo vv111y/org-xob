@@ -2737,7 +2737,7 @@ org-xob--templates
   ;; (kbd "S") 'org-xob-to-section
   (kbd "t") 'org-xob-to-node-tree
   ;; (kbd "F") 'org-xob-to-full-node
-  ;; (kbd "R") 'org-xob-refresh-context
+  ;; (kbd "R") 'org-xob-refresh-contexts
   )
 (define-key org-mode-map
   (kbd "M-S-RET") nil
@@ -3369,29 +3369,44 @@ heading beginning, else nil."
   )
 
 (defun org-xob-refile-region ()
+  "Move text in region to the end of the top section of a selected node."
   (interactive)
   (org-xob-with-xob-on
-   (if (use-region-p)
+   (when (use-region-p)
        (pcase-let ((`(,x ,y) (org-xob--get-create-node)))
-         ;; (when (bound-and-true-p x)
-         ;;   (message "id: %s ||  t: %s" x y)
-         ;;   )
          (when (bound-and-true-p x)
-           (kill-region (point) (mark))
-           (save-window-excursion
-             (org-with-wide-buffer
-              (org-id-goto x)
-              (if (org-goto-first-child)
-                  (progn
-                    (newline 2)
-                    (forward-line -1))
-                (org-end-of-subtree)
-                (newline)
-                )
-              (org-xob--smart-paste))))
+           (message "id: %s ||  t: %s" x y)
+           )
          ))))
 
+;;;###autoload
+(defun org-xob-refile-region ()
+  "Move text in region to the end of the top section of a selected node."
+  (interactive)
+  (org-xob-with-xob-on
+   (when (use-region-p)
+     (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+       (when (bound-and-true-p ID)
+         (kill-region (point) (mark))
+         (save-window-excursion
+           (org-with-wide-buffer
+            (org-id-goto ID)
+            (if (org-goto-first-child)
+                (progn
+                  (newline 2)
+                  (forward-line -1))
+              (org-end-of-subtree)
+              (newline))
+            (org-xob--smart-paste))))))))
+
+
+
 (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+  (when (bound-and-true-p ID)
+    (print title))
+  ;; (print (bound-and-true-p ID))
+  ;; (print (bound-and-true-p title))
+  ;; (message "yes")
   ;; (print ID)
   ;; (print title)
   ;; (print (boundp 'ID))
@@ -3404,9 +3419,7 @@ heading beginning, else nil."
     ;; )
   )
 
-(when (bound-and-true-p vv-sw)
-  (message "yes")
-)
+
 
 
 
@@ -3414,6 +3427,7 @@ org-xob--open-nodes
 (setq org-xob--open-nodes nil)
 
 (setq org-xob-buffers nil)
+(setq org-xob-all-buffers nil)
 (setq org-xob-last-buffer nil)
 (buffer-live-p
  org-xob-last-buffer)
@@ -3432,3 +3446,38 @@ org-xob--open-nodes
 
 
 (setq vv/v (org-entry-put (point) "TEE" (uuidgen-4)))
+
+(progn
+  (org-hide-entry)
+  (org-show-set-visibility 'tree)
+  ;; (org-show-entry)
+  )
+
+(org-overview)
+(org-content)
+(org-show-children 1)
+(org-hide-entry)
+(org-flag-subtree t)
+
+(let ((p (org--paragraph-at-point)))
+  (if p
+      (buffer-substring-no-properties
+       (org-element-property :contents-begin p)
+       (org-element-property :contents-end p))))
+
+(let ((p (org--paragraph-at-point)))
+  (buffer-substring-no-properties
+   (or (print (org-element-property :contents-begin p))
+       (print (org-element-property :begin p))
+       )
+   (or (print (org-element-property :contents-end p))
+       (print (org-element-property :end p)))))
+
+(let ((b "bee"))
+  (bound-and-true-p b))
+
+
+
+(org-xob-map-node-sources
+ "851CA75F-6A9C-4508-978F-267DF08FF8CC"
+ #'(lambda () (org-insert-subheading)))

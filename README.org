@@ -124,7 +124,7 @@ Future release will allow for associated material from other sources, such as or
 | org-xob-show-backlinks   | Show node backlinks in context buffer             |
 | org-xob-show-forlinks    | Show node forlinks in context buffer              |
 | org-xob-ql-search        | (N/A) show ql search results in context buffer    |
-| org-xob-refresh-context  | Refresh all the context sources in context buffer |
+| org-xob-refresh-contexts  | Refresh all the context sources in context buffer |
 |--------------------------+---------------------------------------------------|
 
 |-------------------------+-----------------------------------------|
@@ -135,7 +135,7 @@ Future release will allow for associated material from other sources, such as or
 | org-xob-to-section      | Show section before first subheading    |
 | org-xob-to-node-tree    | Show only tree structure of source item |
 | org-xob-to-full-node    | Show the complete source item           |
-| org-xob-refresh-context | Refresh context item at point           |
+| org-xob-refresh-contexts | Refresh context item at point           |
 |-------------------------+-----------------------------------------|
 
 ** Tips
