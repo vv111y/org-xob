@@ -413,10 +413,10 @@ Calling with C-u will force a restart."
    (pcase-let ((`(,ID ,title) (if arg
                                   (org-xob--get-node-by-type)
                                 (org-xob--get-create-node))))
-     (when (and ID title)
-       (org-xob--edit-node ID title)))))
+     (and ID
+          title
+          (org-xob--edit-node ID title)))))
 
-;; TODO buggy source deletions
 ;;;###autoload
 (defun org-xob-close-node (&optional ID)
   "Delete a node that has been open for editing. If argument ID
