@@ -1686,13 +1686,8 @@ Further, if optional ID is given, then check if this source comes from node with
     :action func))
 
 (defun org-xob-map-node-sources (ID func)
-  (org-ql-select (list (current-buffer) org-xob--pair-buf)
+  (org-ql-select org-xob-all-buffers
     `(is-xob-source ,ID)
-    :action func))
-
-(defun org-xob-map-node-sources-2 (ID func)
-  (org-ql-select (list (current-buffer) org-xob--pair-buf)
-    `(is-xob-source-alt ,ID)
     :action func))
 
 (defun org-xob-node-source (ID source func)
