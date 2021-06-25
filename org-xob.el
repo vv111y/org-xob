@@ -1626,16 +1626,11 @@ then checks using org-xob--is-edit-node-p."
                      org-xob--node-types)
              (eq 0 (org-uuidgen-p (org-entry-get (point) "ID")))))
 
-(org-ql-defpred is-xob-source (&optional ID)
-  "Checks if heading has a valid tag (registered sources), and has a PID property.
-Further, if optional ID is given, then check if this source comes from node with ID."
-  :normalizers ((`(set-difference (org-get-tags) ,org-xob-available-sources)))
-  :body (and (not (set-difference (org-get-tags) org-xob-available-sources))
-             (property "PID" ID)))
-
-(org-ql-defpred is-xob-source-alt (pid)
-  "Just uses the PID property to find source headings."
-  :body (property "PID" pid))
+(org-ql-defpred is-xob-source (PID)
+  "Checks if heading is a source for node with ID 'PID'"
+  :body  (org-xob--is-source-p
+          (property "PID" PID)
+          ))
 
 ;;;;; org-ql mapping functions TODO test
 
