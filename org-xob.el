@@ -493,20 +493,22 @@ then also update the forlinks source."
   "Move text in region to the end of the top section of a selected node."
   (interactive)
   (org-xob-with-xob-on
-   (if (use-region-p)
-       (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-         (when (bound-and-true-p ID)
-           (kill-region (point) (mark))
-           (save-window-excursion
-             (org-with-wide-buffer
-              (org-id-goto ID)
-              (if (org-goto-first-child)
-                  (progn
-                    (newline 2)
-                    (forward-line -1))
-                (org-end-of-subtree)
-                (newline))
-              (org-xob--smart-paste))))))))
+   (when (use-region-p)
+     (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+       (when (bound-and-true-p ID)
+         (kill-region (point) (mark))
+         (save-window-excursion
+           (org-with-wide-buffer
+            (org-id-goto ID)
+            (if (org-goto-first-child)
+                (progn
+                  (newline 2)
+                  (forward-line -1))
+              (org-end-of-subtree)
+              (newline))
+            (org-xob--smart-paste))))
+       )
+     )))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
