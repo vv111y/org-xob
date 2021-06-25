@@ -618,7 +618,7 @@ sQuery Form: ")
    nil))
 
 ;;;###autoload
-(defun org-xob-refresh-node-context ()
+(defun org-xob-refresh-contexts ()
   "Refresh all displayed sources for node at point."
   (interactive)
   (org-xob-map-node-sources (org-entry-get (point) "EDIT")
@@ -797,6 +797,7 @@ If ID is given, then convert todo with that ID."
       (split-window-right)
       (delete-window))))
 
+;; NOTE keep? not being used
 (defun org-xob--id-create ()
   "Create a UUID formatted ID. org-id will not work with buffers that are
 not visiting a file. This function is meant for such a case. Use in conjunction
@@ -806,7 +807,6 @@ Returns ID if successful, nil otherwise."
     (org-entry-put (point) "ID" ID)
     ID))
 
-;; TODO org-ql syntax right?
 (defun org-xob--id-goto (ID)
   (when (and (org-not-nil ID)
              org-xob-all-buffers)
@@ -821,7 +821,6 @@ Returns ID if successful, nil otherwise."
       (set-buffer (marker-buffer m))
       (goto-char m)
       (point))))
-
 
 (defun org-xob--goto-buffer-heading (ID)
   "Find heading with ID in current buffer. If found then return point at
@@ -1460,7 +1459,7 @@ source is a plist that describes the content source."
           (if temp
               (dolist (el temp)
                 (org-xob--source-add-item el)))))
-    (message "xob: can't refresh context here, something's wrong.")))
+    (message "xob: can't refresh context here, source ID does not match.")))
 
 (defun org-xob--source-add-item (ID)
   "Appends a single entry to the end of the source subtree.
@@ -1483,7 +1482,6 @@ Otherwise apply to source at point."
   (org-with-wide-buffer
    (org-save-outline-visibility
        ;; (org-narrow-to-subtree)
-     ;; (outline-show-all)
      (if (and (org-xob--is-source-p)
               (org-goto-first-child))
          (while (progn
@@ -1691,7 +1689,7 @@ then checks using org-xob--is-edit-node-p."
           (tags source))
     :action func))
 
-;;;;; Activity DONE UNCHANGED
+;;;;; Activity
 
 (defun org-xob--open-today ()
   "Open today node for logging."
@@ -1877,7 +1875,7 @@ If there are no saved tables, then create new empty ones."
 
 ;; --- contextual resources ---
 
-(defun orb-xob-add-info-source (source)
+(defun org-xob-add-info-source (source)
   "Add a contextual information source to xob system."
   (interactive)
   (and (symbolp source)
