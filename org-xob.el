@@ -1395,9 +1395,8 @@ arguments are supplied, then check the associated heading."
     newsrc))
 
 (defun org-xob-show-source (source &optional arg)
-  "Show context source for opened node at point. The second argument
-source-type is the data structure defining the source. If necessary will
-make"
+  "Show context source for opened node at point. If this context material is already
+displayed, then refresh it. With optional C-u, force repopulating the item list."
   ;; in an edit node? get id, name, and which buffer is the context buffer
   (if-let* ((eid (org-xob--is-edit-node-p))
             (node (org-xob--get-open-node eid))
@@ -1416,7 +1415,7 @@ make"
             (org-with-wide-buffer
              (evil-save-state
                (when (eq '(4) arg) 										;; if arg then repop items
-                 (funcall (plist-get newsrc :getfn) newsrc))
+                 (funcall (plist-get src :getfn) src))
                ;; TODO redo for overheading
                (if (org-xob--goto-buffer-heading
                     (plist-get src :ID))
@@ -1427,7 +1426,7 @@ make"
     (message "Source is not available.")))
 
 (defun org-xob--this-node-sources (id)
-  "Returns node context sources as a list."
+  "Returns node context sources as a list of their ids."
   (when-let* ((node (org-xob--get-open-node id))
               (srcs (open-node-sources node)))
     (mapcar #'(lambda (x) (plist-get x :ID))
@@ -1443,8 +1442,7 @@ source is a plist that describes the content source."
       (goto-char (point-max)) ;; TODO goto super-heading, then to end of tree
       (org-insert-heading '(4) 'invisible-ok 'TOP) ;; TODO insert sub-tree
       (org-edit-headline (plist-get source :title))
-      (dolist (el (plist-get source :tags))
-        (org-set-tags-to el))
+      (org-set-tags (plist-get source :tags))
       (org-entry-put (point) "ID" (plist-get source :ID))
       (org-entry-put (point) "PID" (plist-get source :PID)))
     (org-xob--source-refresh source)
@@ -1557,7 +1555,7 @@ to all source items."
                   (let ((pid (org-entry-get (point) "PID")) str)
                     (when (org-uuidgen-p pid)
                      (org-xob--clear-node)
-                     (org-set-tags-to tag)
+                     (org-set-tags tag)
                      (and selector
                           (stringp
                            (setq str (org-xob--select-content pid selector)))
