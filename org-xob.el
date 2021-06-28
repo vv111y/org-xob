@@ -1126,8 +1126,8 @@ Returns the ID if true, nil otherwise."
 
 (defun org-xob--is-edit-node-p ()
   "Is point on a node that is in an edit state? Return it's ID if true, nil otherwise."
-  (when-let ((id (org-entry-get (point) "EDIT")))
-    (and (string= "t" (org-entry-get (point) "xob"))
+  (when-let ((id (org-entry-get (point) "EDIT" 'inherit)))
+    (and (string= "t" (org-entry-get (point) "xob" 'inherit))
          (eq 0 (org-uuidgen-p id))
          (member "edit" (org-get-tags))
          id)))
