@@ -344,6 +344,7 @@ Calling with C-u will force a restart."
         (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
         (add-hook 'ediff-quit-hook #'org-xob--ediff-quit-hook)
+        (add-hook 'org-super-links-pre-link-hook #'org-xob--super-links-hook)
         (message "XOB: hooks enabled."))
        (not (setq org-xob--open-nodes nil))
        (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
@@ -390,6 +391,7 @@ Calling with C-u will force a restart."
         (remove-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (remove-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
         (remove-hook 'ediff-quit-hook #'org-xob--ediff-quit-hook)
+        (remove-hook 'org-super-links-pre-link-hook #'org-xob--super-links-hook)
         (cancel-timer org-xob-new-day-timer)
         (setq org-xob-on-p nil)
         (message "XOB: stopped."))))
@@ -473,14 +475,17 @@ If called with optional ID argument, then remove the node with that ID."
 
 ;;;###autoload
 (defun org-xob-insert-link ()
-  "Inserts a properly formatted xob node link at point. If we are in a xob buffer,
-then also update the forlinks source."
+  "Inserts a properly formatted xob node link at point. If we are in a
+xob edit buffer, then also update the forlinks source."
   (interactive)
   (org-xob-with-xob-on
-   (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-     (org-super-links--insert-link (org-id-find ID 'MARKERP))
-     (org-xob-with-xob-buffer
-      (org-xob--source-refresh 'forlinks)))))
+   (save-window-excursion
+     (save-excursion
+       (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+         (org-super-links--insert-link (org-id-find ID 'MARKERP)))))
+   (when (org-xob--is-edit-node-p)
+     (org-xob-sync-edit)
+     (org-xob--source-refresh 'forlinks))))
 
 ;;;###autoload
 (defun org-xob-delete-link ()
@@ -1311,6 +1316,12 @@ as a capture hook function."
           (if title
               (org-xob--edit-node ID title)))
       nil)))
+
+(defun org-xob--super-links-hook ()
+  "Adjust linking actions depending on whether the source is an original
+or edit node."
+  (if (org-xob--is-edit-node-p)
+      (org-xob-goto-original)))
 
 (defun org-xob--insert-link-header (ID title target)
   "Checks if link subheader exist at target. If not, inserts a
