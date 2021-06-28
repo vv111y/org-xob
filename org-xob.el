@@ -500,7 +500,7 @@ xob edit buffer, then also update the forlinks source."
   (org-xob-with-xob-on
    (when (use-region-p)
      (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-       (when (bound-and-true-p ID)
+       (when ID
          (kill-region (point) (mark))
          (save-window-excursion
            (org-with-wide-buffer
@@ -565,7 +565,8 @@ xob edit buffer, then also update the forlinks source."
   "Change the type for node at point, or at optional node specified by ID."
   (interactive)
   (org-xob-with-xob-on
-   (if (org-xob--is-node-p)
+   (if (or (org-xob--is-node-p)
+           (org-xob--is-edit-node-p))
        (helm :buffer "xob types"
              :sources (helm-build-sync-source "xob-types"
                         :candidates org-xob--node-types
