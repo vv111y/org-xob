@@ -948,10 +948,14 @@ the correct location."
     (funcall func)
     (goto-char m)
     (set-marker m nil))
-  (org-set-tags-to "edit")
-  (org-entry-put (point) "EDIT" (org-entry-get (point) "ID"))
-  (org-entry-put (point) "ID" (uuidgen-4))
+  (org-xob--mod-to-edit-node)
   (outline-hide-entry))
+
+(defun org-xob--mod-to-edit-node (&optional refresh)
+  (org-set-tags "edit")
+  (org-entry-put (point) "EDIT" (org-entry-get (point) "ID"))
+  (unless refresh
+    (org-entry-put (point) "ID" (uuidgen-4))))
 
 (defun org-xob--edit-node (ID title)
   "Open node for editing. Selects the last current xob buffer, if none are
@@ -976,13 +980,20 @@ in a single-pane display format."
 (defun org-xob-revert-edit ()
   "Revert the edit node at point back to the original."
   (interactive)
-  (let (clip)
-    (save-window-excursion
-      (save-excursion
-        (org-xob-goto-original)
-        (setq clip (org-xob--get-full-node 1 'meta))))
-    (org-xob--update-node clip 'meta)
-    (org-xob--edit-write #'(lambda () nil))))
+  (org-back-to-heading) ;; todo improve - back to proper heading
+  (when-let ((pid (org-entry-get (point) "EDIT"))
+        (tid (org-entry-get (point) "ID"))
+        (m (point-marker)))
+    (org-mark-subtree)
+    (call-interactively #'delete-region)
+    (deactivate-mark 'force)
+    (insert (org-xob--select-content
+             pid
+             #'(lambda () (org-xob--get-full-node 1 'meta))))
+    (goto-char m)
+    (org-xob--mod-to-edit-node)
+    (org-entry-put (point) "ID" tid)
+    (outline-hide-entry)))
 
 (defun org-xob--update-modified-time ()
   "Update the modified timestamp for xob node at point."
