@@ -1758,9 +1758,15 @@ then checks using org-xob--is-edit-node-p."
   (save-window-excursion
     (save-excursion
       (save-restriction
-        (org-xob--id-goto org-xob-today)
-        (org-narrow-to-subtree)
-        ()))))
+        (let* ((title (gethash id org-xob--id-title)))
+          (org-xob--id-goto org-xob-today)
+          (org-narrow-to-subtree)
+          (org-xob--smart-paste
+           (concat "| " (format-time-string "%r")
+                   " | " event
+                   " | " title
+                   " | " description
+                   " |")))))))
 
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())
