@@ -1384,27 +1384,24 @@ Returns mark for the link subheader."
 
 ;; --- Node Versioning ---
 
-;; (defun org-xob--sync-node (node)
-;;   "Update entry based on local edits."
-;;   ;; is node in KB? no, add, else
-;;   ;; is node different? no, ignore, else sync/update
-;;   nil
-;;   )
+(defun org-xob--save-version (new)
+  "Create a diff between prior node state and current, then save it."
+  (let ((old (org-xob--get-full-node (org-current-level) 'meta)))
+    ()))
 
-;; (defun org-xob--diff-node (now-node last-node)
-;;   "Creates a diff using =org-xob--delta-executable=.
-;; The order of versions is reversed; the diff allows the reconstruction of
-;; the last-node from the now-node.
-;; The diff is stored in the currently active =org-xob--KB-file=."
-;;   (shell-command))
-;; ;; (defun org-xob--new-node-diff (nodeID)
-;; ;;   (let ((old-id (org-id-store-link node)))))
+(defun org-xob--diff-node (new old)
+  "Creates a diff using =org-xob--delta-executable=.
+The order of versions is reversed; the diff allows the reconstruction of
+the prior state from the current."
+  (shell-command))
+;; (defun org-xob--new-node-diff (nodeID)
+;;   (let ((old-id (org-id-store-link node)))))
 
-;; (defun org-xob--diff-filename (node)
-;;   (concat
-;;    ;; node id
-;;    "-"
-;;    (format-time-string "%j-%H-%M")))
+(defun org-xob--diff-filename (node)
+  (concat
+   ;; node id
+   "-"
+   (format-time-string "%j-%H-%M")))
 
 (defun org-xob--node-add-time-property (property)
   "Convenience function to add high resolution time property.
