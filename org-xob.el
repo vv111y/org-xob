@@ -443,6 +443,19 @@ that point be under the nodes top heading, not a subheading."
     (call-interactively #'delete-region)))
 
 ;;;###autoload
+(defun org-xob-sync-edit (&optional arg sID)
+  "Update original xob node with any edits. With optional arg sID
+update node with that ID. With universal arg C-u, update all open edit nodes.
+Current version performs simple, blunt, whole content replacement."
+  (interactive "P")
+  (org-xob-with-xob-on
+   (let ((id (or sID (org-entry-get (point) "ID"))))
+     (if (eq current-prefix-arg '(4))
+         (dolist (ID (org-xob--get-open-node-ids))
+           (funcall #'org-xob--update-original ID))
+       (funcall #'org-xob--update-original id)))))
+
+;;;###autoload
 (defun org-xob-remove-node (&optional ID)
   "Removes node at point from xob system, but does not delete the node itself.
 Removes node from the hash tables, and any backlinks in other nodes referencing it.
@@ -1030,40 +1043,46 @@ Otherwise just yank. If heading is a xob node, then update modified time propert
 ;; -- SYNC --
 
 ;; TODO record diff, check if deleted open nodes
-;;;###autoload
-(defun org-xob-sync-edit (&optional arg sID)
-  "Update original xob node with any edits. With optional arg sID
-update node with that ID. With universal arg C-u, update all open edit nodes.
-Current version performs simple, blunt, whole content replacement."
-  (interactive "P")
-  (save-window-excursion
-    (save-excursion
-      (let ((updater #'(lambda (ID)
-                         (progn
-                           (org-xob--id-goto ID)
-                           (when-let (((org-xob--is-edit-node-p))
-                                      (clip (org-xob--get-full-node 1 nil)))
-                             (catch 'nochange
-                               (unless (org-xob--modified-time=)
-                                   (if (y-or-n-p "Original node has changed. Run ediff?")
-                                       (org-xob-ediff-edit)
-                                     (unless (y-or-n-p "Really change?")
-                                       (throw 'nochange))))
-                               (org-xob-goto-original)
-                               (org-xob--update-original clip)))))))
-        (if (eq current-prefix-arg '(4))
-            (dolist (ID (org-xob--get-open-node-ids))
-              (funcall updater ID))
-          (if sID (funcall updater sID)
-            (funcall updater (org-entry-get (point) "ID"))))))))
-
-(defun org-xob--update-original (clip)
+(defun org-xob--update-original (clip id)
   "update contents of KB node at point with string ~clip~.
 Note, requires that all KB nodes are stored at level 1.
 Does not use the kill-ring."
-  (when (org-xob--is-node-p)
-    (org-xob--update-node clip)
-    (org-xob--update-modified-time)))
+  (save-window-excursion
+    (save-excursion
+      (org-xob--id-goto ID)
+      (when-let ((id (org-xob--is-edit-node-p))
+                 (clip (org-xob--get-full-node (org-current-level)
+                                               'meta)))
+        (catch 'nochange
+          (unless (org-xob--modified-time=)
+            (if (y-or-n-p "Original node has changed. Run ediff?")
+                (progn (org-xob-ediff-edit)
+                       (throw 'nochange))
+              (unless (y-or-n-p "Really change?")
+                (throw 'nochange))))
+          (org-xob-goto-original)
+          (when (org-xob--is-node-p)
+            ;; TODO atomic change
+            (setq clip (org-xob--parse-edit-node clip id))
+            (org-xob--save-version clip)
+            (org-xob--update-node clip 'meta)
+            (org-xob--log-event "edited" id)))))))
+
+(defun org-xob--parse-edit-node (clip id)
+  "Parse out relevant parts of a node after syncing into the xob KB (knowledge base).
+Requires that point be on the relevant inserted text."
+  (when-let ((id (org-xob--is-edit-node-p)))
+    (with-temp-buffer
+      (org-mode)
+      (org-paste-subtree 1 clip)
+      (goto-char (point-min))
+      (org-entry-put (point) "ID" id)
+      (org-delete-property "EDIT")
+      (org-toggle-tag "edit" 'OFF)
+      (org-xob--update-modified-time)
+      ;; TODO pull out logging/clocking
+      ;; TODO convert tmp links to super-links
+      (buffer-string))))
 
 (defun org-xob--update-node (clip &optional meta)
   "Update any node with the given string ~clip~. If optional argument
