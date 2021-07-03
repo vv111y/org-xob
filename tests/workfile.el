@@ -3014,7 +3014,7 @@ org-xob--node-sources
 
 (fmakunbound 'org-xob-with-xob-buffer)
 (defun vv/pp ()
-  (org-paste-subtree 1 
+  (org-paste-subtree 1
                      (buffer-substring (point) (mark))
                      nil nil))
 
@@ -3481,3 +3481,81 @@ org-xob--open-nodes
 (org-xob-map-node-sources
  "851CA75F-6A9C-4508-978F-267DF08FF8CC"
  #'(lambda () (org-insert-subheading)))
+
+(defun vv/ll ()
+  (interactive)
+  (save-restriction
+    (let (l els ast)
+      (org-narrow-to-subtree)
+      (setq els (delete-dups
+                 (delq nil
+                       (org-element-map
+                           (org-element-parse-buffer)
+                           'link
+                         ;; #'identity
+                         (lambda (el)
+                           ;; (plist-get el :type)
+                           (org-element-property :type el)
+                           ;; (cdr el)
+                           ;; (plist-get (cdr el) :type)
+                           )
+                         )
+                       )))
+      ;; (print (cadr els))
+      (print els)
+      )
+    ))
+
+
+(defun vv/lll ()
+  (interactive)
+  (while (re-search-forward "\\[\\[ftp:" nil t)
+    (replace-match "\[\[id:" t t)))
+
+(defun vv/lll ()
+  (interactive)
+  (org-element-map
+      (org-element-parse-buffer)
+      'link
+    ;; #'identity
+    (lambda (el)
+      ;; (plist-get el :type)
+      ;; (org-element-property :type el)
+      (if (string= "ftp" (org-element-property :type el))
+          (progn
+            (re-search-forward "ftp" nil t nil)
+            (replace-match "id" t t nil nil))
+          ;; (let ((pl (nth 1 el))
+          ;;       )
+          ;;   (plist-put pl :content "weebo")
+          ;;   (princ el))
+
+          ;; (org-element-context)
+          ;; (org-element-property :title el)
+          ;; (delete-region (org-element-property :begin el)
+          ;;                (- (org-element-property :end el) 1))
+          ;; (goto-char (org-element-property :end el))
+          ;; (print (org-element-link-parser))
+          ;; (print (org-element-link-interpreter el el))
+          ;; (org-element-set-contents el
+          ;;                           '(:type "id")
+          ;;                           )
+        nil
+        )
+      ;; (cdr el)
+      ;; (plist-get (cdr el) :type)
+      )
+    ))
+
+(org-link-types)
+
+(let ((event "hold")
+      (title "comp sci")
+      (description ""))
+  (org-paste-subtree nil 
+                     (concat "| " (format-time-string "%r")
+                             " | " event
+                             " | " title
+                             " | " description
+                             " |"
+                             )))

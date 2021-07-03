@@ -504,7 +504,9 @@ xob edit buffer, then also update the forlinks source."
 (defun org-xob-delete-link ()
   "simple wrapper to call org-superlinks-delete-link"
   (interactive)
-  (org-super-links-delete-link))
+  (org-super-links-delete-link)
+  ;; if edit node, then sync, make atomic
+  ())
 
 ;;;###autoload
 (defun org-xob-refile-region ()
@@ -1172,6 +1174,10 @@ Returns the ID if true, nil otherwise."
          (gethash id org-xob--id-title)
          (member "edit" (org-get-tags))
          id)))
+
+(defun org-xob--to-node-top ()
+  "Goto the top heading of the node, whether edit or original."
+  ())
 
 (defun org-xob--eval-capture-templates ()
   "Re-evaluate the capture templates so they are up to date."
