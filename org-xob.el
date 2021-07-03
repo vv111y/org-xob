@@ -584,8 +584,7 @@ xob edit buffer, then also update the forlinks source."
 (defun org-xob-goto-original ()
   "Go to the original node entry in the knowledge base."
   (interactive)
-  (cond ((org-xob--is-node-p nil 'deepcheck))
-        ((org-xob--is-edit-node-p)
+  (cond ((org-xob--is-edit-node-p)
          (org-id-goto (org-entry-get (point) "EDIT")))
         ((org-id-goto (org-entry-get (point) "PID")))))
 
@@ -1170,7 +1169,7 @@ Returns the ID if true, nil otherwise."
   "Is point on a node that is in an edit state? Return it's ID if true, nil otherwise."
   (when-let ((id (org-entry-get (point) "EDIT" 'inherit)))
     (and (string= "t" (org-entry-get (point) "xob" 'inherit))
-         (eq 0 (org-uuidgen-p id))
+         (gethash id org-xob--id-title)
          (member "edit" (org-get-tags))
          id)))
 
