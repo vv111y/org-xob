@@ -514,19 +514,13 @@ xob edit buffer, then also update the forlinks source."
    (when (use-region-p)
      (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
        (when ID
+         ;; TODO atomic change
          (kill-region (point) (mark))
          (save-window-excursion
            (org-with-wide-buffer
             (org-id-goto ID)
-            (if (org-goto-first-child)
-                (progn
-                  (newline 2)
-                  (forward-line -1))
-              (org-end-of-subtree)
-              (newline))
-            (org-xob--smart-paste))))
-       )
-     )))
+            (org-xob--paste-top-section)
+            (org-xob--log-event "refile" ID))))))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
@@ -1028,15 +1022,27 @@ changed since opening this copy."
           (setq otime (org-entry-get (point) "MODIFIED"))
           (not (org-time= etime otime)))))))
 
+(defun org-xob--paste-top-section (&optional clip)
+  "paste clip at the end of the headings top section.
+Point needs to be on the heading."
+  (if (org-goto-first-child)
+      (progn
+        (newline 2)
+        (forward-line -1))
+    (org-end-of-subtree)
+    (newline))
+  (org-xob--smart-paste clip))
+
 (defun org-xob--smart-paste (&optional clip)
   "If the paste is an org subtree, then properly adjust levels for the current heading.
 Otherwise just yank. If heading is a xob node, then update modified time property."
   (save-excursion
     (if clip
-        (org-paste-subtree nil clip nil nil)
+        (if (org-kill-is-subtree-p clip)
+            (org-paste-subtree nil clip nil nil)
+          (insert clip))
       (if (org-kill-is-subtree-p)
           (org-paste-subtree nil clip t t)
-        ;; (insert clip)
         (yank))))
   (org-xob--update-modified-time))
 
