@@ -1066,7 +1066,7 @@ Otherwise just yank. If heading is a xob node, then update modified time propert
 ;; -- SYNC --
 
 ;; TODO record diff, check if deleted open nodes
-(defun org-xob--update-original (clip id)
+(defun org-xob--update-original (ID)
   "update contents of KB node at point with string ~clip~.
 Note, requires that all KB nodes are stored at level 1.
 Does not use the kill-ring."
@@ -1075,7 +1075,8 @@ Does not use the kill-ring."
       (org-xob--id-goto ID)
       (when-let ((id (org-xob--is-edit-node-p))
                  (clip (org-xob--get-full-node (org-current-level)
-                                               'meta)))
+                                               'meta))
+                 flag changes)
         (catch 'nochange
           (unless (org-xob--modified-time=)
             (if (y-or-n-p "Original node has changed. Run ediff?")
@@ -1085,11 +1086,21 @@ Does not use the kill-ring."
                 (throw 'nochange))))
           (org-xob-goto-original)
           (when (org-xob--is-node-p)
-            ;; TODO atomic change
             (setq clip (org-xob--parse-edit-node clip id))
-            (org-xob--save-version clip)
-            (org-xob--update-node clip 'meta)
-            (org-xob--log-event "edited" id)))))))
+            (setq changes (nconc (prepare-change-group (current-buffer))
+                                 (prepare-change-group org-xob-log-buffer)))
+            (unwind-protect
+                (and
+                 (activate-change-group changes)
+                 (org-xob--save-version clip)
+                 (org-xob--update-node clip 'meta)
+                 (org-xob--log-event "edited" id)
+                 (setq flag t))
+              (if flag
+                  (accept-change-group changes)
+                (cancel-change-group changes)
+                (messages "could not sync node: %s"
+                          (gethash id org-xob--id-title))))))))))
 
 (defun org-xob--parse-edit-node (clip id)
   "Parse out relevant parts of a node after syncing into the xob KB (knowledge base).
@@ -1105,6 +1116,7 @@ Requires that point be on the relevant inserted text."
       (org-xob--update-modified-time)
       ;; TODO pull out logging/clocking
       ;; TODO convert tmp links to super-links
+      ;; would be nice to have proper links in edit node
       (buffer-string))))
 
 (defun org-xob--update-node (clip &optional meta)

@@ -3559,3 +3559,15 @@ org-xob--open-nodes
                              " | " description
                              " |"
                              )))
+
+;;; change group
+
+(setq xs (nconc (prepare-change-group (current-buffer))
+                (prepare-change-group org-xob-last-buffer)))
+
+(unwind-protect
+    (activate-change-group xs))
+
+(accept-change-group xs)
+(cancel-change-group xs)
+(pop-to-buffer (marker-buffer (org-id-find "ba157228-ff3a-49ea-9363-d16150697474" t)))
