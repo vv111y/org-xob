@@ -516,13 +516,29 @@ xob edit buffer, then also update the forlinks source."
    (when (use-region-p)
      (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
        (when ID
-         ;; TODO atomic change
-         (kill-region (point) (mark))
-         (save-window-excursion
-           (org-with-wide-buffer
-            (org-id-goto ID)
-            (org-xob--paste-top-section)
-            (org-xob--log-event "refile" ID))))))))
+         (let* ((tbuffer (marker-buffer (org-id-find ID t)))
+                (changes (nconc (prepare-change-group (current-buffer))
+                                (prepare-change-group tbuffer)
+                                (prepare-change-group org-xob-log-buffer)))
+                flag)
+           (unwind-protect
+               (and
+                (activate-change-group changes)
+                (kill-region (point) (mark))
+                (save-window-excursion
+                  (org-with-wide-buffer
+                   (org-id-goto ID)
+                   (org-xob--paste-top-section)
+                   (org-xob--log-event "refile" ID)
+                   (if (and (org-xob--id-goto ID)
+                            (org-xob--is-edit-node-p))
+                       (org-xob-revert-edit))))
+                (setq flag t))
+             (if flag
+                 (accept-change-group changes)
+               (cancel-change-group changes)
+               (messages "could not refile to node: %s"
+                         (gethash id org-xob--id-title))))))))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
