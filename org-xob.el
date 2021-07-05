@@ -863,6 +863,20 @@ Returns ID if successful, nil otherwise."
       (goto-char m)
       (point))))
 
+(defun org-xob--goto-edit (ID)
+  (when (and (org-not-nil ID)
+             org-xob-buffers)
+    (setq m
+          (car
+           (org-ql-select org-xob-buffers
+             `(and (property "EDIT" ,ID)
+                   (tags "edit"))
+             :action '(point-marker))))
+    (when (markerp m)
+      (set-buffer (marker-buffer m))
+      (goto-char m)
+      (point))))
+
 (defun org-xob--goto-buffer-heading (ID)
   "Find heading with ID in current buffer. If found then return point at
 heading beginning, else nil."
