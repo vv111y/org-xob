@@ -1223,7 +1223,7 @@ has valid UUID formatted ID and xob TYPE properties in the property drawer.
 Deepcheck only works on heading at point, any ID argument is ignored.
 Returns the ID if true, nil otherwise."
   (interactive)
-  (let ((temp (if ID ID (org-id-get nil))))
+  (let ((temp (or ID (org-id-get nil))))
     (if temp
         (if DEEPCHECK
             (and
@@ -1447,16 +1447,16 @@ Returns mark for the link subheader."
         (if place (progn
                     (goto-char place)
                     (org-back-to-heading))
-          (newline)
+          (newline 2)
           (org-insert-subheading '(4))
           (org-insert-link nil (concat "ID:" ID) title)
-          (newline)
+          (newline 2)
           (org-back-to-heading))
         (point-marker)))))
 
 ;; --- Node Versioning ---
 
-(defun org-xob--save-version (new)
+(defun org-xob--save-version (old new)
   "Create a diff between prior node state and current, then save it."
   (let ((old (org-xob--get-full-node (org-current-level) 'meta)))
     ()))
@@ -1845,22 +1845,22 @@ then checks using org-xob--is-edit-node-p."
 
 (defun org-xob--log-event (event id &optional description)
   "General log function used to send activity entries to the log."
-  ;; timestamp
-  ;; event
-  ;; node
-  ;; description
   (save-window-excursion
     (save-excursion
       (save-restriction
-        (let* ((title (gethash id org-xob--id-title)))
-          (org-xob--id-goto org-xob-today)
-          (org-narrow-to-subtree)
-          (org-xob--smart-paste
-           (concat "| " (format-time-string "%r")
-                   " | " event
-                   " | " title
-                   " | " description
-                   " |")))))))
+        (let ((title (gethash id org-xob--id-title)))
+          (org-id-goto org-xob-today)
+          (if t
+              (progn
+                (org-narrow-to-subtree)
+                (org-xob--paste-top-section
+                 (concat "| " (format-time-string "%r")
+                         " | " event
+                         " | " title
+                         " | " description
+                         " |"))
+                t)
+            nil))))))
 
 (defun org-xob--auto-clock-in ())
 (defun org-xob--auto-clock-out ())

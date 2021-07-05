@@ -3571,3 +3571,44 @@ org-xob--open-nodes
 (accept-change-group xs)
 (cancel-change-group xs)
 (pop-to-buffer (marker-buffer (org-id-find "ba157228-ff3a-49ea-9363-d16150697474" t)))
+
+(let* ((b 'bee)
+            c d)
+  (setq c "ree")
+  (setq d "dee")
+  (message "c %s and d %s and b  %s" c d b))
+
+(not (org-narrow-to-subtree))
+
+(not (insert "bb "))bb bb bb
+
+(org-xob--log-event "surprise" "ba157228-ff3a-49ea-9363-d16150697474")
+org-xob-all-buffers
+(org-id-goto "ba157228-ff3a-49ea-9363-d16150697474")
+(not (org-id-goto ""))
+
+(logbook-end (save-excursion
+               (re-search-forward org-logbook-drawer-re)))
+
+(progn
+  (save-excursion
+    (re-search-forward org-logbook-drawer-re))
+  (match-string 0)
+  ;; (let ((a (car (match-data t)))
+  ;;       (b (cadr (match-data t))))
+  ;;   ;; (message "s: %s  e: %s" a b)
+  ;;   (kill-region a b)
+  ;;   )
+  )
+(progn
+  (save-excursion
+    (re-search-forward org-logbook-drawer-re))
+  ;; (match-string 0)
+  (kill-region (match-beginning 0)
+               (match-end 0))
+  (yank)
+  )
+
+(buffer-substring-no-properties
+ (region-beginning)
+ (+ 20 (region-beginning)))
