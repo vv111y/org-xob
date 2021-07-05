@@ -519,26 +519,29 @@ xob edit buffer, then also update the forlinks source."
          (let* ((tbuffer (marker-buffer (org-id-find ID t)))
                 (changes (nconc (prepare-change-group (current-buffer))
                                 (prepare-change-group tbuffer)
-                                (prepare-change-group org-xob-log-buffer)))
+                                (prepare-change-group org-xob-today-buffer)))
+                (beg (region-beginning))
+                (snip (buffer-substring-no-properties beg
+                                                      (+ 20 beg)))
                 flag)
            (unwind-protect
-               (and
+               (progn
                 (activate-change-group changes)
                 (kill-region (point) (mark))
                 (save-window-excursion
-                  (org-with-wide-buffer
-                   (org-id-goto ID)
-                   (org-xob--paste-top-section)
-                   (org-xob--log-event "refile" ID)
-                   (if (and (org-xob--id-goto ID)
-                            (org-xob--is-edit-node-p))
-                       (org-xob-revert-edit))))
+                  (save-excursion
+                    (org-id-goto ID)
+                    (org-xob--paste-top-section)
+                    (org-xob--log-event "refile" ID snip)
+                    (if (and (org-xob--goto-edit ID)
+                             (org-xob--is-edit-node-p))
+                        (org-xob-revert-edit))))
                 (setq flag t))
              (if flag
                  (accept-change-group changes)
                (cancel-change-group changes)
-               (messages "could not refile to node: %s"
-                         (gethash id org-xob--id-title))))))))))
+               (message "xob: failed to refile section to node: %s"
+                         (gethash ID org-xob--id-title))))))))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
