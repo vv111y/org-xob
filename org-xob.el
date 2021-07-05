@@ -1127,26 +1127,11 @@ Does not use the kill-ring."
                 (message "xob: failed to sync node: %s"
                          (gethash ID org-xob--id-title))))))))))
 
-(defun org-xob--parse-edit-node (clip id)
-  "Parse out relevant parts of a node after syncing into the xob KB (knowledge base).
-Requires that point be on the relevant inserted text."
-  (when-let ((id (org-xob--is-edit-node-p)))
-    (with-temp-buffer
-      (org-mode)
-      (org-paste-subtree 1 clip)
-      (goto-char (point-min))
-      (org-entry-put (point) "ID" id)
-      (org-delete-property "EDIT")
-      (org-toggle-tag "edit" 'OFF)
-      (org-xob--update-modified-time)
-      ;; TODO pull out logging/clocking
-      ;; TODO convert tmp links to super-links
-      ;; would be nice to have proper links in edit node
-      (buffer-string))))
-
-(defun org-xob--update-node (clip &optional meta)
+(defun org-xob--update-node (clip &optional meta parsedit)
   "Update any node with the given string ~clip~. If optional argument
-meta is selected, then update the meta section as well (whole subtree)."
+meta is selected, then update the meta section as well (whole subtree).
+With argument parsedit selected, then treat this as an edit update
+and parse node."
   (org-with-wide-buffer
    (org-save-outline-visibility
        (org-narrow-to-subtree)
@@ -1156,7 +1141,36 @@ meta is selected, then update the meta section as well (whole subtree)."
      (call-interactively #'delete-region)
      (deactivate-mark 'force)
      (unless meta (org-end-of-meta-data t))
-     (insert clip))))
+     (org-paste-subtree 1 clip)
+     ;; (insert clip)
+     (when parsedit (org-xob--parse-edit-node)))))
+
+(defun org-xob--parse-edit-node ()
+  "Parse out relevant parts of a node after syncing into the xob KB (knowledge base).
+Requires that point be on the relevant inserted text."
+  (goto-char (point-min))
+  (let ((id (org-entry-get (point) "EDIT"))
+        (title (nth 4 (org-heading-components)))
+        m)
+    (org-entry-put (point) "ID" id)
+    (org-delete-property "EDIT")
+    (org-toggle-tag "edit" 'OFF)
+    (when (re-search-forward org-logbook-drawer-re nil t)
+      (kill-region (match-beginning 0)
+                   (match-end 0))
+      (setq m (org-xob--insert-link-header id title org-xob-today))
+      (with-current-buffer (marker-buffer m)
+        (org-end-of-subtree)
+        (newline)
+        (yank)
+        ))
+    (goto-char (point-min))
+    ())
+
+  ;; TODO pull out logging/clocking
+  ;; TODO convert tmp links to super-links
+  ;; would be nice to have proper links in edit node
+  )
 
 ;;;###autoload
 (defun org-xob-ediff-edit ()
