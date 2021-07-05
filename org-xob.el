@@ -1039,7 +1039,8 @@ in a single-pane display format."
 
 (defun org-xob--update-modified-time ()
   "Update the modified timestamp for xob node at point."
-  (if (org-xob--is-node-p)
+  (if (or (org-xob--is-node-p)
+          (org-xob--is-edit-node-p))
       (org-entry-put (point) "MODIFIED"
                      (concat "[" (format-time-string "%F %a %R") "]")))
   nil)
@@ -1054,18 +1055,19 @@ changed since opening this copy."
         (save-excursion
           (org-xob-goto-original)
           (setq otime (org-entry-get (point) "MODIFIED"))
-          (not (org-time= etime otime)))))))
+          (org-time= etime otime))))))
 
 (defun org-xob--paste-top-section (&optional clip)
   "paste clip at the end of the headings top section.
 Point needs to be on the heading."
-  (if (org-goto-first-child)
-      (progn
-        (newline 2)
-        (forward-line -1))
-    (org-end-of-subtree)
-    (newline))
-  (org-xob--smart-paste clip))
+  (org-with-wide-buffer
+   (if (org-goto-first-child)
+       (progn
+         (newline 2)
+         (forward-line -1))
+     (org-end-of-subtree)
+     (newline))
+   (org-xob--smart-paste clip)))
 
 (defun org-xob--smart-paste (&optional clip)
   "If the paste is an org subtree, then properly adjust levels for the current heading.
