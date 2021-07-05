@@ -1092,34 +1092,40 @@ Does not use the kill-ring."
   (save-window-excursion
     (save-excursion
       (org-xob--id-goto ID)
-      (when-let ((id (org-xob--is-edit-node-p))
-                 (clip (org-xob--get-full-node (org-current-level)
-                                               'meta))
-                 flag changes)
-        (catch 'nochange
-          (unless (org-xob--modified-time=)
-            (if (y-or-n-p "Original node has changed. Run ediff?")
-                (progn (org-xob-ediff-edit)
-                       (throw 'nochange))
-              (unless (y-or-n-p "Really change?")
-                (throw 'nochange))))
-          (org-xob-goto-original)
-          (when (org-xob--is-node-p)
-            (setq clip (org-xob--parse-edit-node clip id))
+      (when (org-xob--is-edit-node-p)
+        (let (nclip oclip flag changes)
+          (catch 'nochange
+            (unless (org-xob--modified-time=)
+              (if (y-or-n-p "Original node has changed. Run ediff?")
+                  (progn (org-xob-ediff-edit)
+                         (throw 'nochange))
+                (unless (y-or-n-p "Really change?")
+                  (throw 'nochange))))
             (setq changes (nconc (prepare-change-group (current-buffer))
-                                 (prepare-change-group org-xob-log-buffer)))
+                                 (prepare-change-group org-xob-today-buffer)))
             (unwind-protect
-                (and
-                 (activate-change-group changes)
-                 (org-xob--save-version clip)
-                 (org-xob--update-node clip 'meta)
-                 (org-xob--log-event "edited" id)
-                 (setq flag t))
+                (progn
+                  (activate-change-group changes)
+                  (org-xob--update-modified-time)
+                  (setq nclip (org-xob--get-full-node (org-current-level)
+                                                'meta))
+                  (org-xob-goto-original)
+                  (when (org-xob--is-node-p)
+                    (setq oclip (org-xob--get-full-node (org-current-level)
+                                                        'meta))
+                    (org-xob--save-version oclip nclip)
+                    (org-xob--update-node nclip 'meta 'parsedit))
+                  (org-xob--log-event "edited"
+                                      (org-entry-get (point) "ID"))
+                  (setq flag t))
               (if flag
-                  (accept-change-group changes)
+                  (progn
+                    (accept-change-group changes)
+                    (org-xob--id-goto ID)
+                    (org-xob-revert-edit))
                 (cancel-change-group changes)
-                (messages "could not sync node: %s"
-                          (gethash id org-xob--id-title))))))))))
+                (message "xob: failed to sync node: %s"
+                         (gethash ID org-xob--id-title))))))))))
 
 (defun org-xob--parse-edit-node (clip id)
   "Parse out relevant parts of a node after syncing into the xob KB (knowledge base).
