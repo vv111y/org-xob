@@ -3651,3 +3651,23 @@ org-xob-all-buffers
                          :follow #'org-id-open
                          :export
                          :store #'org-id-store-link)
+;;; d
+
+(org-element-context)
+
+(org-insert-link nil "xob:46725d52-df69-4108-9541-888223885dcd" "do i have")[[xob:46725d52-df69-4108-9541-888223885dcd][do i have]][[id:46725d52-df69-4108-9541-888223885dcd][do i have]][[do i have]]
+
+
+(let ((m (org-end-of-subtree)))
+  (re-search-forward "\\[\\[xobdel:*" m t)
+  (if (string= "[[xobdel:" (match-string 0))
+      (message "weebo")))
+
+(progn
+  (re-search-forward "\\[\\[xobdel:*" nil t)
+  (stringp (match-string 0))
+  )
+(let ((m (org-end-of-subtree)))
+  (goto-char (point-min))
+  (re-search-forward "\\[\\[xobdel:*" 249560 t)
+  )

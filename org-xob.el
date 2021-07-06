@@ -216,6 +216,31 @@ n.b  -- bibliographic entries")
 
 (defvar org-xob--auto-templates '("ad" "as" "al" "all" "alit" "alt" "lp" "nt" "na" "nw" "tf" "tp"))
 
+;;;;; link variables
+
+(org-link-set-parameters "xob"
+                         :follow #'org-id-open
+                         :store #'org-id-store-link)
+
+(org-link-set-parameters "xobdel"
+                         :follow #'org-id-open
+                         :store #'org-id-store-link)
+
+(defconst org-xob--x-link-re "\\[\\[xob:*"
+  "Regex for xob link types.")
+
+(defconst org-xob--xdel-link-re "\\[\\[xobdel:*" 
+  "Regex for xobdel link types.")
+
+(defconst org-xob--x-link-str "[[xob:" 
+  "String for xobdel link types.")
+
+(defconst org-xob--xdel-link-str "[[xobdel:" 
+  "String for xobdel link types.")
+
+(defconst org-xob--id-link-str "[[id:" 
+  "String for id link types.")
+
 ;;;;; Keymaps
 
 (defvar org-xob-map
@@ -354,6 +379,7 @@ Calling with C-u will force a restart."
        (org-xob--register-files)
        (org-xob--process-files)
        (org-xob--eval-capture-templates)
+       (org-link-make-regexps)
        (org-xob--open-today)
        (setq org-xob-new-day-timer
              (run-at-time "00:00"
@@ -489,24 +515,30 @@ If called with optional ID argument, then remove the node with that ID."
 ;;;###autoload
 (defun org-xob-insert-link ()
   "Inserts a properly formatted xob node link at point. If we are in a
-xob edit buffer, then also update the forlinks source."
+xob edit buffer, use a xob link and update the forlinks source."
   (interactive)
   (org-xob-with-xob-on
    (save-window-excursion
      (save-excursion
        (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-         (org-super-links--insert-link (org-id-find ID 'MARKERP)))))
-   (when (org-xob--is-edit-node-p)
-     (org-xob-sync-edit)
-     (org-xob--source-refresh 'forlinks))))
+         )))
+   (if (org-xob--is-edit-node-p)
+       (progn
+         (org-insert-link (concat "xob:" ID) title)
+         (org-xob--source-refresh 'forlinks))
+    (org-super-links--insert-link (org-id-find ID 'MARKERP)) )))
 
 ;;;###autoload
 (defun org-xob-delete-link ()
   "simple wrapper to call org-superlinks-delete-link"
   (interactive)
-  (org-super-links-delete-link)
-  ;; if edit node, then sync, make atomic
-  ())
+  (if (org-xob--is-edit-node-p)
+      (progn
+        (goto-char (org-element-property :begin (org-element-context)))
+        (replace-regexp org-xob--xlink-re
+                        org-xob--xdel-link-str
+                        nil (point) (line-end-position)))
+    (org-super-links-delete-link)))
 
 ;;;###autoload
 (defun org-xob-refile-region ()
@@ -1163,15 +1195,14 @@ Requires that point be on the relevant inserted text."
         (org-end-of-subtree)
         (newline)
         (yank)))
-    (org-end-of-subtree)
-    (setq m (point))
+    (setq m (org-end-of-subtree))
     (goto-char (point-min))
-    (while (and (< (point) m)
-                (re-search-forward
-                 "\\[\\[xob:*"
-                 nil t))
-      (replace-match "[[id:" t t)
-      (org-super-links-convert-link-to-super t))))
+    (while (or (re-search-forward org-xob--x-link-re m t)
+               (re-search-forward org-xob--xdel-link-re m t))
+      (if (string= org-xob--xdel-link-str (match-string 0))
+          (org-super-links-delete-link)
+        (replace-match org-xob--id-link-str t t)
+        (org-super-links-convert-link-to-super t)))))
 
 ;;;###autoload
 (defun org-xob-ediff-edit ()
@@ -1653,8 +1684,10 @@ then return all other links."
                      (if (funcall test (equal (org-element-property
                                                :drawer-name (cadr (org-element-lineage link)))
                                               "BACKLINKS"))
-                         (if (org-xob--is-node-p
-                              (setq ID (org-element-property :path link)))
+                         (if (and (not (string= "xobdel"
+                                                (org-element-property :type link)))
+                                  (org-xob--is-node-p
+                                   (setq ID (org-element-property :path link))))
                              ID
                            nil)))))))))))
 
