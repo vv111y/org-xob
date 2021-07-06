@@ -1082,11 +1082,11 @@ Otherwise just yank. If heading is a xob node, then update modified time propert
         (yank))))
   (org-xob--update-modified-time))
 
-;; -- SYNC --
+;;;;; Sync & Ediff Node
 
 ;; TODO record diff, check if deleted open nodes
 (defun org-xob--update-original (ID)
-  "update contents of KB node at point with string ~clip~.
+  "update contents of KB node with contents of the edit node with ID.
 Note, requires that all KB nodes are stored at level 1.
 Does not use the kill-ring."
   (save-window-excursion
@@ -1162,15 +1162,16 @@ Requires that point be on the relevant inserted text."
       (with-current-buffer (marker-buffer m)
         (org-end-of-subtree)
         (newline)
-        (yank)
-        ))
+        (yank)))
+    (org-end-of-subtree)
+    (setq m (point))
     (goto-char (point-min))
-    ())
-
-  ;; TODO pull out logging/clocking
-  ;; TODO convert tmp links to super-links
-  ;; would be nice to have proper links in edit node
-  )
+    (while (and (< (point) m)
+                (re-search-forward
+                 "\\[\\[xob:*"
+                 nil t))
+      (replace-match "[[id:" t t)
+      (org-super-links-convert-link-to-super t))))
 
 ;;;###autoload
 (defun org-xob-ediff-edit ()

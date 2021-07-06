@@ -3609,6 +3609,45 @@ org-xob-all-buffers
   (yank)
   )
 
+
+;; "^[	 ]*:LOGBOOK:[	 ]*
+;; \\(?:.*
+;; \\)*?[	 ]*:END:[	 ]*$"
+
 (buffer-substring-no-properties
  (region-beginning)
  (+ 20 (region-beginning)))
+
+;;; link parse
+
+(org-element-map (org-element-parse-buffer) 'link
+  (lambda (el)
+    (org-element-link-parser)))
+
+(while (org-element-link))
+
+(defun vv/nl ()
+  (interactive)
+  (let (m)
+    (save-excursion
+      (org-end-of-subtree)
+      (setq m (point)))
+    (while (and (< (point) m)
+                (re-search-forward
+                 "\\[\\[xob:*"
+                 nil t))
+      (replace-match "[[id:" t t)
+      (org-super-links-convert-link-to-super t)
+      )))
+
+;; (not (eobp))
+
+;; (replace-match "[[id:" t t)
+
+(concat "^[	 ]*\\[\\[xob:"
+        thing-at-point-uuid-regexp)
+
+(org-link-set-parameters "xob"
+                         :follow #'org-id-open
+                         :export
+                         :store #'org-id-store-link)
