@@ -531,14 +531,22 @@ xob edit buffer, use a xob link and update the forlinks source."
 
 ;;;###autoload
 (defun org-xob-delete-link ()
-  "simple wrapper to call org-superlinks-delete-link"
+  "Delete link at point in a xob node. If this is an edit node, then insert
+placeholder link (deletion will occur on sync). If it is a regular node,
+then just use org-super-links."
   (interactive)
   (if (org-xob--is-edit-node-p)
-      (progn
-        (goto-char (org-element-property :begin (org-element-context)))
-        (replace-regexp org-xob--xlink-re
-                        org-xob--xdel-link-str
-                        nil (point) (line-end-position)))
+      (let* ((link (org-element-context))
+            (loc (org-element-property :path link))
+            (beg (org-element-property :begin link))
+            (end (org-element-property :end link))
+            (desc (buffer-substring-no-properties
+                   (org-element-property :contents-begin link)
+                   (org-element-property :contents-end link))))
+        (funcall-interactively #'delete-region beg end)
+        (org-insert-link nil (concat "xobdel:"
+                                     loc)
+                         desc))
     (org-super-links-delete-link)))
 
 ;;;###autoload

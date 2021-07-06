@@ -3671,3 +3671,16 @@ org-xob-all-buffers
   (goto-char (point-min))
   (re-search-forward "\\[\\[xobdel:*" 249560 t)
   )
+
+(replace-regexp 
+                
+                nil (point) (line-end-position))
+
+
+(org-insert-link )
+
+(let ((link (org-element-context)))
+  (buffer-substring-no-properties (org-element-property :contents-begin link)
+                    (org-element-property :contents-end link)))
+
+(org-element-property :contents (org-element-context))
