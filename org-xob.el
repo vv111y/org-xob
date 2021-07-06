@@ -1,11 +1,11 @@
-;;; org-xob.el --- advanced knowledge management system in Org-mode -*- lexical-binding: t; -*-
+;;; org-xob.el --- Advanced knowledge management system in Org-mode -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020 Willy Rempel
 ;; Author: Willy Rempel <willy.rempel@acm.org>
 ;; URL: https://github.com/vv111y/org-xob.el
 ;; Version: 0.5-pre
-;; Package-Requires: ((emacs "25.2") (org) (org-element) (org-id) (org-ql) (cl-lib) (org-super-links))
-;; Keywords:
+;; Package-Requires: ((emacs "27.1") (org) (org-element) (org-id) (org-ql) (cl-lib) (org-super-links))
+;; Keywords: outlines
 
 ;; This file is not part of GNU Emacs.
 
@@ -94,6 +94,7 @@
 
 (defgroup org-xob nil
   "Settings for `org-xob'."
+  :group 'org-mode
   :link '(url-link "http://github.com/vv111y/org-xob.el"))
 
 (defcustom org-xob-something nil
@@ -305,25 +306,25 @@ n.b  -- bibliographic entries")
   )
 
 (defun org-xob--up-heading ()
-  (if (or (org-folded-p)
-          (org-empty-entry-p))
+  (if (or (org-xob-folded-p)
+          (org-xob-empty-entry-p))
       (org-up-heading-safe)
     (outline-hide-subtree)))
 
 (defun org-xob--down-heading ()
-  (if (org-folded-p)
+  (if (org-xob-folded-p)
       (progn (org-show-entry)
              (org-show-children))
     (org-goto-first-child)))
 
-(defun org-folded-p ()
+(defun org-xob-folded-p ()
   "Returns non-nil if point is on a folded headline or plain list
 item. (credit https://emacs.stackexchange.com/a/26840)"
   (and (or (org-at-heading-p)
            (org-at-item-p))
        (invisible-p (point-at-eol))))
 
-(defun org-empty-entry-p ()
+(defun org-xob-empty-entry-p ()
   "Returns true if this entry is empty."
   (when (org-at-heading-p)
     (let (a b)
@@ -1378,7 +1379,7 @@ trimend - Exclude empty lines at the bottom."
         (exchange-point-and-mark))
       (buffer-substring (point) (mark)))))
 
-;; --new nodes and links--
+;;;;;; --new nodes and links--
 (defun org-xob--get-create-node ()
   "Find or create new xob KB node using helm. Returns node (ID title) as a list."
   (unless org-xob-on-p
@@ -1486,7 +1487,7 @@ Returns mark for the link subheader."
           (org-back-to-heading))
         (point-marker)))))
 
-;; --- Node Versioning ---
+;;;;;; --- Node Versioning ---
 
 (defun org-xob--save-version (old new)
   "Create a diff between prior node state and current, then save it."
@@ -1788,8 +1789,7 @@ then checks using org-xob--is-edit-node-p."
 (org-ql-defpred is-xob-source (PID)
   "Checks if heading is a source for node with ID 'PID'"
   :body  (org-xob--is-source-p
-          (property "PID" PID)
-          ))
+          (property "PID" PID)))
 
 ;;;;; org-ql mapping functions TODO test
 
@@ -1809,9 +1809,11 @@ then checks using org-xob--is-edit-node-p."
   (org-ql-select org-xob-buffers
     `(property ,prop ,val)))
 
-(defun org-xob-find-any-in-buffers ())
+(defun org-xob-find-any-in-buffers ()
+  "Find any node in any xob buffers.")
 
-(defun org-xob-find-all-in-buffers (ID))
+(defun org-xob-find-all-in-buffers (ID)
+  "Find all nodes with same ID in all buffers.")
 
 (defun org-xob-map-if-in-buffers (pred func)
   "Apply func to all headings that satisfy paredicate pred in all xob buffers."
@@ -1845,6 +1847,7 @@ then checks using org-xob--is-edit-node-p."
     :action func))
 
 (defun org-xob-node-source (ID source func)
+  "Apply FUNC to all sources with ID and SOURCE tag."
   (org-ql-select org-xob-buffers
     `(and (is-xob-source ,ID)
           (tags source))
@@ -1896,8 +1899,12 @@ then checks using org-xob--is-edit-node-p."
                 t)
             nil))))))
 
-(defun org-xob--auto-clock-in ())
-(defun org-xob--auto-clock-out ())
+(defun org-xob--auto-clock-in ()
+  "Maybe? automatically clock node editing activity.
+This function starts clock for a given node.")
+
+(defun org-xob--auto-clock-out ()
+  "Maybe?. This functions stops the automatic clock for the given node.")
 ;;;;; xob Management DONE UNCHANGED?
 
 ;;;###autoload
@@ -2053,7 +2060,7 @@ If there are no saved tables, then create new empty ones."
        (plist-member source :PID)
        (plist-member source :getfn)
        (plist-member source :items)
-       (push souce org-xob-available-sources)))
+       (push source org-xob-available-sources)))
 
 ;; --- file management ---
 (defun org-xob--register-files ()
@@ -2166,5 +2173,4 @@ Buffer remains open. Returns the filename."
 
 
 (provide 'org-xob)
-
-;;; org-xob.el ends here
+;;; org-xob ends here
