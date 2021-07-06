@@ -519,15 +519,12 @@ If called with optional ID argument, then remove the node with that ID."
 xob edit buffer, use a xob link and update the forlinks source."
   (interactive)
   (org-xob-with-xob-on
-   (save-window-excursion
-     (save-excursion
-       (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-         )))
-   (if (org-xob--is-edit-node-p)
-       (progn
-         (org-insert-link (concat "xob:" ID) title)
-         (org-xob--source-refresh 'forlinks))
-    (org-super-links--insert-link (org-id-find ID 'MARKERP)) )))
+   (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+     (if (org-xob--is-edit-node-p)
+         (progn
+           (org-insert-link nil (concat "xob:" ID) title)
+           (org-xob--source-refresh 'forlinks))
+       (org-super-links--insert-link (org-id-find ID 'MARKERP)) ))))
 
 ;;;###autoload
 (defun org-xob-delete-link ()
