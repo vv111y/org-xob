@@ -3552,7 +3552,7 @@ org-xob--open-nodes
 (let ((event "hold")
       (title "comp sci")
       (description ""))
-  (org-paste-subtree nil 
+  (org-paste-subtree nil
                      (concat "| " (format-time-string "%r")
                              " | " event
                              " | " title
@@ -3672,8 +3672,7 @@ org-xob-all-buffers
   (re-search-forward "\\[\\[xobdel:*" 249560 t)
   )
 
-(replace-regexp 
-                
+(replace-regexp
                 nil (point) (line-end-position))
 
 
@@ -3684,3 +3683,23 @@ org-xob-all-buffers
                     (org-element-property :contents-end link)))
 
 (org-element-property :contents (org-element-context))
+
+(defun vv/ss (str)
+  (when (re-search-forward str nil t)
+    ;; (princ (match-string 0))
+    (string= org-xob--xdel-link-str (match-string 0))
+    ;; (setf
+    ;;  (point) (match-beginning 0)
+    ;;  (mark) (match-end 0))
+    ))
+
+(vv/ss org-xob--xdel-link-re)
+
+(string= org-xob--xdel-link-str (match-string 0))
+(match-string 0)
+
+;; #("mpu" 0 1 (fontified t org-category "InformationTechnology" line-prefix "" wrap-prefix #("* " 0 2 (face org-indent)) face org-level-1) 1 3 (fontified t org-category "InformationTechnology" line-prefix "" wrap-prefix #("* " 0 2 (face org-indent)) face org-level-1))
+
+(re-search-forward org-xob--xdel-link-re nil t)
+
+(re-search-forward "string" nil t)

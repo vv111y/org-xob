@@ -1126,7 +1126,6 @@ Otherwise just yank. If heading is a xob node, then update modified time propert
 
 ;;;;; Sync & Ediff Node
 
-;; TODO record diff, check if deleted open nodes
 (defun org-xob--update-original (ID)
   "update contents of KB node with contents of the edit node with ID.
 Note, requires that all KB nodes are stored at level 1.
@@ -1350,7 +1349,6 @@ Returns content as a string with properties."
   (let (str)
     (save-window-excursion
       (save-excursion
-        ;; todo replace with copy
         (org-id-goto id)
         (org-with-wide-buffer 	;; TODO maybe remove
          (org-save-outline-visibility
@@ -1717,7 +1715,7 @@ When called with point on the given context item, only that item will be
 updated. If called on a context source heading, then the update is applied
 to all source items."
   (let ((func #'(lambda ()
-                  ;; todo replace with copy
+
                   (let ((pid (org-entry-get (point) "PID")) str)
                     (when (org-uuidgen-p pid)
                      (org-xob--clear-node)
