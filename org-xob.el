@@ -523,8 +523,12 @@ xob edit buffer, use a xob link and update the forlinks source."
      (if (org-xob--is-edit-node-p)
          (progn
            (org-insert-link nil (concat "xob:" ID) title)
-           (org-xob--source-refresh 'forlinks))
-       (org-super-links--insert-link (org-id-find ID 'MARKERP)) ))))
+           (org-xob-show-source 'forlinks))
+       (org-super-links--insert-link (org-id-find ID 'MARKERP))
+       (if (org-xob--is-open-node-p ID)
+           (save-excursion
+             (org-xob--goto-edit ID)
+             (org-xob-revert-edit)))))))
 
 ;;;###autoload
 (defun org-xob-delete-link ()
