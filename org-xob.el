@@ -1284,6 +1284,10 @@ Returns the ID if true, nil otherwise."
          (member "edit" (org-get-tags))
          id)))
 
+(defun org-xob--is-open-node-p (ID)
+  "Is node with ID currently open?"
+  (member ID (org-xob--get-open-node-ids)))
+
 (defun org-xob--to-node-top ()
   "Goto the top heading of the node, whether edit or original."
   ())
