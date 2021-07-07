@@ -3703,3 +3703,13 @@ org-xob-all-buffers
 (re-search-forward org-xob--xdel-link-re nil t)
 
 (re-search-forward "string" nil t)
+
+(org-id-find "6E71A048-CBC3-4336-9BA2-5552D3A43EDC" 'MARKERP)
+
+;;; wip: updating edit from original mods
+
+
+(if (org-xob--is-open-node-p ID)
+    (save-excursion
+      (org-xob--goto-edit ID)
+      (org-xob-revert-edit)))
