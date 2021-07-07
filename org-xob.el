@@ -227,19 +227,19 @@ n.b  -- bibliographic entries")
                          :follow #'org-id-open
                          :store #'org-id-store-link)
 
-(defconst org-xob--x-link-re "\\[\\[xob:*"
+(defconst org-xob--x-link-re "\\[\\[xob\\:"
   "Regex for xob link types.")
 
-(defconst org-xob--xdel-link-re "\\[\\[xobdel:*" 
+(defconst org-xob--xdel-link-re "\\[\\[xobdel:"
   "Regex for xobdel link types.")
 
-(defconst org-xob--x-link-str "[[xob:" 
+(defconst org-xob--x-link-str "[[xob:"
   "String for xobdel link types.")
 
-(defconst org-xob--xdel-link-str "[[xobdel:" 
+(defconst org-xob--xdel-link-str "[[xobdel:"
   "String for xobdel link types.")
 
-(defconst org-xob--id-link-str "[[id:" 
+(defconst org-xob--id-link-str "[[id:"
   "String for id link types.")
 
 ;;;;; Keymaps
