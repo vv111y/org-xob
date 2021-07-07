@@ -1577,8 +1577,8 @@ displayed, then refresh it. With optional C-u, force repopulating the item list.
           (with-current-buffer bufc
             (org-with-wide-buffer
              (evil-save-state
-               (when (eq '(4) arg) 										;; if arg then repop items
-                 (funcall (plist-get src :getfn) src))
+               ;; (when (eq '(4) arg)) 										;; if arg then repop items
+               (funcall (plist-get src :getfn) src eid)
                ;; TODO redo for overheading
                (if (org-xob--goto-buffer-heading
                     (plist-get src :ID))
@@ -1666,15 +1666,16 @@ Otherwise apply to source at point."
 
 ;;;;; KB Context Functions DONE UNCHANGED
 
-(defun org-xob--node-get-link-entries (source)
+(defun org-xob--node-get-link-entries (source &optional EID)
   "Populates source item list from the node. The items are represented by their
 respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
 (which are all other links to xob KB nodes). Assumes org-super-links convention
 where the backlinks are in a BACKLINKS drawer."
   (save-window-excursion
     (save-excursion
-      ;; todo replace with copy
-      (org-id-goto (plist-get source :PID))
+      (if EID
+          (org-xob--goto-edit EID)
+        (org-id-goto (plist-get source :PID)))
       (plist-put source :items
                  (org-xob--node-get-links (plist-get source :name))))))
 
