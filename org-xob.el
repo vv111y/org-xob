@@ -1399,7 +1399,8 @@ trimend - Exclude empty lines at the bottom."
                    :volatile t
                    :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
                                              (unless ID
-                                               (setq ID (org-xob--capture title)))
+                                               (setq ID (org-xob--capture title))
+                                               (org-xob--log-event "new node" ID))
                                              (list ID title))))))
 
 (defun org-xob--get-node-by-type ()
