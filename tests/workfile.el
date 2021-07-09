@@ -3713,3 +3713,127 @@ org-xob-all-buffers
     (save-excursion
       (org-xob--goto-edit ID)
       (org-xob-revert-edit)))
+
+
+;;; multi helm
+(helm :sources (helm-build-sync-source "wooot"
+                 :candidates
+                 ;; (hash-table-keys org-xob--id-title)
+                 (lambda () (cons helm-input (hash-table-keys org-xob--id-title)))
+                 ;; :filtered-candidate-transformer #'(lambda (cans source)
+                 ;;                                     (cons "[?] " cans))
+                 :volatile nil
+                 :action (lambda (key)
+                           (dolist (el (helm-marked-candidates))
+                             (let ((name (gethash el org-xob--id-title)))
+                               (if name (print name))))))
+      :buffer "woot")
+
+(helm :sources (helm-build-sync-source "wooot"
+                 :candidates '("1" "2" "3" "4" "5" "6" "7" "8" "9" "0")
+                 :volatile nil
+                 :action (lambda (key)
+                           (apply #'+
+                                 (mapcar #'string-to-number
+                                         (helm-marked-candidates)))
+                           ))
+      :buffer "woot")
+
+(apply '+ (mapcar #'string-to-number '("1" "2" "3" "4" "5" "6" "7" "8" "9" "0")))
+
+(helm :sources (helm-build-sync-source "wooot"
+                 :candidates '("1" "2" "3" "4" "5" "6" "7" "8" "9" "0")
+                 :action 'vv/hh)
+      :buffer "woot")
+
+(defun vv/hh (sel)
+  (interactive)
+  (when (helm-marked-candidates)
+    (message "oogle"))
+  )
+
+case:
+1 node
+old
+new
+n nodes
+
+
+'(("Select Node" . org-xob--get-create-node-action))
+
+(lambda (title) (org-xob--get-create-node-action title))
+
+(defmacro org-xob--do-selected-nodes (single types &rest body)
+  "Run ~body~ forms for each selected node with corresponding
+ID and title. SINGLE forces the use of one selection, TYPES allows you
+to select the node type first."
+  `(let ((selected (if ,types
+                       (org-xob--get-node-by-type)
+                     (org-xob--get-create-node)))
+         (dothis (lambda (sel) (let ((ID (car sel))
+                                     (title (cdr sel)))
+                                 ,@body))))
+     (if ,(not single)
+         (dolist (sel selected)
+           (funcall dothis sel))
+       (funcall dothis (car selected)))))
+
+(org-xob--do-selected-nodes nil t
+                            (message "id: %s || title: %s" ID title))
+
+(defun org-xob--get-create-node-action (title)
+  "Builds a list of one or more cons cells for selected nodes of form (ID . title)."
+  ;; (message title)
+  (if (< 1 (length (helm-marked-candidates)))
+      (mapcar (lambda (title) (list (gethash title org-xob--title-id) title))
+              (helm-marked-candidates))
+    (if-let ((ID (gethash title org-xob--title-id)))
+        (list ID title)
+      (list (org-xob--capture title) title))))
+
+(org-xob--do-select-nodes t t
+                          (lambda () (message "id: %s || title: %s" ID title))
+                          )
+
+(defun org-xob--do-select-nodes (single types func)
+  "Run FUNC for each selected node with corresponding
+ID and title. SINGLE forces the use of one selection, TYPES allows you
+to select the node type first."
+  (let ((selected (if types
+                      (org-xob--get-node-by-type)
+                    (org-xob--get-create-node)))
+        (dothis (lambda (sel) (let ((ID (car sel))
+                                      (title (cdr sel)))
+                                  (funcall func ID title)))))
+     (if (not single)
+         (dolist (sel selected)
+           (funcall dothis sel))
+       (funcall dothis (car selected)))))
+
+(org-insert-link (org-store-link t) "wooo")
+
+(progn
+  (forward-line)
+  (newline)
+  (previous-line))
+(progn
+  (forward-line)
+  (newline)
+  (previous-line))
+
+(cdr (org-element-at-point))
+(goto-char (org-element-property :end  (org-element-context)))
+
+(re-search-forward "]]" nil t)
+
+(setq org-id-link-to-org-use-id 'create-if-interactive-and-no-custom-id)
+
+(setq org-store-link-functions (add-to-list 'org-store-link-functions 'org-id-store-link))
+
+org-link-parameters
+
+(org-link-set-parameters "id"
+                         :follow #'org-id-open
+                         :store #'org-id-store-link)
+
+

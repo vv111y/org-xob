@@ -1369,13 +1369,12 @@ Returns content as a string with properties."
            (deactivate-mark 'force)))))
     str))
 
-;; NOTE written for org-xob--select-content,
-;; for syncing to xob kb, requires all source nodes
-;; to be at level one - NO nested nodes
+;; NOTE written for org-xob--select-content, for syncing to xob kb
 (defun org-xob--get-full-node (level &optional meta trimtop trimend)
   "Return a full node as a string (with properties). Used for both edit
 node and context presentation. Returns the full node as a string, but with
-adjusted specified level. Options:
+adjusted specified level. Requires all source nodes to be at level one
+with no nesting. Options:
 meta - Include all contents. Adds the heading and all drawers at the top.
 			 Otherwise just the body is returned.
 trimtop - Exclude any empty space between the heading and the first content.
