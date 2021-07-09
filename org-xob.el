@@ -1257,29 +1257,32 @@ Requires that point be on the relevant inserted text."
 
 ;;;;; Node Functions DONE UNCHANGED
 
-(defun org-xob--is-node-p (&optional ID DEEPCHECK)
+(defun org-xob--is-node-p (&optional ID DEEPCHECK top)
   "Check if a heading is a xob node. Called interactively it defaults to heading at point.
 If an ID argument is supplied, then check the heading associated with it.
 With option DEEPCHECK, do not use any table lookup, but check whether the heading
 has valid UUID formatted ID and xob TYPE properties in the property drawer.
 Deepcheck only works on heading at point, any ID argument is ignored.
-Returns the ID if true, nil otherwise."
+If TOP is selected, then only check immediate heading, no inheritance check
+in subheadings. Returns the ID if true, nil otherwise."
   (interactive)
   (let ((temp (or ID (org-id-get nil))))
     (if temp
         (if DEEPCHECK
             (and
-             (string= "t" (org-entry-get (point) "xob"))
-             (member (org-entry-get (point) "TYPE") org-xob--node-types)
+             (string= "t" (org-entry-get (point) "xob" (not top)))
+             (member (org-entry-get (point) "TYPE" (not top)) org-xob--node-types)
              (eq 0 (org-uuidgen-p temp))
-             (not (org-entry-get (point) "EDIT"))
+             (not (org-entry-get (point) "EDIT" (not top)))
              temp)
           (if (gethash temp org-xob--id-title) temp)))))
 
-(defun org-xob--is-edit-node-p ()
-  "Is point on a node that is in an edit state? Return it's ID if true, nil otherwise."
-  (when-let ((id (org-entry-get (point) "EDIT" 'inherit)))
-    (and (string= "t" (org-entry-get (point) "xob" 'inherit))
+(defun org-xob--is-edit-node-p (&optional top)
+  "Is point on a node that is in an edit state? Return it's ID if true,
+nil otherwise. With optional TOP, check the specific heading at point,
+no inheritance check in subheadings."
+  (when-let ((id (org-entry-get (point) "EDIT" (not top))))
+    (and (string= "t" (org-entry-get (point) "xob" (not top)))
          (gethash id org-xob--id-title)
          (member "edit" (org-get-tags))
          id)))
@@ -1290,7 +1293,12 @@ Returns the ID if true, nil otherwise."
 
 (defun org-xob--to-node-top ()
   "Goto the top heading of the node, whether edit or original."
-  ())
+  (when (or (org-xob--is-node-p)
+            (org-xob--is-edit-node-p))
+    (org-back-to-heading)
+    (while (and (or (not (org-xob--is-node-p top))
+                    (not (org-xob--is-edit-node-p top)))
+                (org-up-heading-safe)))))
 
 (defun org-xob--eval-capture-templates ()
   "Re-evaluate the capture templates so they are up to date."
