@@ -1396,23 +1396,40 @@ trimend - Exclude empty lines at the bottom."
                    :candidates (lambda ()
                                  (let* ((cans (hash-table-keys org-xob--title-id)))
                                    (cons helm-input cans)))
-                   :volatile t
-                   :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
-                                             (unless ID
-                                               (setq ID (org-xob--capture title)))
-                                             (list ID title))))))
+                   :action #'org-xob--get-create-node-action)))
 
 (defun org-xob--get-node-by-type ()
   "Find a node by type."
   (unless org-xob-on-p
     (org-xob-start))
   (if-let ((type (org-xob--select-node-type)))
-      (helm :buffer "*xob get paper*"
+      (helm :buffer "*xob get typed node*"
             :sources (helm-build-sync-source "xob-papers"
                        :candidates (org-xob--find-nodes-by-type type)
-                       :volatile t
-                       :action (lambda (title) (let ((ID (gethash title org-xob--title-id)))
-                                                 (list ID title)))))))
+                       :action #'org-xob--get-create-node-action))))
+
+(defun org-xob--get-create-node-action (title)
+  "Builds a list of one or more cons cells for selected nodes of form (ID . title)."
+  (mapcar (lambda (title)
+            (if-let ((ID (gethash title org-xob--title-id)))
+                (list ID title)
+              (list (org-xob--capture title) title)))
+          (helm-marked-candidates)))
+
+(defun org-xob--do-select-nodes (single types func)
+  "Run FUNC for each selected node with corresponding
+ID and title. SINGLE forces the use of one selection, TYPES allows you
+to select the node type first."
+  (let ((selected (if types
+                      (org-xob--get-node-by-type)
+                    (org-xob--get-create-node)))
+        (dothis (lambda (sel) (let ((ID (car sel))
+                                    (title (cadr sel)))
+                                (funcall func ID title)))))
+    (if (not single)
+        (dolist (sel selected)
+          (funcall dothis sel))
+      (funcall dothis (car selected)))))
 
 (defun org-xob--select-node-type ()
   (helm :buffer "xob types"
