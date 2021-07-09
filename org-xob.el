@@ -505,6 +505,7 @@ If called with optional ID argument, then remove the node with that ID."
                (setq link-element (org-super-links--find-link ID))
                (if link-element
                    (org-super-links--delete-link link-element)))))
+         (org-xob--log-event "removed" ID)
          (remhash ID org-xob--id-title)
          (remhash title org-xob--title-id)
          (org-entry-delete (point) "TYPE")
