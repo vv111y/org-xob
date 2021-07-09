@@ -442,27 +442,30 @@ Calling with C-u will force a restart."
    (org-xob--do-select-nodes nil arg #'org-xob--edit-node)))
 
 ;;;###autoload
-(defun org-xob-close-node (&optional ID)
+(defun org-xob-close-node (&optional arg ID)
   "Delete a node that has been open for editing. If argument ID
 is supplied, then close that node, otherwise close node at point.
 All displayed contextual material will also be deleted. Requires
 that point be under the nodes top heading, not a subheading."
-  (interactive)
-  (when-let ((ID (or (and (org-xob--id-goto ID)
-                          ID)
-                     (org-entry-get (point) "EDIT")))
-             ((org-xob--is-edit-node-p)))
-    (with-current-buffer org-xob--c-buff
-      (mapc #'(lambda (src) (progn (when (org-xob--id-goto src)
-                                     (org-mark-subtree)
-                                     (call-interactively 'delete-region))))
-            (org-xob--this-node-sources ID)))
-    (setq org-xob--open-nodes
-          (cl-delete-if #'(lambda (x) (string= x ID))
-                        org-xob--open-nodes
-                        :key #'(lambda (x) (open-node-ID x))))
-    (org-mark-subtree)
-    (call-interactively #'delete-region)))
+  (interactive "P")
+  (cl-flet ((close-node ()
+                        (when-let ((ID (org-entry-get (point) "EDIT"))
+                                   ((org-xob--is-edit-node-p)))
+                          (with-current-buffer org-xob--c-buff
+                            (mapc #'(lambda (src) (progn (when (org-xob--id-goto src)
+                                                           (org-mark-subtree)
+                                                           (call-interactively 'delete-region))))
+                                  (org-xob--this-node-sources ID)))
+                          (setq org-xob--open-nodes
+                                (cl-delete-if #'(lambda (x) (string= x ID))
+                                              org-xob--open-nodes
+                                              :key #'(lambda (x) (open-node-ID x))))
+                          (org-mark-subtree)
+                          (call-interactively #'delete-region)
+                          (goto-char (point-min)))))
+    (cond (arg (org-xob-map-buffer-edit-nodes #'close-node))
+          ((and ID (org-xob--id-goto ID)) (close-node))
+          (t (close-node)))))
 
 ;;;###autoload
 (defun org-xob-sync-edit (&optional arg sID)
