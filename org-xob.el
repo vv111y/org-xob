@@ -1411,6 +1411,7 @@ trimend - Exclude empty lines at the bottom."
                    :candidates (lambda ()
                                  (let* ((cans (hash-table-keys org-xob--title-id)))
                                    (cons helm-input cans)))
+                   :volatile t
                    :action #'org-xob--get-create-node-action)))
 
 (defun org-xob--get-node-by-type ()
@@ -1421,6 +1422,7 @@ trimend - Exclude empty lines at the bottom."
       (helm :buffer "*xob get typed node*"
             :sources (helm-build-sync-source "xob-papers"
                        :candidates (org-xob--find-nodes-by-type type)
+                       :volatile t
                        :action #'org-xob--get-create-node-action))))
 
 (defun org-xob--get-create-node-action (title)
@@ -1474,6 +1476,7 @@ as a capture hook function."
         (org-entry-put (point) "MODIFIED" timestamp)
         (puthash ID title org-xob--id-title)
         (puthash title ID org-xob--title-id)
+        (org-xob--log-event "new node" ID)
         (setq org-xob--last-captured ID))))
 
 (defun org-xob--capture (title)
