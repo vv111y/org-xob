@@ -1859,12 +1859,20 @@ then checks using org-xob--is-edit-node-p."
     :action func))
 
 (defun org-xob-map-all-nodes (func)
+  "Apply FUNC on all nodes in all xob buffers."
   (org-ql-select org-xob-buffers
     '(is-xob-node)
     :action func))
 
 (defun org-xob-map-all-edits (func)
+  "Apply FUNC on all edit nodes in all xob buffers."
   (org-ql-select org-xob-buffers
+    '(is-xob-edit)
+    :action func))
+
+(defun org-xob-map-buffer-edit-nodes (func)
+  "Apply FUNC to all edit nodes in current buffer."
+  (org-ql-select (current-buffer)
     '(is-xob-edit)
     :action func))
 
