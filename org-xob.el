@@ -554,7 +554,8 @@ then just use org-super-links."
 ;;;###autoload
 (defun org-xob-refile-region (&optional arg)
   "Move text in region to the end of the top section of a selected node.
-This directly writes to a KB node, any open edit nodes are automatically
+If an open edit node is present, then refiled text is sent there, otherwise it is
+written to the original KB node, any open edit nodes are automatically
 updated."
   (interactive "P")
   (org-xob-with-xob-on
@@ -569,25 +570,27 @@ updated."
                  (beg (region-beginning))
                  (snip (buffer-substring-no-properties beg
                                                        (+ 20 beg)))
-                 flag)
+                 eid flag)
             (unwind-protect
                 (progn
                   (activate-change-group changes)
                   (kill-region (point) (mark))
                   (save-window-excursion
                     (save-excursion
-                      (org-id-goto ID)
-                      (org-xob--paste-top-section)
-                      (org-xob--log-event "refile" ID snip)
-                      (if (and (org-xob--goto-edit ID)
-                               (org-xob--is-edit-node-p))
-                          (org-xob-revert-edit))))
-                  (setq flag t))
+                      (if (setq eid (and (org-xob--goto-edit ID)
+                                         (org-xob--is-edit-node-p)))
+                          (progn
+                            (org-xob--paste-top-section)
+                            (org-xob-sync-edit))
+                        (org-id-goto ID)
+                        (org-xob--paste-top-section))
+                      (org-xob--log-event "refile" ID snip))
+                    (setq flag t))))
               (if flag
                   (accept-change-group changes)
                 (cancel-change-group changes)
                 (message "xob: failed to refile section to node: %s"
-                         (gethash ID org-xob--id-title))))))))))
+                         (gethash ID org-xob--id-title)))))))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
