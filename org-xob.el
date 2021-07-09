@@ -436,15 +436,10 @@ Calling with C-u will force a restart."
 
 ;;;###autoload
 (defun org-xob-get-node (&optional arg)
-  "Focus on a node for editing. If it does not exist, create it."
+  "Open one or more nodes for editing. If node does not exist, create it."
   (interactive "P")
   (org-xob-with-xob-on
-   (pcase-let ((`(,ID ,title) (if arg
-                                  (org-xob--get-node-by-type)
-                                (org-xob--get-create-node))))
-     (and ID
-          title
-          (org-xob--edit-node ID title)))))
+   (org-xob--do-select-nodes nil arg #'org-xob--edit-node)))
 
 ;;;###autoload
 (defun org-xob-close-node (&optional ID)
@@ -514,17 +509,24 @@ If called with optional ID argument, then remove the node with that ID."
          (org-xob--save-state))))))
 
 ;;;###autoload
-(defun org-xob-insert-link ()
+(defun org-xob-insert-link (&optional arg)
   "Inserts a properly formatted xob node link at point. If we are in a
-xob edit buffer, use a xob link and update the forlinks source."
-  (interactive)
+xob edit buffer, use a xob placeholder link and update the forlinks source.
+Note: linking does not occur until edit is synced with the KB."
+  (interactive "P")
   (org-xob-with-xob-on
-   (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-     (if (org-xob--is-edit-node-p)
-         (progn
-           (org-insert-link nil (concat "xob:" ID) title)
-           (org-xob-show-source 'forlinks))
-       (org-super-links--insert-link (org-id-find ID 'MARKERP))))))
+   (org-xob--do-select-nodes
+    nil arg
+    #'(lambda (ID title)
+      (if (org-xob--is-edit-node-p)
+          (progn
+            (org-insert-link nil (concat "xob:" ID) title)
+            (insert " ")
+            (org-xob-show-source 'forlinks))
+        (org-super-links--insert-link (org-id-find ID 'MARKERP))
+        (goto-char (org-element-property :end  (org-element-context)))
+        ;; (re-search-forward "]]" nil t)
+        (insert " "))))))
 
 ;;;###autoload
 (defun org-xob-delete-link ()
@@ -547,38 +549,41 @@ then just use org-super-links."
     (org-super-links-delete-link)))
 
 ;;;###autoload
-(defun org-xob-refile-region ()
-  "Move text in region to the end of the top section of a selected node."
-  (interactive)
+(defun org-xob-refile-region (&optional arg)
+  "Move text in region to the end of the top section of a selected node.
+This directly writes to a KB node, any open edit nodes are automatically
+updated."
+  (interactive "P")
   (org-xob-with-xob-on
    (when (use-region-p)
-     (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
-       (when ID
-         (let* ((tbuffer (marker-buffer (org-id-find ID t)))
-                (changes (nconc (prepare-change-group (current-buffer))
-                                (prepare-change-group tbuffer)
-                                (prepare-change-group org-xob-today-buffer)))
-                (beg (region-beginning))
-                (snip (buffer-substring-no-properties beg
-                                                      (+ 20 beg)))
-                flag)
-           (unwind-protect
-               (progn
-                (activate-change-group changes)
-                (kill-region (point) (mark))
-                (save-window-excursion
-                  (save-excursion
-                    (org-id-goto ID)
-                    (org-xob--paste-top-section)
-                    (org-xob--log-event "refile" ID snip)
-                    (if (and (org-xob--goto-edit ID)
-                             (org-xob--is-edit-node-p))
-                        (org-xob-revert-edit))))
-                (setq flag t))
-             (if flag
-                 (accept-change-group changes)
-               (cancel-change-group changes)
-               (message "xob: failed to refile section to node: %s"
+     (org-xob--do-select-nodes
+      t arg
+      #'(lambda (ID title)
+          (let* ((tbuffer (marker-buffer (org-id-find ID t)))
+                 (changes (nconc (prepare-change-group (current-buffer))
+                                 (prepare-change-group tbuffer)
+                                 (prepare-change-group org-xob-today-buffer)))
+                 (beg (region-beginning))
+                 (snip (buffer-substring-no-properties beg
+                                                       (+ 20 beg)))
+                 flag)
+            (unwind-protect
+                (progn
+                  (activate-change-group changes)
+                  (kill-region (point) (mark))
+                  (save-window-excursion
+                    (save-excursion
+                      (org-id-goto ID)
+                      (org-xob--paste-top-section)
+                      (org-xob--log-event "refile" ID snip)
+                      (if (and (org-xob--goto-edit ID)
+                               (org-xob--is-edit-node-p))
+                          (org-xob-revert-edit))))
+                  (setq flag t))
+              (if flag
+                  (accept-change-group changes)
+                (cancel-change-group changes)
+                (message "xob: failed to refile section to node: %s"
                          (gethash ID org-xob--id-title))))))))))
 
 ;;;###autoload
