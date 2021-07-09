@@ -2219,6 +2219,32 @@ Buffer remains open. Returns the filename."
       (kill-whole-line 1)
       (save-buffer))))
 
+;; --- misc functions ---
+
+(defun org-xob/dt-to-ts ()
+  "convenience function: datetree to timestamp when just under heading"
+  (interactive)
+  (save-excursion
+    (org-back-to-heading)
+    (org-set-property
+     "CREATED"
+     (concat "["
+             (truncate-string-to-width
+              (nth 4 (org-heading-components)) 14)
+             "]"))))
+
+(defun org-xob/dt-to-ts/parent ()
+  "convenience function: datetree to timestamp for subheadings"
+  (interactive)
+  (org-set-property
+   "CREATED"
+   (concat "["
+           (truncate-string-to-width
+            (save-excursion
+              (org-up-heading-safe)
+              (nth 4 (org-heading-components))) 14)
+           "]")))
+
 
 (provide 'org-xob)
 ;;; org-xob ends here

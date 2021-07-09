@@ -2927,7 +2927,8 @@ org-xob--node-sources
         (with-current-buffer buf (goto-char (point-max)) (insert "\nhey\n")))))
 ;;; timestamp from datetree
 
-(defun vv/dt-to-ts ()
+(defun org-xob/dt-to-ts ()
+  "convenience function: datetree to timestamp when just under heading"
   (interactive)
   (save-excursion
     (org-back-to-heading)
@@ -2938,7 +2939,8 @@ org-xob--node-sources
               (nth 4 (org-heading-components)) 14)
              "]"))))
 
-(defun vv/dt-to-ts/parent ()
+(defun org-xob/dt-to-ts/parent ()
+  "convenience function: datetree to timestamp for subheadings"
   (interactive)
   (org-set-property
    "CREATED"
