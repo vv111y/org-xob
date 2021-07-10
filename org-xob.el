@@ -475,10 +475,10 @@ Current version performs simple, blunt, whole content replacement."
   (interactive "P")
   (org-xob-with-xob-on
    (let ((id (or sID (org-entry-get (point) "ID"))))
-     (if (eq current-prefix-arg '(4))
+     (if arg
          (dolist (ID (org-xob--get-open-node-ids))
-           (funcall #'org-xob--update-original ID))
-       (funcall #'org-xob--update-original id)))))
+           (org-xob--update-original ID))
+       (org-xob--update-original id)))))
 
 ;;;###autoload
 (defun org-xob-remove-node (&optional ID)
