@@ -1939,6 +1939,8 @@ then checks using org-xob--is-edit-node-p."
     (save-excursion
       (save-restriction
         (let ((title (gethash id org-xob--id-title)))
+          (unless org-xob-today
+            (org-xob--open-today))
           (org-id-goto org-xob-today)
           (if t
               (progn
