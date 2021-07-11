@@ -971,16 +971,15 @@ the windows."
 
 (defun org-xob--dual-pane (win)
   "Use dual-pane interface"
-  (unless (window-atom-root win)
-    (when-let* ((buf1 (switch-to-buffer
-                       org-xob-last-buffer))
-                (buf2 (buffer-local-value 'org-xob--pair-buf
-                                          buf1))
-                (win1 (selected-window))
-                (win2 (display-buffer-in-atom-window
-                       buf2
-                       `((window . ,(selected-window)) (side . right)))))
-      (setq org-xob--display 'dual))))
+  (when-let* ((buf1 (switch-to-buffer
+                     org-xob-last-buffer))
+              (buf2 (buffer-local-value 'org-xob--pair-buf
+                                        buf1))
+              (win1 (selected-window))
+              (win2 (split-window-right)))
+    (with-selected-window win2
+        (switch-to-buffer buf2))
+    (setq org-xob--display 'dual)))
 
 
 ;;;;; Edit Node Functions TODO
