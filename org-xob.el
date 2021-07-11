@@ -1035,12 +1035,9 @@ the correct location."
   "change tag and properties for newly written edit node."
   (goto-char (point-max))
   (newline)
-  (let ((m (point-marker)))
-    (funcall func)
-    (goto-char m)
-    (set-marker m nil))
+  (save-excursion (funcall func))
   (org-xob--mod-to-edit-node)
-  (outline-hide-entry))
+  (org-flag-subtree t))
 
 (defun org-xob--mod-to-edit-node (&optional refresh)
   (org-set-tags "edit")
