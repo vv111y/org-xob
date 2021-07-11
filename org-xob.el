@@ -451,11 +451,13 @@ that point be under the nodes top heading, not a subheading."
   (cl-flet ((close-node ()
                         (when-let ((ID (org-entry-get (point) "EDIT"))
                                    ((org-xob--is-edit-node-p)))
-                          (with-current-buffer org-xob--c-buff
-                            (mapc #'(lambda (src) (progn (when (org-xob--id-goto src)
-                                                           (org-mark-subtree)
-                                                           (call-interactively 'delete-region))))
-                                  (org-xob--this-node-sources ID)))
+                          (if (buffer-live-p org-xob--c-buff)
+                              (with-current-buffer org-xob--c-buff
+                                (mapc #'(lambda (src)
+                                          (progn (when (org-xob--id-goto src)
+                                                   (org-mark-subtree)
+                                                   (call-interactively 'delete-region))))
+                                      (org-xob--this-node-sources ID))))
                           (setq org-xob--open-nodes
                                 (cl-delete-if #'(lambda (x) (string= x ID))
                                               org-xob--open-nodes
@@ -878,15 +880,15 @@ If ID is given, then convert todo with that ID."
 (defun org-xob--close-buffer-hook ()
   "Properly close xob buffer: remove it from org-xob-buffers, kill context buffer."
   (let ((buf (current-buffer)))
+    (call-interactively #'org-xob-close-node '(4))
+    (org-xob-refresh-open-nodes)
     (setq org-xob-buffers (cl-delete buf org-xob-buffers))
     (setq org-xob-all-buffers (cl-delete buf org-xob-all-buffers))
     (setq org-xob-all-buffers (cl-delete org-xob--pair-buf org-xob-all-buffers))
     (if (eq buf org-xob-last-buffer)
         (setq org-xob-last-buffer (car-safe org-xob-buffers)))
-    (kill-buffer org-xob--pair-buf)
-    (when (eq 'dual org-xob--display)
-      (split-window-right)
-      (delete-window))))
+    (if (buffer-live-p org-xob--pair-buf)
+        (kill-buffer org-xob--pair-buf))))
 
 ;; NOTE keep? not being used
 (defun org-xob--id-create ()
