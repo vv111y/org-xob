@@ -3839,3 +3839,26 @@ org-link-parameters
                          :store #'org-id-store-link)
 
 
+
+;;; w
+
+(window-right (selected-window))
+
+(let ((win (window-right (selected-window))))
+  (if win
+      (select-window win)
+    (setq win (split-window-right))
+    (select-window win)))
+
+(let ((win (window-right (selected-window))))
+  (if (and win
+           (eq 'dual org-xob--display))
+
+      )
+
+  ;; (if win
+  ;;     (select-window win)
+  ;;   (setq win (split-window-right))
+  ;;   (select-window win))
+
+  )

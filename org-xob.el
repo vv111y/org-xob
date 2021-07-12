@@ -350,9 +350,6 @@ item. (credit https://emacs.stackexchange.com/a/26840)"
                    (switch-to-buffer org-xob-last-buffer))
               (switch-to-buffer (setq org-xob-last-buffer
                                       (org-xob-new-buffer))))
-          (if (eq org-xob--display 'dual)
-              (org-xob--dual-pane (selected-window))
-            (org-xob--single-pane (selected-window)))
           ,@body))
 
 ;;;; Commands
@@ -663,6 +660,18 @@ updated."
 
 ;;;;; Display Commands
 
+;; org-xob--display
+
+;;;###autoload
+(defun org-xob-dual-display ()
+  (interactive)
+  (org-xob--dual-pane (selected-window)))
+
+;;;###autoload
+(defun org-xob-single-display ()
+  (interactive)
+  (org-xob--single-pane (selected-window)))
+
 ;;;###autoload
 (defun org-xob-toggle-display ()
   "Switch between single or dual pane display."
@@ -972,7 +981,7 @@ the windows."
         (setq org-xob--display 'single))))
 
 (defun org-xob--dual-pane (win)
-  "Use dual-pane interface"
+  "Use dual-pane interface."
   (when-let* ((buf1 (switch-to-buffer
                      org-xob-last-buffer))
               (buf2 (buffer-local-value 'org-xob--pair-buf
@@ -1295,6 +1304,22 @@ no inheritance check in subheadings."
 (defun org-xob--is-open-node-p (ID)
   "Is node with ID currently open?"
   (member ID (org-xob--get-open-node-ids)))
+
+(defun org-xob--node-1D-p (&optional ID)
+  "Test whether node at point (or optional node with ID) is displayed inline."
+  (let ((p (if ID (org-id-find ID 'markerp) (point))))
+    (string= "1D" (org-entry-get p "D" 'inherit nil))))
+
+(defun org-xob--node-2D-p (&optional ID)
+  "Test whether node at point (or optional node with ID) is displayed with sideline."
+  (let ((p (if ID (org-id-find ID 'markerp) (point))))
+    (string= "2D" (org-entry-get p "D" 'inherit nil))))
+
+(defun org-xob--node-?D (&optional ID)
+  "Returns the display type of node at point (or optional node with ID)
+as a text string, either \'1D\' or \'2D\'."
+  (let ((p (if ID (org-id-find ID 'markerp) (point))))
+    (org-entry-get p "D" 'inherit nil)))
 
 (defun org-xob--to-node-top ()
   "Goto the top heading of the node, whether edit or original."
