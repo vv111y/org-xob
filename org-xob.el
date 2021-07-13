@@ -1222,12 +1222,13 @@ Requires that point be on the relevant inserted text."
         (yank)))
     (setq m (org-end-of-subtree))
     (goto-char (point-min))
-    (while (or (re-search-forward org-xob--x-link-re m t)
-               (re-search-forward org-xob--xdel-link-re m t))
-      (if (string= org-xob--xdel-link-str (match-string 0))
-          (org-super-links-delete-link)
-        (replace-match org-xob--id-link-str t t)
-        (org-super-links-convert-link-to-super t)))))
+    (org-with-wide-buffer
+     (while (or (re-search-forward org-xob--x-link-re m t)
+                (re-search-forward org-xob--xdel-link-re m t))
+       (if (string= org-xob--xdel-link-str (match-string 0))
+           (org-super-links-delete-link)
+         (replace-match org-xob--id-link-str t t)
+         (org-super-links-convert-link-to-super t))))))
 
 ;;;###autoload
 (defun org-xob-ediff-edit ()

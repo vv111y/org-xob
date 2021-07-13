@@ -3642,7 +3642,27 @@ org-xob-all-buffers
       (org-super-links-convert-link-to-super t)
       )))
 
+(goto-char (re-search-forward
+            ;; "\([:alnum:]\|[:space:]\)\\[\\[xob:"
+            ;; "\([:space:]\)\\[\\[xob:"
+            "[:blank:]\\[\\[xob:"
+            ;; "\([:alnum:] \| [:space:]\)\\[\\[xob:"
+            nil t))
+
+"[a-zA-Z1-9]\\[\\[xob:"
+
+as;lfkjae [[[xob:41839480-09D4-4EBE-9A20-052B6C6ACE8A][GitHub]] 
+
+aslfkjae [[xob:41839480-09D4-4EBE-9A20-052B6C6ACE8A][GitHub]] 
+
+aslfkjae[[xob:41839480-09D4-4EBE-9A20-052B6C6ACE8A][GitHub]] 
+aslfkja4[[xob:41839480-09D4-4EBE-9A20-052B6C6ACE8A][GitHub]] 
 ;; (not (eobp))
+
+(org-store-link-functions)
+
+org-link-parameters
+
 
 ;; (replace-match "[[id:" t t)
 
@@ -3653,7 +3673,6 @@ org-xob-all-buffers
                          :follow #'org-id-open
                          :export
                          :store #'org-id-store-link)
-;;; d
 
 (org-element-context)
 
