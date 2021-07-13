@@ -1144,7 +1144,6 @@ Otherwise just yank. If heading is a xob node, then update modified time propert
 
 (defun org-xob--update-original (ID)
   "update contents of KB node with contents of the edit node with ID.
-Note, requires that all KB nodes are stored at level 1.
 Does not use the kill-ring."
   (save-window-excursion
     (save-excursion
@@ -1191,16 +1190,17 @@ With argument parsedit selected, then treat this as an edit update
 and parse node."
   (org-with-wide-buffer
    (org-save-outline-visibility
-       (org-narrow-to-subtree)
-     (org-show-subtree)
-     (org-mark-subtree)
-     (unless meta (org-end-of-meta-data t))
-     (call-interactively #'delete-region)
-     (deactivate-mark 'force)
-     (unless meta (org-end-of-meta-data t))
-     (org-paste-subtree 1 clip)
-     ;; (insert clip)
-     (when parsedit (org-xob--parse-edit-node)))))
+       (let ((lev (org-current-level)))
+         (org-narrow-to-subtree)
+         (org-show-subtree)
+         (org-mark-subtree)
+         (unless meta (org-end-of-meta-data t))
+         (call-interactively #'delete-region)
+         (deactivate-mark 'force)
+         (unless meta (org-end-of-meta-data t))
+         (org-paste-subtree lev clip)
+         ;; (insert clip)
+         (when parsedit (org-xob--parse-edit-node))))))
 
 (defun org-xob--parse-edit-node ()
   "Parse out relevant parts of a node after syncing into the xob KB (knowledge base).
@@ -1389,8 +1389,7 @@ Returns content as a string with properties."
 (defun org-xob--get-full-node (level &optional meta trimtop trimend)
   "Return a full node as a string (with properties). Used for both edit
 node and context presentation. Returns the full node as a string, but with
-adjusted specified level. Requires all source nodes to be at level one
-with no nesting. Options:
+adjusted specified level. Requires that source nodes are not nested. Options:
 meta - Include all contents. Adds the heading and all drawers at the top.
 			 Otherwise just the body is returned.
 trimtop - Exclude any empty space between the heading and the first content.
