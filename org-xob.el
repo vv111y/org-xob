@@ -219,15 +219,25 @@ n.b  -- bibliographic entries")
 
 ;;;;; link variables
 
+;; NOTE if I use org-id-store-link in either xob links, then org-id asks which function to use for storing
+;; some reason link store functions cannot be reused. org-id-open for follow does work though
 (org-link-set-parameters "xob"
                          :follow #'org-id-open
-                         :store #'org-id-store-link)
+                         :face '(:foreground "#ccbafa" :underline t) 
+                         :store nil
+                         )
 
 (org-link-set-parameters "xobdel"
                          :follow #'org-id-open
+                         :face '(:foreground "dim gray" :underline t) 
+                         :store nil
+                         )
+
+(org-link-set-parameters "id"
+                         :follow #'org-id-open
                          :store #'org-id-store-link)
 
-(defconst org-xob--x-link-re "\\[\\[xob\\:"
+(defconst org-xob--x-link-re "\\[\\[xob:"
   "Regex for xob link types.")
 
 (defconst org-xob--xdel-link-re "\\[\\[xobdel:"
