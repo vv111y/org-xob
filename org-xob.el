@@ -671,6 +671,17 @@ updated."
          (org-id-goto (org-entry-get (point) "EDIT")))
         ((org-id-goto (org-entry-get (point) "PID")))))
 
+;;;;; Special node access
+
+;;;###autoload
+(defun org-xob-get-project-nodes ()
+  "Select from project nodes."
+  (interactive)
+  (unless org-xob-on-p
+    (org-xob-start))
+  (org-xob-with-xob-on
+   (org-xob--do-select-nodes nil "a.project" #'org-xob--edit-node)))
+
 ;;;;; Display Commands
 
 ;;;###autoload
@@ -1426,11 +1437,13 @@ trimend - Exclude empty lines at the bottom."
                    :volatile t
                    :action #'org-xob--get-create-node-action)))
 
-(defun org-xob--get-node-by-type ()
+(defun org-xob--get-node-by-type (&optional type)
   "Find a node by type."
   (unless org-xob-on-p
     (org-xob-start))
-  (if-let ((type (org-xob--select-node-type)))
+  (if-let ((type (if (stringp type)
+                     type
+                   (org-xob--select-node-type))))
       (helm :buffer "*xob get typed node*"
             :sources (helm-build-sync-source "xob-papers"
                        :candidates (org-xob--find-nodes-by-type type)
@@ -1450,7 +1463,7 @@ trimend - Exclude empty lines at the bottom."
 ID and title. SINGLE forces the use of one selection, TYPES allows you
 to select the node type first."
   (let ((selected (if types
-                      (org-xob--get-node-by-type)
+                      (org-xob--get-node-by-type types)
                     (org-xob--get-create-node)))
         (dothis (lambda (sel) (let ((ID (car sel))
                                     (title (cadr sel)))
