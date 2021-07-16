@@ -488,8 +488,9 @@ Current version performs simple, blunt, whole content replacement."
   (org-xob-with-xob-on
    (let ((id (or sID (org-entry-get (point) "ID"))))
      (if arg
-         (dolist (ID (org-xob--get-open-node-ids))
-           (org-xob--update-original ID))
+         (org-xob-map-all-edits
+          #'(lambda () (org-xob--update-original
+                        (org-entry-get (point) "ID"))))
        (org-xob--update-original id)))))
 
 ;;;###autoload
@@ -1160,7 +1161,12 @@ Does not use the kill-ring."
     (save-excursion
       (org-xob--id-goto ID)
       (when (org-xob--is-edit-node-p)
-        (let (nclip oclip flag changes)
+        (let* ((tbuffer (marker-buffer (org-id-find
+                                        (org-entry-get (point) "EDIT") t)))
+               (changes (nconc (prepare-change-group (current-buffer))
+                               (prepare-change-group tbuffer)
+                               (prepare-change-group org-xob-today-buffer)))
+               m nclip oclip flag)
           (catch 'nochange
             (unless (org-xob--modified-time=)
               (if (y-or-n-p "Original node has changed. Run ediff?")
@@ -1168,8 +1174,6 @@ Does not use the kill-ring."
                          (throw 'nochange))
                 (unless (y-or-n-p "Really change?")
                   (throw 'nochange))))
-            (setq changes (nconc (prepare-change-group (current-buffer))
-                                 (prepare-change-group org-xob-today-buffer)))
             (unwind-protect
                 (progn
                   (activate-change-group changes)
@@ -1177,11 +1181,13 @@ Does not use the kill-ring."
                   (setq nclip (org-xob--get-full-node (org-current-level)
                                                 'meta))
                   (org-xob-goto-original)
+                  (setq m (point))
                   (when (org-xob--is-node-p)
                     (setq oclip (org-xob--get-full-node (org-current-level)
                                                         'meta))
                     (org-xob--save-version oclip nclip)
                     (org-xob--update-node nclip 'meta 'parsedit))
+                  (goto-char m)
                   (org-xob--log-event "edited"
                                       (org-entry-get (point) "ID"))
                   (setq flag t))
