@@ -3858,7 +3858,26 @@ org-link-parameters
                          :store #'org-id-store-link)
 
 
-(org-ql-select org-xob--KB-files
-  `(and (is-xob-node)
-        (property "TYPE" "a.project"))
-  :action #'(nth 4 (org-heading-components)))
+
+;;; w
+
+(window-right (selected-window))
+
+(let ((win (window-right (selected-window))))
+  (if win
+      (select-window win)
+    (setq win (split-window-right))
+    (select-window win)))
+
+(let ((win (window-right (selected-window))))
+  (if (and win
+           (eq 'dual org-xob--display))
+
+      )
+
+  ;; (if win
+  ;;     (select-window win)
+  ;;   (setq win (split-window-right))
+  ;;   (select-window win))
+
+  )
