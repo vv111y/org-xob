@@ -221,20 +221,22 @@ n.b  -- bibliographic entries")
 
 ;; NOTE if I use org-id-store-link in either xob links, then org-id asks which function to use for storing
 ;; some reason link store functions cannot be reused. org-id-open for follow does work though
+;; modus vivendi link colour ("blue-alt-other" . "#00bcff")
 (org-link-set-parameters "xob"
                          :follow #'org-id-open
-                         :face '(:foreground "#ccbafa" :underline t) 
+                         :face '(:foreground "#ccbafa" :underline t)
                          :store nil
                          )
 
 (org-link-set-parameters "xobdel"
                          :follow #'org-id-open
-                         :face '(:foreground "dim gray" :underline t) 
+                         :face '(:foreground "dim gray" :underline t)
                          :store nil
                          )
 
 (org-link-set-parameters "id"
                          :follow #'org-id-open
+                         :face '(:foreground "#00aaff" :underline t)
                          :store #'org-id-store-link)
 
 (defconst org-xob--x-link-re "\\[\\[xob:"
@@ -882,26 +884,34 @@ If ID is given, then convert todo with that ID."
   (interactive)
   (when-let ((numbufs (number-to-string
                        (length org-xob-buffers)))
-             (buf1 (get-buffer-create
-                         (concat "xob-E-" numbufs)))
+             (session-name (concat "xob-"
+                                   numbufs
+                                   "-"
+                                   (format-time-string "%F") ".org"))
+             (session-path (concat org-xob-dir "/" session-name))
+             (buf1 (if (file-exists-p session-path)
+                       (find-file session-path)
+                     (get-buffer-create session-name)
+                     (write-file session-path)))
              (buf2 (get-buffer-create
                          (concat "xob-C-" numbufs))))
     (with-current-buffer buf1
       (org-mode)
       (org-xob-mode 1)
+      (auto-save-mode 1)
       (add-hook 'kill-buffer-hook #'org-xob--close-buffer-hook nil 'local)
-      (setq-local org-xob--buf 'parent)
-      (setq-local org-xob--pair-buf buf2)
+      (setq-local org-xob--buf 'parent
+                  org-xob--pair-buf buf2)
       (if single
           (progn (setq-local org-xob--display 'single)
                  (setq-local org-xob--c-buff (current-buffer)))
-        (setq-local org-xob--display 'dual)
-        (setq-local org-xob--c-buff buf2)))
+        (setq-local org-xob--display 'dual
+                    org-xob--c-buff buf2)))
     (with-current-buffer buf2
       (org-mode)
       (org-xob-mode 1)
-      (setq-local org-xob--buf 'child)
-      (setq-local org-xob--pair-buf buf1))
+      (setq-local org-xob--buf 'child
+                  org-xob--pair-buf buf1))
     (setq org-xob-last-buffer buf1)
     (push buf1 org-xob-buffers)
     (push buf1 org-xob-all-buffers)
