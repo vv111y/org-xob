@@ -3881,3 +3881,9 @@ org-link-parameters
   ;;   (select-window win))
 
   )
+
+
+(org-ql-select org-xob--KB-files
+  `(and (is-xob-node)
+        (property "TYPE" "a.project"))
+  :action #'(nth 4 (org-heading-components)))

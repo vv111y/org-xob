@@ -4,7 +4,7 @@
 ;; Author: Willy Rempel <willy.rempel@acm.org>
 ;; URL: https://github.com/vv111y/org-xob.el
 ;; Version: 0.5-pre
-;; Package-Requires: ((emacs "27.1") (org) (org-element) (org-id) (org-ql) (cl-lib) (org-super-links))
+;; Package-Requires: ((emacs "27.1"))
 ;; Keywords: outlines
 
 ;; This file is not part of GNU Emacs.
@@ -70,7 +70,7 @@
 
 ;;;; Requirements
 (require 'org)
-(require 'org-element)
+;; (require 'org-element)
 (require 'org-id)
 (require 'org-ql)
 (require 'org-ql-search)
@@ -195,6 +195,9 @@
 
 (defvar org-xob--agenda-file nil
   "The current xob agenda file where all activity nodes other than day nodes go.")
+
+(defvar org-xob--archive-file nil
+  "The current xob archive file where archived nodes go.")
 
 ;; file header strings
 (defvar org-xob--xob-header "#+PROPERTY: xob t\n")
@@ -322,12 +325,14 @@ n.b  -- bibliographic entries")
   )
 
 (defun org-xob--up-heading ()
+  "Xob hydra navigation: fold heading at point first, otherwise go up to parent."
   (if (or (org-xob-folded-p)
           (org-xob-empty-entry-p))
       (org-up-heading-safe)
     (outline-hide-subtree)))
 
 (defun org-xob--down-heading ()
+  "Xob hydra navigation: unfold heading one level first before going in."
   (if (org-xob-folded-p)
       (progn (org-show-entry)
              (org-show-children))
@@ -335,7 +340,7 @@ n.b  -- bibliographic entries")
 
 (defun org-xob-folded-p ()
   "Returns non-nil if point is on a folded headline or plain list
-item. (credit https://emacs.stackexchange.com/a/26840)"
+item. (credit https://emacs.stackexchange.com/a/26840)."
   (and (or (org-at-heading-p)
            (org-at-item-p))
        (invisible-p (point-at-eol))))
@@ -2038,30 +2043,31 @@ This function starts clock for a given node.")
 (defun org-xob-info ()
   "Give basic information about the xob system."
   (interactive)
-  (display-message-or-buffer
-   (concat
-    "XOB State\n"
-    "---------\n"
-    "title-id-table entries:\t\t\t"
-    (number-to-string (hash-table-count org-xob--title-id)) "\n"
-    "id-title-table entries:\t\t\t"
-    (number-to-string (hash-table-count org-xob--id-title)) "\n"
-    "org-id entries:\t\t\t\t\t\t\t"
-    (number-to-string (hash-table-count org-id-locations)) "\n"
-    "\n"
-    "KB files count:\t\t\t\t\t\t\t"
-    (number-to-string (length org-xob--KB-files)) "\n"
-    "Agenda files count:\t\t\t\t\t"
-    (number-to-string (length org-xob--agenda-files)) "\n"
-    "Log files count:\t\t\t\t\t\t\t"
-    (number-to-string (length org-xob--log-files)) "\n"
-    "Archive files count:\t\t\t\t\t"
-    (number-to-string (length org-xob--archive-files)) "\n"
-    "\n"
-    "current KB file:\t\t\t\t\t\t\t" org-xob--KB-file "\n"
-    "current agenda file:\t\t\t\t\t" org-xob--agenda-file "\n"
-    "current log file:\t\t\t\t\t\t" org-xob--log-file "\n"
-    "current archive file:\t\t\t\t" org-xob--archive-file "\n")))
+  (org-xob-with-xob-on
+   (display-message-or-buffer
+    (concat
+     "XOB State\n"
+     "---------\n"
+     "title-id-table entries:\t\t\t"
+     (number-to-string (hash-table-count org-xob--title-id)) "\n"
+     "id-title-table entries:\t\t\t"
+     (number-to-string (hash-table-count org-xob--id-title)) "\n"
+     "org-id entries:\t\t\t\t\t\t\t"
+     (number-to-string (hash-table-count org-id-locations)) "\n"
+     "\n"
+     "KB files count:\t\t\t\t\t\t\t"
+     (number-to-string (length org-xob--KB-files)) "\n"
+     "Agenda files count:\t\t\t\t\t"
+     (number-to-string (length org-xob--agenda-files)) "\n"
+     "Log files count:\t\t\t\t\t\t\t"
+     (number-to-string (length org-xob--log-files)) "\n"
+     "Archive files count:\t\t\t\t\t"
+     (number-to-string (length org-xob--archive-files)) "\n"
+     "\n"
+     "current KB file:\t\t\t\t\t\t\t" org-xob--KB-file "\n"
+     "current agenda file:\t\t\t\t\t" org-xob--agenda-file "\n"
+     "current log file:\t\t\t\t\t\t" org-xob--log-file "\n"
+     "current archive file:\t\t\t\t" org-xob--archive-file "\n"))))
 
 ;;;###autoload
 (defun org-xob-rebuild ()
@@ -2291,6 +2297,7 @@ Buffer remains open. Returns the filename."
         org-xob--archive-file nil))
 
 (defun org-xob--uncurrent-file (file)
+  "Remove current status from given file."
   (save-excursion
     (with-current-buffer (find-file (eval file))
       (goto-char (point-min))
@@ -2300,8 +2307,8 @@ Buffer remains open. Returns the filename."
 
 ;; --- misc functions ---
 
-(defun org-xob/dt-to-ts ()
-  "convenience function: datetree to timestamp when just under heading"
+(defun org-xob-dt-to-ts ()
+  "Convenience function: datetree to timestamp when just under heading."
   (interactive)
   (save-excursion
     (org-back-to-heading)
@@ -2312,8 +2319,8 @@ Buffer remains open. Returns the filename."
               (nth 4 (org-heading-components)) 14)
              "]"))))
 
-(defun org-xob/dt-to-ts/parent ()
-  "convenience function: datetree to timestamp for subheadings"
+(defun org-xob-dt-to-ts-parent ()
+  "Convenience function: datetree to timestamp for subheadings."
   (interactive)
   (org-set-property
    "CREATED"
@@ -2324,6 +2331,6 @@ Buffer remains open. Returns the filename."
               (nth 4 (org-heading-components))) 14)
            "]")))
 
-
 (provide 'org-xob)
-;;; org-xob ends here
+
+;;; org-xob.el ends here
