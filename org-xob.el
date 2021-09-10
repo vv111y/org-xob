@@ -254,6 +254,10 @@ n.b  -- bibliographic entries")
 (defconst org-xob--id-link-str "[[id:"
   "String for id link types.")
 
+(defconst org-xob--log-re "[^[:alnum:] : _ , . ? ; + = ! @ # $ % & ( ) < > -]"
+  "Regex to clean log entry descriptions.")
+
+
 ;;;;; Keymaps
 
 (defvar org-xob-map
@@ -506,7 +510,7 @@ If called with optional ID argument, then remove the node with that ID."
            (org-id-goto ID))
        (let* ((ID (org-id-get (point)))
               (title (gethash ID org-xob--id-title))
-              (forlinks (org-xob--node-get-links "forlinks"))
+              (forlinks (org-xob--node-get-links 'forlinks))
               link-element)
          (dolist (el forlinks)
            (save-excursion
@@ -581,8 +585,10 @@ updated."
                                  (prepare-change-group tbuffer)
                                  (prepare-change-group org-xob-today-buffer)))
                  (beg (region-beginning))
+                 (end (region-end))
                  (snip (buffer-substring-no-properties beg
-                                                       (+ 20 beg)))
+                                                       (min end
+                                                            (+ 20 beg))))
                  eid flag)
             (unwind-protect
                 (progn
@@ -1521,7 +1527,7 @@ to select the node type first."
                    :action (lambda (c) c))))
 
 (defun org-xob--find-nodes-by-type (type)
-  (org-ql-select org-xob--KB-files
+  (org-ql-select (append org-xob--KB-files org-xob--agenda-files)
     `(and (is-xob-node)
           (property "TYPE" ,type))
     :action #'(nth 4 (org-heading-components))))
@@ -2002,7 +2008,9 @@ then checks using org-xob--is-edit-node-p."
   (save-window-excursion
     (save-excursion
       (save-restriction
-        (let ((title (gethash id org-xob--id-title)))
+        (let ((title (gethash id org-xob--id-title))
+              (descrpt (if description
+                           (replace-regexp-in-string org-xob--log-re "" description))))
           (unless org-xob-today
             (org-xob--open-today))
           (org-id-goto org-xob-today)
@@ -2013,7 +2021,7 @@ then checks using org-xob--is-edit-node-p."
                  (concat "| " (format-time-string "%r")
                          " | " event
                          " | " title
-                         " | " description
+                         " | " descrpt
                          " |"))
                 t)
             nil))))))
