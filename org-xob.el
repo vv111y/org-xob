@@ -596,7 +596,7 @@ updated."
                  (end (region-end))
                  (snip (buffer-substring-no-properties beg
                                                        (min end
-                                                            (+ 80 beg))))
+                                                            (+ 70 beg))))
                  eid flag)
             (unwind-protect
                 (progn
@@ -2025,7 +2025,8 @@ then checks using org-xob--is-edit-node-p."
   (save-window-excursion
     (save-excursion
       (save-restriction
-        (let ((title (gethash id org-xob--id-title))
+        (let ((title (if (org-uuidgen-p id) (gethash id org-xob--id-title)
+                       id))
               (descrpt (if description
                            (replace-regexp-in-string org-xob--log-re "" description))))
           (unless org-xob-today
