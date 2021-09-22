@@ -550,8 +550,9 @@ Note: linking does not occur until edit is synced with the KB."
             (org-xob-show-source 'forlinks))
         (org-super-links--insert-link (org-id-find ID 'MARKERP))
         (goto-char (org-element-property :end  (org-element-context)))
-        ;; (re-search-forward "]]" nil t)
-        (insert " "))))))
+        (insert " ")
+        (org-xob--log-event "link" (org-entry-get (point) "ID"))
+        (org-xob--log-event "-> to" ID))))))
 
 ;;;###autoload
 (defun org-xob-delete-link ()
@@ -571,6 +572,8 @@ then just use org-super-links."
         (org-insert-link nil (concat "xobdel:"
                                      loc)
                          desc))
+    (org-xob--log-event "X link" (org-element-property :path (org-element-context)))
+    (org-xob--log-event "-> from" (org-entry-get (point) "ID"))
     (org-super-links-delete-link)))
 
 ;;;###autoload
@@ -593,7 +596,7 @@ updated."
                  (end (region-end))
                  (snip (buffer-substring-no-properties beg
                                                        (min end
-                                                            (+ 20 beg))))
+                                                            (+ 80 beg))))
                  eid flag)
             (unwind-protect
                 (progn
@@ -608,7 +611,8 @@ updated."
                             (org-xob-sync-edit))
                         (org-id-goto ID)
                         (org-xob--paste-top-section))
-                      (org-xob--log-event "refile" ID snip))
+                      (org-xob--log-event "refile" ID)
+                      (org-xob--log-event "-> snip" snip))
                     (setq flag t))))
               (if flag
                   (accept-change-group changes)
@@ -643,9 +647,11 @@ updated."
     (when-let ((newname (nth 4 (org-heading-components)))
                (ID (org-entry-get (point) "ID"))
                (oldname (gethash ID org-xob--id-title)))
+      (org-xob--log-event "rename" ID)
       (puthash ID newname org-xob--id-title)
       (puthash newname ID org-xob--title-id)
-      (remhash oldname org-xob--title-id))))
+      (remhash oldname org-xob--title-id)
+      (org-xob--log-event "-> new" ID))))
 
 ;;;###autoload
 (defun org-xob-add-node-labels ()
@@ -1255,7 +1261,7 @@ Requires that point be on the relevant inserted text."
   (goto-char (point-min))
   (let ((id (org-entry-get (point) "EDIT"))
         (title (nth 4 (org-heading-components)))
-        m)
+        lid m)
     (org-entry-put (point) "ID" id)
     (org-delete-property "EDIT")
     (org-toggle-tag "edit" 'OFF)
@@ -1269,13 +1275,19 @@ Requires that point be on the relevant inserted text."
         (yank)))
     (setq m (org-end-of-subtree))
     (goto-char (point-min))
-    (org-with-wide-buffer
-     (while (or (re-search-forward org-xob--x-link-re m t)
-                (re-search-forward org-xob--xdel-link-re m t))
-       (if (string= org-xob--xdel-link-str (match-string 0))
-           (org-super-links-delete-link)
-         (replace-match org-xob--id-link-str t t)
-         (org-super-links-convert-link-to-super t))))))
+    (org-show-subtree)
+    (while (or (re-search-forward org-xob--x-link-re m t)
+               (re-search-forward org-xob--xdel-link-re m t))
+      (if (string= org-xob--xdel-link-str (match-string 0))
+          (progn 
+            (setq lid (org-element-property :path (org-element-context)))
+            (org-super-links-delete-link)
+            (org-xob--log-event "X link" lid))
+        (replace-match org-xob--id-link-str t t)
+        (setq lid (org-element-property :path (org-element-context)))
+        (org-super-links-convert-link-to-super t)
+        (org-xob--log-event "link" id)
+        (org-xob--log-event "-> to" lid)))))
 
 ;;;###autoload
 (defun org-xob-ediff-edit ()
