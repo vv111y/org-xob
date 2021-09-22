@@ -2026,7 +2026,7 @@ then checks using org-xob--is-edit-node-p."
     (save-excursion
       (save-restriction
         (let ((title (if (org-uuidgen-p id) (gethash id org-xob--id-title)
-                       id))
+                       (replace-regexp-in-string org-xob--log-re "" id)))
               (descrpt (if description
                            (replace-regexp-in-string org-xob--log-re "" description))))
           (unless org-xob-today
@@ -2039,7 +2039,7 @@ then checks using org-xob--is-edit-node-p."
                  (concat "| " (format-time-string "%r")
                          " | " event
                          " | " title
-                         " | " descrpt
+                         ;; " | " descrpt
                          " |"))
                 t)
             nil))))))
