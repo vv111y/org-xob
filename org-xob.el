@@ -357,7 +357,7 @@ item. (credit https://emacs.stackexchange.com/a/26840)."
         (setq b (point)))
       (= a b))))
 
-;;;; Macros DONE
+;;;; Macros
 (defmacro org-xob-with-xob-on (&rest body)
   (declare (debug (body)))
   `(if org-xob-on-p
@@ -853,7 +853,7 @@ sQuery Form: ")
       (when-let ((id (org-entry-get (point) "PID")))
         (org-xob--edit-node id (gethash id org-xob--id-title))))))
 
-;;;;; Activity Commands DONE
+;;;;; Activity Commands
 ;;;###autoload
 (defun org-xob-log-done (&optional ID)
   "Convert a complete TODO into a log entry for future reference.
@@ -897,7 +897,7 @@ If ID is given, then convert todo with that ID."
     (org-super-links--insert-link)))
 
 ;;;; Backend
-;;;;; Buffer Functions DONE
+;;;;; Buffer Functions
 
 (defun org-xob-buffer-p (&optional buffer)
   (let ((buf (or buffer (current-buffer))))
@@ -1060,7 +1060,7 @@ the windows."
     (setq org-xob--display 'dual)))
 
 
-;;;;; Edit Node Functions TODO
+;;;;; Edit Node Functions
 
 ;; TODO fails if there are other edit buffers open
 ;;;###autoload
@@ -1348,7 +1348,7 @@ Requires that point be on the relevant inserted text."
     (setq org-xob--ediff-bufe nil)
     (setq org-xob--ediff-frm nil)))
 
-;;;;; Node Functions DONE UNCHANGED
+;;;;; Node Functions
 
 (defun org-xob--is-node-p (&optional ID DEEPCHECK top)
   "Check if a heading is a xob node. Called interactively it defaults to heading at point.
@@ -1664,7 +1664,7 @@ Maybe useful for syncing."
                  (number-to-string
                   (car (time-convert (current-time) '10000)))))
 
-;;;;; Contexts Functions TODO
+;;;;; Contexts Functions
 
 ;; TEST
 (defun org-xob--is-source-p (&optional PID ID)
@@ -1800,7 +1800,7 @@ Otherwise apply to source at point."
      (org-up-heading-safe)
      (outline-hide-subtree))))
 
-;;;;; KB Context Functions DONE UNCHANGED
+;;;;; KB Context Functions
 
 (defun org-xob--node-get-link-entries (source &optional EID)
   "Populates source item list from the node. The items are represented by their
@@ -1886,7 +1886,7 @@ to all source items."
     (call-interactively #'delete-region)
     (deactivate-mark 'force)))
 
-;;;;; org-ql predicates TODO test
+;;;;; org-ql predicates
 (org-ql-defpred is-xob-node-deep ()
   "Deepcheck if heading is a xob node."
   :body (and (property "xob" t)
@@ -1941,7 +1941,7 @@ then checks using org-xob--is-edit-node-p."
   :body  (org-xob--is-source-p
           (property "PID" PID)))
 
-;;;;; org-ql mapping functions TODO test
+;;;;; org-ql mapping functions
 
 (defun org-xob-map-buffers (func)
   "Apply func in all xob buffers."
@@ -2068,7 +2068,7 @@ This function starts clock for a given node.")
 
 (defun org-xob--auto-clock-out ()
   "Maybe?. This functions stops the automatic clock for the given node.")
-;;;;; xob Management DONE UNCHANGED?
+;;;;; xob Management
 
 ;;;###autoload
 (defun org-xob-info ()
