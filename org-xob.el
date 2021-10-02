@@ -576,6 +576,39 @@ then just use org-super-links."
     (org-xob--log-event "-> from" (org-entry-get (point) "ID"))
     (org-super-links-delete-link)))
 
+(defun org-xob--refile-region-internal (ID title)
+  (let* ((tbuffer (marker-buffer (org-id-find ID t)))
+         (changes (nconc (prepare-change-group (current-buffer))
+                         (prepare-change-group tbuffer)
+                         (prepare-change-group org-xob-today-buffer)))
+         (beg (region-beginning))
+         (end (region-end))
+         (snip (buffer-substring-no-properties beg
+                                               (min end
+                                                    (+ 70 beg))))
+         eid flag)
+    (unwind-protect
+        (progn
+          (activate-change-group changes)
+          (kill-region (point) (mark))
+          (save-window-excursion
+            (save-excursion
+              (if (setq eid (and (org-xob--goto-edit ID)
+                                 (org-xob--is-edit-node-p)))
+                  (progn
+                    (org-xob--paste-top-section)
+                    (org-xob-sync-edit))
+                (org-id-goto ID)
+                (org-xob--paste-top-section))
+              (org-xob--log-event "refile" ID)
+              (org-xob--log-event "-> snip" snip))
+            (setq flag t))))
+    (if flag
+        (accept-change-group changes)
+      (cancel-change-group changes)
+      (message "xob: failed to refile section to node: %s"
+               (gethash ID org-xob--id-title)))))
+
 ;;;###autoload
 (defun org-xob-refile-region (&optional arg)
   "Move text in region to the end of the top section of a selected node.
@@ -587,38 +620,7 @@ updated."
    (when (use-region-p)
      (org-xob--do-select-nodes
       t arg
-      #'(lambda (ID title)
-          (let* ((tbuffer (marker-buffer (org-id-find ID t)))
-                 (changes (nconc (prepare-change-group (current-buffer))
-                                 (prepare-change-group tbuffer)
-                                 (prepare-change-group org-xob-today-buffer)))
-                 (beg (region-beginning))
-                 (end (region-end))
-                 (snip (buffer-substring-no-properties beg
-                                                       (min end
-                                                            (+ 70 beg))))
-                 eid flag)
-            (unwind-protect
-                (progn
-                  (activate-change-group changes)
-                  (kill-region (point) (mark))
-                  (save-window-excursion
-                    (save-excursion
-                      (if (setq eid (and (org-xob--goto-edit ID)
-                                         (org-xob--is-edit-node-p)))
-                          (progn
-                            (org-xob--paste-top-section)
-                            (org-xob-sync-edit))
-                        (org-id-goto ID)
-                        (org-xob--paste-top-section))
-                      (org-xob--log-event "refile" ID)
-                      (org-xob--log-event "-> snip" snip))
-                    (setq flag t))))
-              (if flag
-                  (accept-change-group changes)
-                (cancel-change-group changes)
-                (message "xob: failed to refile section to node: %s"
-                         (gethash ID org-xob--id-title)))))))))
+      (orb-xob--refile-region-internal ID title)))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
@@ -698,6 +700,22 @@ updated."
     (org-xob-start))
   (org-xob-with-xob-on
    (org-xob--do-select-nodes nil "a.project" #'org-xob--edit-node)))
+
+;;;###autoload
+(defun org-xob-file-paper ()
+  "refile region into a n.bib.article entry. Prompts for the title."
+  (interactive)
+  (org-xob-with-xob-on
+   (when (use-region-p)
+     (save-window-excursion
+       (save-excursion
+         (let ((name (read-string "Paper title:")))
+           (org-xob--capture name)
+           (org-xob--refile-region-internal org-xob--last-captured
+                                            name)
+           (org-id-goto org-xob--last-captured)
+           (org-entry-put (point) "TYPE" "n.bib.article")
+           (org-entry-put (point) "NOTER_DOCUMENT" "~/Zotero/storage/")))))))
 
 ;;;;; Display Commands
 
