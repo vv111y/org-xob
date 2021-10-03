@@ -620,7 +620,7 @@ updated."
    (when (use-region-p)
      (org-xob--do-select-nodes
       t arg
-      (org-xob--refile-region-internal ID title)))))
+      #'org-xob--refile-region-internal))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
