@@ -220,6 +220,56 @@ n.b  -- bibliographic entries")
 
 (defvar org-xob--auto-templates '("ad" "as" "al" "all" "alit" "alt" "lp" "nt" "na" "nw" "tf" "tp"))
 
+(defvar org-xob--templates
+        `(("nn" "new node" entry (file org-xob--KB-file)
+           "* %(eval org-xob--last-title) \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :ntype "n.n"
+           :immediate-finish t
+           :empty-lines-after 1)
+
+          ("ad" "today" entry (file+function org-xob--log-file ,(lambda () (org-datetree-find-month-create (calendar-current-date))))
+           "**** %<%F %A> \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :immediate-finish t
+           :ntype "a.day"
+           )
+
+          ;; org-projectile for now
+          ("ap" "new project" entry (file org-xob--agenda-file)
+           "* %^{description} \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :ntype "a.project"
+           :immediate-finish t
+           )
+
+          ;; not sure
+          ("as" "new session" entry (file org-xob--agenda-file)
+           "* %^{description}  \n:BACKLINKS:\n:END:\n"
+           :xob-node t
+           :ntype "a.session"
+           :immediate-finish t
+           )
+
+          ;; regular templates for now
+          ("tf" "todo general" entry (file org-xob--agenda-file)
+           "* %^{description} \n:BACKLINKS:\n:END:\n\n%?"
+           :xob-node t
+           :todo t
+           :ntype "a.todo"
+           :immediate-finish t
+           )
+
+          ;; org-projectile for now
+          ("tp" "todo project" entry (file org-xob--agenda-file)
+           "* %^{description} \n:BACKLINKS:\n:END:\n\n%a\n%?"
+           :xob-node t
+           :todo t
+           :ntype "a.todo"
+           :immediate-finish t
+           ))
+        "Org capture templates required for org-xob to run. More templates can be added for customization.")
+
 ;;;;; link variables
 
 ;; NOTE if I use org-id-store-link in either xob links, then org-id asks which function to use for storing
