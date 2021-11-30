@@ -427,11 +427,11 @@ Calling with C-u will force a restart."
                               (append org-xob--KB-files
                                       org-xob--agenda-files
                                       org-xob--log-files)))
-        (setq org-agenda-files
-              (set-difference org-agenda-files
-                              (append org-agenda-files
-                                      org-xob--agenda-files
-                                      org-xob--log-files)))
+        ;; (setq org-agenda-files
+        ;;       (set-difference org-agenda-files
+        ;;                       (append org-agenda-files
+        ;;                               org-xob--agenda-files
+        ;;                               org-xob--log-files)))
         (org-xob--clear-file-variables)
         (remove-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (remove-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
@@ -2286,9 +2286,9 @@ If necessary create new files."
   (setq org-id-extra-files (append org-xob--KB-files
                                    org-xob--agenda-files
                                    org-xob--log-files))
-  (setq org-agenda-files (append org-agenda-files
-                                 org-xob--agenda-files
-                                 org-xob--log-files))
+  ;; (setq org-agenda-files (append org-agenda-files
+  ;;                                org-xob--agenda-files
+  ;;                                org-xob--log-files))
   t)
 
 (defun org-xob--new-file (filepointer fileprefix filelist)
