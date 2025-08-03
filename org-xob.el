@@ -211,7 +211,7 @@
 (defvar org-xob-labels '("one" "two" "cat" "dog"))
 
 (defvar org-xob--node-types
-  '("a.day" "a.project" "a.session" "a.log" "a.log.life" "a.log.tools" "a.log.project" "a.todo" "n.n" "n.topic" "n.bib.article" "n.bib.web" "t.free" "t.project")
+  '("a.day" "a.project" "a.session" "a.log" "a.log.life" "a.log.tools" "a.log.project" "a.todo" "n.n" "n.topic" "n.bib.article" "n.bib.book" "n.bib.web" "t.free" "t.project")
   "List of different types of nodes. The default is 'n.n', a generic content node. Type prefixes:
 a    -- activity nodes related to tasks and scheduling
 t    -- todo type nodes
