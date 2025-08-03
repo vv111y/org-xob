@@ -93,5 +93,5 @@ flycheck_*.el
 # network security
 /network-security.data
 
-/dev/versioning/KB-file-000.org
-/dev/versioning/xob_state
+.stignore
+compile-log.txt
