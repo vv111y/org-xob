@@ -3,6 +3,20 @@
 #+PROPERTY: xob t 
 
 * Mauris ac felis vel velit tristique imperdiet.   
+:PROPERTIES:
+:ID:       807ddebd-9fb4-4394-b4ed-414266609060
+:xob:      t
+:TYPE:     a.project
+:CATEGORY: Dev
+:CREATED:  [2021-02-18 Thu]
+:MODIFIED: [2021-02-18 Thu]
+:EDIT:     d0db75f5-8abe-4be7-ad53-2b1a4ff0caa4
+:END:
+:BACKLINKS:
+[2021-03-05 Fri 12:41] <- [[id:77b97b28-1e9b-4941-bcea-36b494c03442][Dev study plan]]
+[2021-03-05 Fri 11:37] <- [[id:e5493fc8-f051-4163-9c01-946b63a0b462][Software Engineering]]
+[2021-02-16 Tue 12:28] <- [[file:~/Documents/1TEXT/InformationTechnology.org::*Software Engineering][Software Engineering]]
+:END:
 :LOGBOOK:
 - Note taken on [2021-01-08 Fri 07:34] \\
   someting
@@ -29,14 +43,44 @@ CLOCK: [2021-01-08 Fri 07:33]--[2021-01-08 Fri 07:33] =>  0:00
 - State "[-]"        from "[.]"        [2021-01-08 Fri 07:11]
 CLOCK: [2021-01-08 Fri 06:44]--[2021-01-08 Fri 06:44] =>  0:00
 :END:
+
+. 
+:somedrawer:
+sdlkjsfkj
+:end:
+
+
+sdlkfj
+** fdkfj
+sdlfkj
+
 * Aliquam posuere.    
 :LOGBOOK:
 - Rescheduled from "[2021-01-13 Wed]" on [2021-01-13 Wed 03:39]
 :END:
+
+
+#+begin_src elisp
+  (org-skip-whitespace)
+#+end_src
+
+doesn't seem to do much, just errors
+#+begin_example elisp
+  (org-next-block)
+#+end_example
+
 ** Phasellus purus.
 * more
+yadda 
+yadda 
+ut
 ** some
+
+yadda 
+yadda 
+
 *** yes
+
 :PROPERTIES:
 :LABELS:   one cat
 :END:
@@ -63,7 +107,22 @@ CLOCK: [2021-01-08 Fri 06:44]--[2021-01-08 Fri 06:44] =>  0:00
 *** df
 :PROPERTIES:
 :xob:      t
+:M: em 
 :END:
+
+#+begin_src elisp
+  (setq vv/s (car
+              (org-ql-select (current-buffer)
+                `(property "M" "em")
+                :action #'(point-marker))))
+#+end_src
+
+#+RESULTS:
+: #<marker at 2327 in org-test.org>
+
+#+begin_src elisp
+  (goto-char vv/s)
+#+end_src
 
 (equal "t" (org-entry-get (point) "xob"))
 (org-entry-get (point) "xob")
@@ -81,3 +140,15 @@ CLOCK: [2021-01-08 Fri 06:44]--[2021-01-08 Fri 06:44] =>  0:00
 
 (org-element-at-point)
   (paragraph (:begin 2316 :end 2439 :contents-begin 2316 :contents-end 2438 :post-blank 1 :post-affiliated 2316 :parent nil))
+* mmmm
+:PROPERTIES:
+:ID:       43ece2a6-e7f3-450f-aef5-607f3c159a4a
+:END:
+#+begin_src elisp
+  (let ((ID (uuidgen-4)))
+    (org-entry-put (point) "ID" ID)
+    ID)
+#+end_src
+
+#+RESULTS:
+: 43ece2a6-e7f3-450f-aef5-607f3c159a4a

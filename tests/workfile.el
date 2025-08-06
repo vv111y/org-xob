@@ -1263,6 +1263,7 @@ inhibit-modification-hooks
 ;;; trial #2 xob state : alternate use struct for state
 (cl-defstruct xob-state kb-count kb-current kb-files t-id-table-fn id-n-table-fn)
 (setq xob (make-xob-state :kb-count 0 :t-id-table-fn "title-id-table" :id-n-table-fn "id-node-table"))
+
 ;;; xob-new-file, save/load object
 (defun xob-new-file ()
   (interactive)
@@ -1453,16 +1454,30 @@ org-capture-after-finalize-hook ;; done. for closing stuff
 ;;; Workspace
 ;;;; dual buffers/windows
 ;;;; atomic window ex.
-(let ((window (split-window-right)))
-  (window-make-atom (window-parent window))
-  (display-buffer-in-atom-window
-   (get-buffer-create "*Messages*")
-   `((window . ,(window-parent window)) (window-height . 5))))
+(let ((right (split-window-right))
+      (left (selected-window)))
+  (window-make-atom (window-parent left))
+  (get-buffer-create "left")
+  (select-window right)
+  (get-buffer-create "right")
+  (insert "on the right")
+  (select-window left)
+  (insert "on the left")
+  )
 
-(let ((window
+(let ((right
        (display-buffer-in-atom-window
-        (get-buffer-create "*node context*")
-        `((window . ,(selected-window)) (side . right))))))
+        (get-buffer-create "right")
+        `((window . ,(selected-window)) (side . right))))
+      (left (selected-window)))
+  (set-window-buffer left
+                     (get-buffer-create "left"))
+  (select-window right)
+  (get-buffer-create "right")
+  (insert "on the right")
+  (select-window left)
+  (insert "on the left")
+  )
 
 ;; (defun org-xob-open-sideline ()
 ;;   "Open context content in a side window."
@@ -2588,6 +2603,7 @@ org-xob--templates
             "(org-xob--source-backlinks): %s" org-xob--source-backlinks  "\n"
             "(org-xob--source-forlinks): %s" org-xob--source-forlinks "\n") )))
 
+;;; symbols vs strings
 (defun vvamm (s)
   (cond
    ((and (symbolp s) (boundp s)) (eval s))
@@ -2721,7 +2737,7 @@ org-xob--templates
   ;; (kbd "S") 'org-xob-to-section
   (kbd "t") 'org-xob-to-node-tree
   ;; (kbd "F") 'org-xob-to-full-node
-  ;; (kbd "R") 'org-xob-refresh-context
+  ;; (kbd "R") 'org-xob-refresh-contexts
   )
 (define-key org-mode-map
   (kbd "M-S-RET") nil
@@ -2779,6 +2795,23 @@ org-xob--templates
 (org-end-of-meta-data)
 (org-end-of-meta-data t)
 (org-end-of-meta-data 1)
+
+(defun vv/mm ()
+  (interactive)
+  ;; (org-save-outline-visibility t)
+  (org-show-all)
+  (org-end-of-subtree)
+  ;; (org-end-of-subtree t t)
+  ;; (outline-end-of-heading)
+  ;; (outline-end-of-subtree)
+  ;; (newline)
+  ;; (forward-line -1)
+  ;; (newline)
+  ;; (forward-line -1)
+  )
+
+(re-search-forward (rx (and line-end space)) nil t nil)
+(org-insert-heading '(4) t t)
 
 (car org-xob--open-nodes)
 
@@ -2892,12 +2925,18 @@ org-xob--node-sources
               (t nil))))
     (if (buffer-live-p buf)
         (with-current-buffer buf (goto-char (point-max)) (insert "\nhey\n")))))
+;;; timestamp from datetree
 
+<<<<<<< HEAD
 (if nil "hi" (concat "bee" "boo"))
 ;;; timestamp from datetree
 
 (defun org-xob/datetree-timestamp ()
   "For entry in a datetree, add a 'created' property with the timestamp derived from the datetree."
+=======
+(defun org-xob/dt-to-ts ()
+  "convenience function: datetree to timestamp when just under heading"
+>>>>>>> v0.9
   (interactive)
   (save-excursion
     (org-back-to-heading)
@@ -2908,8 +2947,13 @@ org-xob--node-sources
               (nth 4 (org-heading-components)) 14)
              "]"))))
 
+<<<<<<< HEAD
 (defun org-xob/dt-ts/parent ()
   "For entry in a datetree, add a 'created' property with the timestamp derived from the datetree."
+=======
+(defun org-xob/dt-to-ts/parent ()
+  "convenience function: datetree to timestamp for subheadings"
+>>>>>>> v0.9
   (interactive)
   (org-set-property
    "CREATED"
@@ -2972,6 +3016,7 @@ org-xob--node-sources
   (format "%s" a))
 
 
+<<<<<<< HEAD
 ;;; windows
 (window-left (selected-window))
 (window-right (selected-window))
@@ -2993,3 +3038,889 @@ org-xob--node-sources
            (unless (org-entry-get (point) prop)
              (org-entry-put (point) prop
                             (concat "[" (format-time-string "%F %a %R") "]"))))))))
+=======
+;;; org cut paste
+(org-kill-is-subtree-p)
+;;; v0.9 edit buffer
+(defun org-xob-with-xob-buffer (&rest body)
+  (or (org-xob-buffer-p (current-buffer))
+      (and (org-xob-buffer-p org-xob-last-buffer)
+           (switch-to-buffer org-xob-last-buffer))
+      (switch-to-buffer (setq org-xob-last-buffer
+                              (org-xob-new-buffer))))
+  ,@body)
+
+(fmakunbound 'org-xob-with-xob-buffer)
+(defun vv/pp ()
+  (org-paste-subtree 1
+                     (buffer-substring (point) (mark))
+                     nil nil))
+
+(let ((r 'bee))
+  (eq r 'bee))
+;;; buffer navigation old
+
+(defun org-xob--id-goto (sID)
+  "Search buffers for org heading with ID and place point there.
+Return point position if found, nil otherwise. This does not display
+the buffer."
+  (let (place)
+    (when (org-not-nil sID)
+      (or (and (string= sID (org-entry-get (point) "ID"))
+               (org-back-to-heading)
+               (point))
+          (and (setq place (org-find-entry-with-id sID))
+               (goto-char place))
+          (dolist (buf org-xob-buffers)
+            (when (setq place (with-current-buffer buf
+                                (org-find-entry-with-id sID)))
+              (set-buffer buf)
+              (goto-char place)
+              (return place)))))))
+
+;; TODO redo with org-ql
+(defun org-xob--goto-buffer-heading (ID)
+  "Go to heading in current buffer with ID. Does not require org-id."
+  (let ((m (point)))
+    (org-with-wide-buffer
+     (goto-char (point-min))
+     (if (re-search-forward ID nil t)
+         (org-back-to-heading 'invisible-ok)
+       (progn
+         (goto-char m)
+         (message "%s not found." ID))))))
+
+
+;; TODO ??? probably not
+(defun org-xob--write-context-tree (ID title)
+  "For dual pane display."
+  (with-current-buffer org-xob--pair-buf
+    (goto-char (point-max))
+    (insert
+     (concat "* " title "  :context:"))
+    ())
+  )
+
+(defun vv/u (&optional arg n)
+  (interactive "P")
+  (print current-prefix-arg)
+  ;; (if (eq current-prefix-arg 4)
+  ;;     (print "wee"))
+  ;; (if arg
+  ;;     (print (concat "fee" (int-to-string arg)))
+  ;;   (print (concat "n" n)))
+  )
+
+(let ((current-prefix-arg 4)) (call-interactively 'vv/u))
+
+(setq vv/bb (make-open-node :ID "blen" :sources () ))
+()
+(add-to-list 'vvl (make-open-node :ID "peen" :sources (list)))
+(add-to-list 'vvl (make-open-node :ID "fruar" :sources (list)))
+
+vvl
+(print (open-node-ID (car vvl)))
+
+;; (cl-pushnew (make-open-node :ID "peen" :sources (list)))
+
+vv/bb
+(open-node-ID vv/bb)
+(open-node-sources vv/bb)
+(open-node-p vv/bb)
+
+(setq org-xob--open-nodes nil )
+(setq vv/s '(1 2 3 4 5 8 0))
+
+(cl-remove '0 vv/s)
+
+(let ((setq vv/s (point-marker)))
+  (assert (markerp m)))
+
+(setq vv/s (point-marker))
+(goto-char vv/s)
+(markerp vv/s)
+(markerp (car vv/s))
+(progn
+  (pop-to-buffer
+   (marker-buffer vv/s))
+  (goto-char vv/s))
+(org-ql-select (current-buffer)
+  `(property "M" "em"))
+
+;; v0.5 version
+(defun org-xob-show-source (source source-type &optional arg)
+  "Show context source for opened node at point. The second argument
+source-type is the data structure defining the source. If necessary will
+make"
+  ;; in an edit node? get id, name
+  (if-let ((eid (org-xob--is-edit-node-p))
+           (title (truncate-string-to-width
+                   (nth 4 (org-heading-components) 25))))
+      ;; get src list, get src if in list
+        (if-let* ((srcs (org-xob--this-node-sources eid))
+                  (src (mapcar '(lambda (x)
+                                  (if (equal source (car-safe (cdr-safe x)))
+                                      x)) srcs)))
+            ;; if src in list then it is prepped, find it
+            (let (m)
+              (when (eq '(4) arg) ;; if arg then repopulate items
+                (funcall (plist-get newsrc :getfn) newsrc))
+              (if (org-xob-map-node-sources eid src
+                                            (lambda () (setq m (point-marker))))
+                  ;; if found, maybe pop its buffer, pulse it
+                  (progn
+                    (unless (get-buffer-window (marker-buffer m) t)
+                      (pop-to-buffer (marker-buffer m)))
+                    (save-excursion
+                      (goto-char m)
+                      (if (pulse-available-p)
+                          (pulse-momentary-highlight-one-line (point)))))
+                ;; not found, then write src
+                (org-xob--source-write source)))
+          ;; not in list, make new src, add to srcs
+          (let ((newsrc (copy-tree source-type)))
+            (plist-put newsrc :ID (setq ID (org-xob--id-create)))
+            (plist-put newsrc :PID eid)
+            (plist-put newsrc :title title)
+            (funcall (plist-get newsrc :getfn) newsrc)
+            (push newsrc srcs)))))
+
+
+
+(org-xob--this-node-sources "974c8278-b670-4877-9fed-67a06cd5ee37")
+(let ((id "974c8278-b670-4877-9fed-67a06cd5ee37"))
+  (mapcar #'(lambda (x) (print (open-node-ID x)
+                          (open-node-sources x))) org-xob--open-nodes))
+
+(mapcar #'(lambda (x) (print (open-node-ID x)
+                             (open-node-sources x)))
+        org-xob--open-nodes)
+
+(dolist (x org-xob--open-nodes)
+  (print
+   ;; (open-node-ID x)
+   (print x)
+   ))
+
+(length org-xob--open-nodes)
+
+(cl-remove-duplicates org-xob--open-nodes
+                      :test #'(lambda (x y)
+                                (progn
+                                  (print x)
+                                  (print y)
+                                  (and (cl-struct-p x)
+                                       (cl-struct-p y)
+                                       (string= (open-node-ID x)
+                                                (open-node-ID y))))))
+(cl-remove "58987B88-C945-4DE4-84F2-31189ECB8860"
+           org-xob--open-nodes
+           :test (lambda (x y) (string= x (open-node-ID y))))
+
+
+(remove nil org-xob--open-nodes)
+
+(setq vv/temp org-xob--open-nodes)
+(open-node-ID
+ (car org-xob--open-nodes))
+
+(delete (nth 0 org-xob--open-nodes) org-xob--open-nodes)
+
+(cl-struct-p "58987B88-C945-4DE4-84F2-31189ECB8860")
+
+(nconc org-xob--open-nodes '("58987B88-C945-4DE4-84F2-31189ECB8860"))
+(print (org-ql-select org-xob-buffers
+          `(tags "edit")
+          :action '(org-entry-get (point) "EDIT")))
+
+(setq vv/temp (remove nil
+                      (org-ql-select org-xob-buffers
+                        `(tags "edit")
+                        :action '(org-entry-get (point) "EDIT"))))
+
+(dolist (x org-xob--open-nodes)
+  (print x)
+  (and (cl-struct-p x)
+       (message "id: %s" (open-node-ID x)))
+  )
+(mapcar #'(lambda (x)
+            (if (and (cl-struct-p x)
+                     (member (open-node-ID x)
+                             vv/temp))
+                x
+                ;; (message "node: %s" x)
+              ;; (message "not: %s" x)
+              ))
+        org-xob--open-nodes)
+(when-let ((onodes (org-xob-map-all-edits #'(lambda ()
+                                              (org-entry-get (point) "EDIT")))))
+  (setq org-xob--open-nodes
+        (remove nil
+                (mapcar #'(lambda (x)
+                            (if (and (cl-struct-p x)
+                                     (member (open-node-ID x)
+                                             onodes))
+                                (print "node: %s" x))
+                            )
+                        org-xob--open-nodes))))
+
+(dolist (el org-xob--open-nodes)
+(if (cl-struct-p el)
+    (message (open-node-ID el))
+  ))
+
+(plistp )
+(setq vvp (copy-tree org-xob--source-backlinks))
+;; (print vvp)
+;; (plist-get vvp :name)
+(plist-put vvp :ID (org-xob--id-create))
+(plist-get vvp :ID)
+
+(let ((newsrc (copy-tree org-xob--source-backlinks)))
+(plist-put newsrc :ID (org-xob--id-create))
+(plist-put newsrc :PID "pid")
+(plist-put newsrc :title "ttttt")
+;; (funcall (plist-get newsrc :getfn) newsrc)
+;; (push newsrc srcs)
+(setq vvp newsrc)
+)
+
+(setq vvss (make-open-node :ID (org-xob--id-create) :sources (list)))
+(push vvp (open-node-sources vvss))
+
+(defun org-xob--prepare-kb-source (source &optional arg)
+"fill in material for a node context source."
+(org-xob-with-context-buffer
+ (let (ID name)
+   (if arg
+       (funcall (plist-get source :getfn) source))
+   (unless (org-xob--id-goto (plist-get source :ID))
+     (plist-put source :ID (setq ID (org-xob--id-create))))
+   (setq name (plist-get source :name))
+   (plist-put source :PID parent-ID)
+   (plist-put source :title parent-title)
+   (make-local-variable name)
+   (nconc (assoc parent-ID org-xob--open-nodes) (list ID))
+   (push (cons name ID) org-xob--node-sources)
+   (funcall (plist-get source :getfn) source)
+   source)))
+
+(setf (open-node-sources (car org-xob--open-nodes)) (list))
+
+(org-get-tags nil t)
+(org-entry-get (point) "EDIT")
+
+;;; old-org-xob-ediff-edit - didn't work well
+(defun old-org-xob-ediff-edit ()
+  "Run ediff on the edit node at point with the original node."
+  (interactive)
+  (save-window-excursion
+    (save-excursion
+      (let ((oid (org-entry-get (point) "EDIT"))
+            bege ende bego endo)
+        (when (org-xob--is-edit-node-p)
+          ;; (save-restriction)
+          (setq org-xob--ediff-bufe (current-buffer))
+          (org-narrow-to-subtree)
+          ;; (org-mark-subtree)
+          ;; (org-end-of-meta-data t)
+          (setq bege (point-min) ende (point-max))
+          ;; (setq bege (point) ende (mark))
+          (deactivate-mark 'force)
+          ;; (narrow-to-region (point) (mark))
+          ;; (save-restriction)
+          (org-id-goto oid)
+          (setq org-xob--ediff-bufo (current-buffer))
+          (org-narrow-to-subtree)
+          ;; (org-mark-subtree)
+          ;; (org-end-of-meta-data t)
+          (setq bego (point-min) endo (point-max))
+          ;; (setq bego (point) endo (mark))
+          (deactivate-mark 'force)
+          ;; (narrow-to-region (point) (mark))
+          (select-frame (setq
+                         org-xob--ediff-frm (make-frame)))
+          (ediff-regions-internal org-xob--ediff-bufe bege ende
+                                  org-xob--ediff-bufo bego endo
+                                  nil 'xob-ediff nil nil)
+          ;; (delete-frame)
+          ;; (with-current-buffer org-xob--ediff-bufo
+          ;;   (widen))
+          ;; (with-current-buffer org-xob--ediff-bufe
+          ;;   (widen))
+          )))))
+
+;;; ---
+    :PROPERTIES:
+    :ID: e982a4a0-05ad-4d64-a0cd-0816e194c37b
+    :END:
+
+(org-time-subtract
+ "[2021-05-25 Tue 14:41]"
+ ;; "[2021-05-25 Tue]"
+ ;; "[2021-05-25 Tue 14:41]"
+ "[2021-05-25 Tue 14:45]"
+ )
+
+;; tighten marked tree
+(progn
+  (org-mark-subtree)
+  (org-end-of-meta-data t)
+  (org-back-over-empty-lines)
+  (exchange-point-and-mark)
+  (org-back-over-empty-lines)
+  (exchange-point-and-mark)
+  )
+
+(require 'helm-org-ql)
+
+(let ((type "bib.article"))
+  (helm-org-ql org-xob--KB-files
+   :property "TYPE" "n.bib.article"
+    ))
+
+
+(defun org-xob--goto-buffer-heading (ID)
+  "Find heading with ID in current buffer. If found then return point at
+heading beginning, else nil."
+  (goto-char (point-min))
+  (if (re-search-forward ID nil t nil)
+      (progn (org-back-to-heading)
+             (point))
+    nil))
+
+(org-forward-element)
+
+(progn
+  (org-end-of-meta-data t)
+  (org-back-over-empty-lines)
+  )
+
+(setq vv/l '("a" "b" "c" "d"))
+(pcase-let ((`(,x ,y) (org-xob--get-create-node)))
+  ;; (print x)
+  ;; (print y)
+  (print (bound-and-true-p x))
+  (print (bound-and-true-p y))
+  (when (bound-and-true-p x)
+    (message "id: %s ||  t: %s" x y))
+  )
+
+(defun org-xob-refile-region ()
+  "Move text in region to the end of the top section of a selected node."
+  (interactive)
+  (org-xob-with-xob-on
+   (when (use-region-p)
+       (pcase-let ((`(,x ,y) (org-xob--get-create-node)))
+         (when (bound-and-true-p x)
+           (message "id: %s ||  t: %s" x y)
+           )
+         ))))
+
+;;;###autoload
+(defun org-xob-refile-region ()
+  "Move text in region to the end of the top section of a selected node."
+  (interactive)
+  (org-xob-with-xob-on
+   (when (use-region-p)
+     (pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+       (when (bound-and-true-p ID)
+         (kill-region (point) (mark))
+         (save-window-excursion
+           (org-with-wide-buffer
+            (org-id-goto ID)
+            (if (org-goto-first-child)
+                (progn
+                  (newline 2)
+                  (forward-line -1))
+              (org-end-of-subtree)
+              (newline))
+            (org-xob--smart-paste))))))))
+
+
+
+(pcase-let ((`(,ID ,title) (org-xob--get-create-node)))
+  (when (bound-and-true-p ID)
+    (print title))
+  ;; (print (bound-and-true-p ID))
+  ;; (print (bound-and-true-p title))
+  ;; (message "yes")
+  ;; (print ID)
+  ;; (print title)
+  ;; (print (boundp 'ID))
+  ;; (print (boundp 'title))
+  ;; (print (bound-and-true-p ID))
+  ;; (print (bound-and-true-p title))
+  nil
+  ;; (when (bound-and-true-p ID)
+    ;; (message "yes")
+    ;; )
+  )
+
+
+
+
+
+org-xob--open-nodes
+(setq org-xob--open-nodes nil)
+
+(setq org-xob-buffers nil)
+(setq org-xob-all-buffers nil)
+(setq org-xob-last-buffer nil)
+(buffer-live-p
+ org-xob-last-buffer)
+
+(cl-delete (current-buffer) org-xob-buffers)
+
+(org-xob--this-node-sources "ba157228-ff3a-49ea-9363-d16150697474")
+
+(uuidgen-4)
+(org-xob--id-create)
+
+
+#s(open-node "e63be15f-45c2-40c4-b6a1-cc8f8c49ea3c" "Software Testing"
+             ((:name forlinks :tags ("KB" "forlinks") :title "Software Testing" :ID "a25cd304-66bf-498b-938b-d162694a74ab" :PID "e63be15f-45c2-40c4-b6a1-cc8f8c49ea3c" :getfn org-xob--node-get-link-entries :items nil)
+              (:name backlinks :tags ("KB" "backlinks") :title "Software Testing" :ID "c78db72f-c7fa-4da6-ae3f-e6b0957a897e" :PID "e63be15f-45c2-40c4-b6a1-cc8f8c49ea3c" :getfn org-xob--node-get-link-entries :items ("e5493fc8-f051-4163-9c01-946b63a0b462"))))
+
+
+(setq vv/v (org-entry-put (point) "TEE" (uuidgen-4)))
+
+(progn
+  (org-hide-entry)
+  (org-show-set-visibility 'tree)
+  ;; (org-show-entry)
+  )
+
+(org-overview)
+(org-content)
+(org-show-children 1)
+(org-hide-entry)
+(org-flag-subtree t)
+
+(let ((p (org--paragraph-at-point)))
+  (if p
+      (buffer-substring-no-properties
+       (org-element-property :contents-begin p)
+       (org-element-property :contents-end p))))
+
+(let ((p (org--paragraph-at-point)))
+  (buffer-substring-no-properties
+   (or (print (org-element-property :contents-begin p))
+       (print (org-element-property :begin p))
+       )
+   (or (print (org-element-property :contents-end p))
+       (print (org-element-property :end p)))))
+
+(let ((b "bee"))
+  (bound-and-true-p b))
+
+
+
+(org-xob-map-node-sources
+ "851CA75F-6A9C-4508-978F-267DF08FF8CC"
+ #'(lambda () (org-insert-subheading)))
+
+(defun vv/ll ()
+  (interactive)
+  (save-restriction
+    (let (l els ast)
+      (org-narrow-to-subtree)
+      (setq els (delete-dups
+                 (delq nil
+                       (org-element-map
+                           (org-element-parse-buffer)
+                           'link
+                         ;; #'identity
+                         (lambda (el)
+                           ;; (plist-get el :type)
+                           (org-element-property :type el)
+                           ;; (cdr el)
+                           ;; (plist-get (cdr el) :type)
+                           )
+                         )
+                       )))
+      ;; (print (cadr els))
+      (print els)
+      )
+    ))
+
+
+(defun vv/lll ()
+  (interactive)
+  (while (re-search-forward "\\[\\[ftp:" nil t)
+    (replace-match "\[\[id:" t t)))
+
+(defun vv/lll ()
+  (interactive)
+  (org-element-map
+      (org-element-parse-buffer)
+      'link
+    ;; #'identity
+    (lambda (el)
+      ;; (plist-get el :type)
+      ;; (org-element-property :type el)
+      (if (string= "ftp" (org-element-property :type el))
+          (progn
+            (re-search-forward "ftp" nil t nil)
+            (replace-match "id" t t nil nil))
+          ;; (let ((pl (nth 1 el))
+          ;;       )
+          ;;   (plist-put pl :content "weebo")
+          ;;   (princ el))
+
+          ;; (org-element-context)
+          ;; (org-element-property :title el)
+          ;; (delete-region (org-element-property :begin el)
+          ;;                (- (org-element-property :end el) 1))
+          ;; (goto-char (org-element-property :end el))
+          ;; (print (org-element-link-parser))
+          ;; (print (org-element-link-interpreter el el))
+          ;; (org-element-set-contents el
+          ;;                           '(:type "id")
+          ;;                           )
+        nil
+        )
+      ;; (cdr el)
+      ;; (plist-get (cdr el) :type)
+      )
+    ))
+
+(org-link-types)
+
+(let ((event "hold")
+      (title "comp sci")
+      (description ""))
+  (org-paste-subtree nil
+                     (concat "| " (format-time-string "%r")
+                             " | " event
+                             " | " title
+                             " | " description
+                             " |"
+                             )))
+
+;;; change group
+
+(setq xs (nconc (prepare-change-group (current-buffer))
+                (prepare-change-group org-xob-last-buffer)))
+
+(unwind-protect
+    (activate-change-group xs))
+
+(accept-change-group xs)
+(cancel-change-group xs)
+(pop-to-buffer (marker-buffer (org-id-find "ba157228-ff3a-49ea-9363-d16150697474" t)))
+
+(let* ((b 'bee)
+            c d)
+  (setq c "ree")
+  (setq d "dee")
+  (message "c %s and d %s and b  %s" c d b))
+
+(not (org-narrow-to-subtree))
+
+(not (insert "bb "))bb bb bb
+
+(org-xob--log-event "surprise" "ba157228-ff3a-49ea-9363-d16150697474")
+org-xob-all-buffers
+(org-id-goto "ba157228-ff3a-49ea-9363-d16150697474")
+(not (org-id-goto ""))
+
+(logbook-end (save-excursion
+               (re-search-forward org-logbook-drawer-re)))
+
+(progn
+  (save-excursion
+    (re-search-forward org-logbook-drawer-re))
+  (match-string 0)
+  ;; (let ((a (car (match-data t)))
+  ;;       (b (cadr (match-data t))))
+  ;;   ;; (message "s: %s  e: %s" a b)
+  ;;   (kill-region a b)
+  ;;   )
+  )
+(progn
+  (save-excursion
+    (re-search-forward org-logbook-drawer-re))
+  ;; (match-string 0)
+  (kill-region (match-beginning 0)
+               (match-end 0))
+  (yank)
+  )
+
+
+;; "^[	 ]*:LOGBOOK:[	 ]*
+;; \\(?:.*
+;; \\)*?[	 ]*:END:[	 ]*$"
+
+(buffer-substring-no-properties
+ (region-beginning)
+ (+ 20 (region-beginning)))
+
+;;; link parse
+
+(org-element-map (org-element-parse-buffer) 'link
+  (lambda (el)
+    (org-element-link-parser)))
+
+(while (org-element-link))
+
+(defun vv/nl ()
+  (interactive)
+  (let (m)
+    (save-excursion
+      (org-end-of-subtree)
+      (setq m (point)))
+    (while (and (< (point) m)
+                (re-search-forward
+                 "\\[\\[xob:*"
+                 nil t))
+      (replace-match "[[id:" t t)
+      (org-super-links-convert-link-to-super t)
+      )))
+
+(goto-char (re-search-forward
+            ;; "\([:alnum:]\|[:space:]\)\\[\\[xob:"
+            ;; "\([:space:]\)\\[\\[xob:"
+            "[:blank:]\\[\\[xob:"
+            ;; "\([:alnum:] \| [:space:]\)\\[\\[xob:"
+            nil t))
+
+"[a-zA-Z1-9]\\[\\[xob:"
+
+as;lfkjae [[[xob:41839480-09D4-4EBE-9A20-052B6C6ACE8A][GitHub]] 
+
+aslfkjae [[xob:41839480-09D4-4EBE-9A20-052B6C6ACE8A][GitHub]] 
+
+aslfkjae[[xob:41839480-09D4-4EBE-9A20-052B6C6ACE8A][GitHub]] 
+aslfkja4[[xob:41839480-09D4-4EBE-9A20-052B6C6ACE8A][GitHub]] 
+;; (not (eobp))
+
+(org-store-link-functions)
+
+org-link-parameters
+
+
+;; (replace-match "[[id:" t t)
+
+(concat "^[	 ]*\\[\\[xob:"
+        thing-at-point-uuid-regexp)
+
+(org-link-set-parameters "xob"
+                         :follow #'org-id-open
+                         :export
+                         :store #'org-id-store-link)
+
+(org-element-context)
+
+(org-insert-link nil "xob:46725d52-df69-4108-9541-888223885dcd" "do i have")[[xob:46725d52-df69-4108-9541-888223885dcd][do i have]][[id:46725d52-df69-4108-9541-888223885dcd][do i have]][[do i have]]
+
+
+(let ((m (org-end-of-subtree)))
+  (re-search-forward "\\[\\[xobdel:*" m t)
+  (if (string= "[[xobdel:" (match-string 0))
+      (message "weebo")))
+
+(progn
+  (re-search-forward "\\[\\[xobdel:*" nil t)
+  (stringp (match-string 0))
+  )
+(let ((m (org-end-of-subtree)))
+  (goto-char (point-min))
+  (re-search-forward "\\[\\[xobdel:*" 249560 t)
+  )
+
+(replace-regexp
+                nil (point) (line-end-position))
+
+
+(org-insert-link )
+
+(let ((link (org-element-context)))
+  (buffer-substring-no-properties (org-element-property :contents-begin link)
+                    (org-element-property :contents-end link)))
+
+(org-element-property :contents (org-element-context))
+
+(defun vv/ss (str)
+  (when (re-search-forward str nil t)
+    ;; (princ (match-string 0))
+    (string= org-xob--xdel-link-str (match-string 0))
+    ;; (setf
+    ;;  (point) (match-beginning 0)
+    ;;  (mark) (match-end 0))
+    ))
+
+(vv/ss org-xob--xdel-link-re)
+
+(string= org-xob--xdel-link-str (match-string 0))
+(match-string 0)
+
+;; #("mpu" 0 1 (fontified t org-category "InformationTechnology" line-prefix "" wrap-prefix #("* " 0 2 (face org-indent)) face org-level-1) 1 3 (fontified t org-category "InformationTechnology" line-prefix "" wrap-prefix #("* " 0 2 (face org-indent)) face org-level-1))
+
+(re-search-forward org-xob--xdel-link-re nil t)
+
+(re-search-forward "string" nil t)
+
+(org-id-find "6E71A048-CBC3-4336-9BA2-5552D3A43EDC" 'MARKERP)
+
+;;; wip: updating edit from original mods
+
+
+(if (org-xob--is-open-node-p ID)
+    (save-excursion
+      (org-xob--goto-edit ID)
+      (org-xob-revert-edit)))
+
+
+;;; multi helm
+(helm :sources (helm-build-sync-source "wooot"
+                 :candidates
+                 ;; (hash-table-keys org-xob--id-title)
+                 (lambda () (cons helm-input (hash-table-keys org-xob--id-title)))
+                 ;; :filtered-candidate-transformer #'(lambda (cans source)
+                 ;;                                     (cons "[?] " cans))
+                 :volatile nil
+                 :action (lambda (key)
+                           (dolist (el (helm-marked-candidates))
+                             (let ((name (gethash el org-xob--id-title)))
+                               (if name (print name))))))
+      :buffer "woot")
+
+(helm :sources (helm-build-sync-source "wooot"
+                 :candidates '("1" "2" "3" "4" "5" "6" "7" "8" "9" "0")
+                 :volatile nil
+                 :action (lambda (key)
+                           (apply #'+
+                                 (mapcar #'string-to-number
+                                         (helm-marked-candidates)))
+                           ))
+      :buffer "woot")
+
+(apply '+ (mapcar #'string-to-number '("1" "2" "3" "4" "5" "6" "7" "8" "9" "0")))
+
+(helm :sources (helm-build-sync-source "wooot"
+                 :candidates '("1" "2" "3" "4" "5" "6" "7" "8" "9" "0")
+                 :action 'vv/hh)
+      :buffer "woot")
+
+(defun vv/hh (sel)
+  (interactive)
+  (when (helm-marked-candidates)
+    (message "oogle"))
+  )
+
+case:
+1 node
+old
+new
+n nodes
+
+
+'(("Select Node" . org-xob--get-create-node-action))
+
+(lambda (title) (org-xob--get-create-node-action title))
+
+(defmacro org-xob--do-selected-nodes (single types &rest body)
+  "Run ~body~ forms for each selected node with corresponding
+ID and title. SINGLE forces the use of one selection, TYPES allows you
+to select the node type first."
+  `(let ((selected (if ,types
+                       (org-xob--get-node-by-type)
+                     (org-xob--get-create-node)))
+         (dothis (lambda (sel) (let ((ID (car sel))
+                                     (title (cdr sel)))
+                                 ,@body))))
+     (if ,(not single)
+         (dolist (sel selected)
+           (funcall dothis sel))
+       (funcall dothis (car selected)))))
+
+(org-xob--do-selected-nodes nil t
+                            (message "id: %s || title: %s" ID title))
+
+(defun org-xob--get-create-node-action (title)
+  "Builds a list of one or more cons cells for selected nodes of form (ID . title)."
+  ;; (message title)
+  (if (< 1 (length (helm-marked-candidates)))
+      (mapcar (lambda (title) (list (gethash title org-xob--title-id) title))
+              (helm-marked-candidates))
+    (if-let ((ID (gethash title org-xob--title-id)))
+        (list ID title)
+      (list (org-xob--capture title) title))))
+
+(org-xob--do-select-nodes t t
+                          (lambda () (message "id: %s || title: %s" ID title))
+                          )
+
+(defun org-xob--do-select-nodes (single types func)
+  "Run FUNC for each selected node with corresponding
+ID and title. SINGLE forces the use of one selection, TYPES allows you
+to select the node type first."
+  (let ((selected (if types
+                      (org-xob--get-node-by-type)
+                    (org-xob--get-create-node)))
+        (dothis (lambda (sel) (let ((ID (car sel))
+                                      (title (cdr sel)))
+                                  (funcall func ID title)))))
+     (if (not single)
+         (dolist (sel selected)
+           (funcall dothis sel))
+       (funcall dothis (car selected)))))
+
+(org-insert-link (org-store-link t) "wooo")
+
+(progn
+  (forward-line)
+  (newline)
+  (previous-line))
+(progn
+  (forward-line)
+  (newline)
+  (previous-line))
+
+(cdr (org-element-at-point))
+(goto-char (org-element-property :end  (org-element-context)))
+
+(re-search-forward "]]" nil t)
+
+(setq org-id-link-to-org-use-id 'create-if-interactive-and-no-custom-id)
+
+(setq org-store-link-functions (add-to-list 'org-store-link-functions 'org-id-store-link))
+
+org-link-parameters
+
+(org-link-set-parameters "id"
+                         :follow #'org-id-open
+                         :store #'org-id-store-link)
+
+
+
+;;; w
+
+(window-right (selected-window))
+
+(let ((win (window-right (selected-window))))
+  (if win
+      (select-window win)
+    (setq win (split-window-right))
+    (select-window win)))
+
+(let ((win (window-right (selected-window))))
+  (if (and win
+           (eq 'dual org-xob--display))
+
+      )
+
+  ;; (if win
+  ;;     (select-window win)
+  ;;   (setq win (split-window-right))
+  ;;   (select-window win))
+
+  )
+
+
+(org-ql-select org-xob--KB-files
+  `(and (is-xob-node)
+        (property "TYPE" "a.project"))
+  :action #'(nth 4 (org-heading-components)))
+>>>>>>> v0.9
