@@ -1292,14 +1292,15 @@ This function starts clock for a given node.")
   (save-window-excursion
     (save-excursion
       (dolist (filename filelist)
-        (with-current-buffer (find-file filename)
-          (org-with-wide-buffer
-           (goto-char (point-min))
-           (while
-               (progn
-                 (if (org-xob--is-node-p nil 'DEEPCHECK)
-                     (funcall func))
-                 (outline-next-heading)))))))))
+        (if (stringp filename)
+            (with-current-buffer (find-file filename)
+              (org-with-wide-buffer
+               (goto-char (point-min))
+               (while
+                   (progn
+                     (if (org-xob--is-node-p nil 'DEEPCHECK)
+                         (funcall func))
+                     (outline-next-heading))))))))))
 
 (defun org-xob-node-info (&optional arg)
   "Get node id, list of for and back links. Default are node names, with

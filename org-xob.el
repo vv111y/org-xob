@@ -104,7 +104,7 @@
   ("T" (org-xob-to-full-node) "full")
   ("e" (org-xob-to-edit) "edit")
   ("q" nil "Quit" :exit t)
-)
+  )
 
 (defun org-xob--up-heading ()
   "Xob hydra navigation: fold heading at point first, otherwise go up to parent."
@@ -146,6 +146,12 @@ item. (credit https://emacs.stackexchange.com/a/26840)."
   "Start the xob system: load state or initialize new. Open new day node.
 Calling with C-u will force a restart."
   (interactive "P")
+  ;; First set the directory based on current name
+  (unless (and org-xob-dir (file-directory-p org-xob-dir))
+    (let ((dir (cdr (assoc org-xob-current-name org-xob-known-dirs))))
+      (if dir
+          (setq org-xob-dir dir)
+        (message "Warning: No valid directory for current xob repository"))))
   (if (equal arg '(4))
       (setq org-xob-on-p nil))
   (if (and
@@ -228,12 +234,13 @@ Otherwise prompt for selection from known repositories."
       (setq org-xob-dir dir)
       (setq org-xob-current-name repo)
 
-      ;; Rebuild with new directory
-      (org-xob-rebuild)
-
       ;; Start the xob system
       (org-xob-start)
-      (message "Switched to xob repository: %s (%s)" repo dir))
+      (message "Switched to xob repository: %s (%s)" repo dir)
+
+      ;; Rebuild with new directory
+      ;; (org-xob-rebuild)
+      )
 
     (unless dir
       (message "Invalid xob repository: %s" repo))))
