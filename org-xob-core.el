@@ -41,6 +41,7 @@
 (require 'cl-lib)
 (require 'org-super-links)
 (require 'hydra)
+(require 'pulse)
 
 (declare-function org-super-links-link "org-super-links.el")
 (declare-function org-super-links-store-link "org-super-links.el")
@@ -70,6 +71,9 @@
 (defvar org-xob-on-p nil)
 
 (defvar org-xob-today nil "The current day node.")
+
+(defvar org-xob-new-day-timer nil
+  "Timer that opens a new day node at midnight.")
 
 (defvar org-xob-buffers nil "List of active xob buffers.")
 
