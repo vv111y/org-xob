@@ -104,7 +104,7 @@
   ("T" (org-xob-to-full-node) "full")
   ("e" (org-xob-to-edit) "edit")
   ("q" nil "Quit" :exit t)
-  )
+)
 
 (defun org-xob--up-heading ()
   "Xob hydra navigation: fold heading at point first, otherwise go up to parent."
@@ -208,6 +208,66 @@ Calling with C-u will force a restart."
         (message "XOB: stopped."))))
 
 ;;;###autoload
+(defun org-xob-switch-repo (&optional repo-name)
+  "Switch to a different xob repository.
+If REPO-NAME is provided, switch to that repository.
+Otherwise prompt for selection from known repositories."
+  (interactive)
+  (let* ((repo (or repo-name
+                   (completing-read "Select xob repository: "
+                                    (mapcar #'car org-xob-known-dirs)
+                                    nil t)))
+         (dir (cdr (assoc repo org-xob-known-dirs))))
+
+    (when (and dir (file-directory-p dir))
+      ;; Stop current xob if running
+      (when org-xob-on-p
+        (org-xob-stop))
+
+      ;; Update variables
+      (setq org-xob-dir dir)
+      (setq org-xob-current-name repo)
+
+      ;; Rebuild with new directory
+      (org-xob-rebuild)
+
+      ;; Start the xob system
+      (org-xob-start)
+      (message "Switched to xob repository: %s (%s)" repo dir))
+
+    (unless dir
+      (message "Invalid xob repository: %s" repo))))
+
+;;;###autoload
+(defun org-xob-add-repo (name directory)
+  "Add a new xob repository to the list of known repositories.
+NAME is a user-friendly name for the repository.
+DIRECTORY is the path to the xob directory."
+  (interactive "sRepository name: \nDDirectory: ")
+  (let ((dir (file-name-as-directory (expand-file-name directory))))
+    ;; Create the directory if it doesn't exist
+    (unless (file-directory-p dir)
+      (if (y-or-n-p (format "Directory %s doesn't exist. Create it? " dir))
+          (make-directory dir t)
+        (error "Cannot add repository without directory")))
+
+    ;; Add to the list
+    (add-to-list 'org-xob-known-dirs (cons name dir))
+    (message "Added xob repository: %s (%s)" name dir)))
+
+;;;###autoload
+(defun org-xob-remove-repo (name)
+  "Remove a repository from the list of known repositories."
+  (interactive
+   (list (completing-read "Remove repository: "
+                          (mapcar #'car org-xob-known-dirs))))
+  (setq org-xob-known-dirs
+        (assoc-delete-all name org-xob-known-dirs))
+  (message "Removed xob repository: %s" name))
+
+
+;;;;; Node Commands
+;;;###autoload
 (defun org-xob-open-day ()
   "Open todays node."
   (interactive)
@@ -300,6 +360,48 @@ If called with optional ID argument, then remove the node with that ID."
          (org-xob--save-state))))))
 
 ;;;###autoload
+(defun org-xob-heading-to-node ()
+  "Convenience function to convert current subtree into a xob KB node."
+  (interactive)
+  (org-xob-with-xob-on
+   (unless (org-xob--is-node-p)
+     (let ((title (nth 4 (org-heading-components))))
+       (if (gethash title org-xob--title-id)
+           (message "heading title conflicts with a xob node. Please rename.")
+         (org-xob--new-node (point))
+         (let ((filename (buffer-file-name)))
+           (unless (member filename org-xob--KB-files)
+             (save-excursion
+               (goto-char (point-min))
+               (insert org-xob--xob-header))
+             (save-buffer)
+             (push filename org-xob--KB-files))))))))
+
+;;;###autoload
+(defun org-xob-rename-node ()
+  "Updates xob system with node heading at point."
+  (interactive)
+  (when (org-xob--is-node-p)
+    (org-back-to-heading)
+    (when-let ((newname (nth 4 (org-heading-components)))
+               (ID (org-entry-get (point) "ID"))
+               (oldname (gethash ID org-xob--id-title)))
+      (org-xob--log-event "rename" ID)
+      (puthash ID newname org-xob--id-title)
+      (puthash newname ID org-xob--title-id)
+      (remhash oldname org-xob--title-id)
+      (org-xob--log-event "-> new" ID))))
+
+;;;###autoload
+(defun org-xob-goto-original ()
+  "Go to the original node entry in the knowledge base."
+  (interactive)
+  (cond ((org-xob--is-edit-node-p)
+         (org-id-goto (org-entry-get (point) "EDIT")))
+        ((org-id-goto (org-entry-get (point) "PID")))))
+
+;;;;; Node Contents Commands
+;;;###autoload
 (defun org-xob-insert-link (&optional arg)
   "Inserts a properly formatted xob node link at point. If we are in a
 xob edit buffer, use a xob placeholder link and update the forlinks source.
@@ -389,39 +491,6 @@ updated."
       #'org-xob--refile-region-internal))))
 
 ;;;###autoload
-(defun org-xob-heading-to-node ()
-  "Convenience function to convert current subtree into a xob KB node."
-  (interactive)
-  (org-xob-with-xob-on
-   (unless (org-xob--is-node-p)
-     (let ((title (nth 4 (org-heading-components))))
-       (if (gethash title org-xob--title-id)
-           (message "heading title conflicts with a xob node. Please rename.")
-         (org-xob--new-node (point))
-         (let ((filename (buffer-file-name)))
-           (unless (member filename org-xob--KB-files)
-             (save-excursion
-               (goto-char (point-min))
-               (insert org-xob--xob-header))
-             (save-buffer)
-             (push filename org-xob--KB-files))))))))
-
-;;;###autoload
-(defun org-xob-rename-node ()
-  "Updates xob system with node heading at point."
-  (interactive)
-  (when (org-xob--is-node-p)
-    (org-back-to-heading)
-    (when-let ((newname (nth 4 (org-heading-components)))
-               (ID (org-entry-get (point) "ID"))
-               (oldname (gethash ID org-xob--id-title)))
-      (org-xob--log-event "rename" ID)
-      (puthash ID newname org-xob--id-title)
-      (puthash newname ID org-xob--title-id)
-      (remhash oldname org-xob--title-id)
-      (org-xob--log-event "-> new" ID))))
-
-;;;###autoload
 (defun org-xob-add-node-labels ()
   "Select labels to apply to node at point, or at optional node specified by ID."
   (interactive)
@@ -447,14 +516,6 @@ updated."
                         :candidates org-xob--node-types
                         :action (lambda (c)
                                   (org-entry-put (point) "TYPE" c)))))))
-
-;;;###autoload
-(defun org-xob-goto-original ()
-  "Go to the original node entry in the knowledge base."
-  (interactive)
-  (cond ((org-xob--is-edit-node-p)
-         (org-id-goto (org-entry-get (point) "EDIT")))
-        ((org-id-goto (org-entry-get (point) "PID")))))
 
 ;;;;; Special node access
 
@@ -557,7 +618,7 @@ sQuery Form: ")
   (interactive)
   (org-xob--context-copy-paste
    "sum"
-   #'(lambda () 
+   #'(lambda ()
        (progn
          (org-end-of-meta-data t)
          (let ((p (org--paragraph-at-point)))

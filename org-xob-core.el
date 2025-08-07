@@ -65,6 +65,16 @@
   "This setting does something."
   :type 'something)
 
+(defcustom org-xob-known-dirs (list (cons "Default" "~/xob/"))
+  "List of known xob directories, as an alist of (name . directory-path)."
+  :type '(alist :key-type string :value-type directory)
+  :group 'org-xob)
+
+(defcustom org-xob-current-name "Default"
+  "Name of the currently selected xob repository."
+  :type 'string
+  :group 'org-xob)
+
 ;;;; Variables
 ;;;;; State variables
 

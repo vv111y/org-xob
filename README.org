@@ -82,10 +82,20 @@ If no current file is found for either of the file types, then a new numbered fi
 :TOC:      :depth 0
 :END:
 
-The central idea is presentation management where xob buffers are not associated with files but are instead treated like windows; they are a place where material is displayed and possibly edited. As such, all content is copied from the original location and pasted into a xob buffer. For current release v0.5, to edit a xob node (note, entry) an indirect buffer is created and narrowed to that entry. Next release will likely also copy the content and then provide syncing capabilities.
-This approach allows for great flexibility in interacting with your org files. Unlike zettlekasten approaches, there is no restriction on using a tree structure, you are free to have org headings in a node, vice-versa, and even nest nodes.  
-Contextual material from both backlinks and forlinks are presented in a dedicated context buffer under 'source' headings. ie all backlinks go under the node backlinks heading, and similarly for the forlinks. You can alter what is displayed, simply the headings, their first paragraph, top section, subheadings, or the full content of that node.  
+The central idea is presentation management where xob buffers are not associated with files but are instead treated like windows; they are a place where material is displayed and possibly edited.
+As such, all content is copied from the original location and pasted into a xob buffer.
+For current release v0.5, to edit a xob node (note, entry) an indirect buffer is created and narrowed to that entry.
+Next release will likely also copy the content and then provide syncing capabilities.
+
+This approach allows for great flexibility in interacting with your org files.
+Unlike zettlekasten approaches, there is no restriction on using a tree structure, you are free to have org headings in a node, vice-versa, and even nest nodes.  
+
+Contextual material from both backlinks and forlinks are presented in a dedicated context buffer under 'source' headings. ie all backlinks go under the node backlinks heading, and similarly for the forlinks.
+You can alter what is displayed, simply the headings, their first paragraph, top section, subheadings, or the full content of that node.  
+
 Future release will allow for associated material from other sources, such as org-ql searches, or internet content.
+
+New [2025-08-07]: multi-repo support. If you need to partition your knowledge base into distinct repositories you can now add them to the list in ~org-xob-known-dirs~. For now there is no way to combine, each are treated distinctly.  
 
 ** Commands
  All commands will start org-xob if it has not started already. General commands are applicable anywhere, Edit buffer commands are relevant in the edit buffer, and Context buffer commands are relevant in that buffer.  
@@ -115,6 +125,9 @@ Future release will allow for associated material from other sources, such as or
 | org-xob-start            | Required: Start the xob system                           |
 | org-xob-stop             | Stopping saves state and cleans up                       |
 | org-xob-rebuild          | Go through all xob files and rebuild xob data structures |
+| org-xob-switch-repo      | select a different xob KB                                |
+| org-xob-add-repo         | add new repository                                       |
+| org-xob-remove-repo      | remove repository                                        |
 |--------------------------+----------------------------------------------------------|
 
 |--------------------------+---------------------------------------------------|
