@@ -501,7 +501,7 @@ updated."
 (defun org-xob-toggle-display ()
   "Switch between single or dual pane display."
   (interactive)
-  (if (and (boundp org-xob--display)
+  (if (and (boundp 'org-xob--display)
            (eq 'dual org-xob--display))
       (atomic-change-group
         (org-xob--single-pane (selected-window))
@@ -557,15 +557,16 @@ sQuery Form: ")
   (interactive)
   (org-xob--context-copy-paste
    "sum"
-   #'(lambda () (progn
-                  (org-end-of-meta-data t)
-                  (let ((p (org--paragraph-at-point)))
-                    (if p
-                        (buffer-substring-no-properties
-                         (or (print (org-element-property :contents-begin p))
-                             (print (org-element-property :begin p)))
-                         (or (print (org-element-property :contents-end p))
-                             (print (org-element-property :end p))))))))))
+   #'(lambda () 
+       (progn
+         (org-end-of-meta-data t)
+         (let ((p (org--paragraph-at-point)))
+           (if p
+               (buffer-substring-no-properties
+                (or (org-element-property :contents-begin p)
+                    (org-element-property :begin p))
+                (or (org-element-property :contents-end p)
+                    (org-element-property :end p)))))))))
 
 ;;;###autoload
 (defun org-xob-to-node-tree ()
