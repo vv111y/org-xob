@@ -159,14 +159,34 @@ knowledge base."
     (kill-buffer buf)))
 
 ;; TODO
-(defun org-xob--rewrite-buffer-1-pane ()
-  "Rewrites all open nodes in single pane format."
-  )
+;; (defun org-xob--rewrite-buffer-1-pane ()
+;;   "Rewrites all open nodes in single pane format."
+;;   )
 
 ;; TODO
+;; (defun org-xob--rewrite-buffer-2-pane ()
+;;   "Rewrites all open nodes in dual pane format."
+;;   )
+
+;; WIP
+(defun org-xob--rewrite-buffer-1-pane ()
+  "Rewrites all open nodes in single pane format."
+  (org-map-entries
+   (lambda ()
+     (when (org-xob--is-edit-node-p)
+       (let ((pid (org-entry-get (point) "EDIT")))
+         (org-xob--edit-write-single-pane pid (gethash pid org-xob--id-title)))))
+   "EDIT<>\"\"" 'file))
+
+;; WIP
 (defun org-xob--rewrite-buffer-2-pane ()
   "Rewrites all open nodes in dual pane format."
-  )
+  (org-map-entries
+   (lambda ()
+     (when (org-xob--is-edit-node-p)
+       (let ((pid (org-entry-get (point) "EDIT")))
+         (org-xob--edit-write-dual-pane pid (gethash pid org-xob--id-title)))))
+   "EDIT<>\"\"" 'file))
 
 ;;;;; Windows
 
