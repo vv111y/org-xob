@@ -64,16 +64,18 @@
              (buf1 (if (file-exists-p session-path)
                        (find-file session-path)
                      (get-buffer-create session-name)
-                     (write-file session-path)))
+                     ;; (write-file session-path)
+                     ))
              (buf2 (get-buffer-create
                     (concat "xob-C-" numbufs))))
     (with-current-buffer buf1
       (org-mode)
       (org-xob-mode 1)
-      (auto-save-mode 1)
+      (auto-save-mode -1)
       (add-hook 'kill-buffer-hook #'org-xob--close-buffer-hook nil 'local)
       (setq-local org-xob--buf 'parent
-                  org-xob--pair-buf buf2)
+                  org-xob--pair-buf buf2
+                  buffer-offer-save nil)
       (if single
           (progn (setq-local org-xob--display 'single)
                  (setq-local org-xob--c-buff (current-buffer)))
@@ -83,8 +85,9 @@
       (org-mode)
       (org-xob-mode 1)
       (setq-local org-xob--buf 'child
-                  org-xob--pair-buf buf1))
-    (setq org-xob-last-buffer buf1)
+                  org-xob--pair-buf buf1
+                  buffer-offer-save nil))
+    ;; (setq org-xob-last-buffer buf1)
     (push buf1 org-xob-buffers)
     (push buf1 org-xob-all-buffers)
     (push buf2 org-xob-all-buffers)
