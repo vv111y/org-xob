@@ -190,20 +190,18 @@ Calling with C-u will force a restart."
       (progn
         (org-xob--save-state)
         (org-xob--close-buffers)
-        (with-current-buffer org-xob-today-buffer
-          (save-buffer)
-          (kill-buffer))
+        (if (and (bound-and-true-p org-xob-today-buffer)
+                 (buffer-live-p org-xob-today-buffer))
+            (with-current-buffer org-xob-today-buffer
+              (save-buffer)
+              (kill-buffer)
+              ))
         (setq org-xob-today nil)
         (setq org-id-extra-files
               (set-difference org-id-extra-files
                               (append org-xob--KB-files
                                       org-xob--agenda-files
                                       org-xob--log-files)))
-        ;; (setq org-agenda-files
-        ;;       (set-difference org-agenda-files
-        ;;                       (append org-agenda-files
-        ;;                               org-xob--agenda-files
-        ;;                               org-xob--log-files)))
         (org-xob--clear-file-variables)
         (remove-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
         (remove-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
