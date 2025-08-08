@@ -159,7 +159,8 @@ knowledge base."
   (let ((current-prefix-arg 4))
     (funcall-interactively #'org-xob-sync-edit))
   (dolist (buf org-xob-buffers)
-    (kill-buffer buf)))
+    (if (buffer-live-p buf)
+        (kill-buffer buf))))
 
 ;; TODO
 ;; (defun org-xob--rewrite-buffer-1-pane ()
