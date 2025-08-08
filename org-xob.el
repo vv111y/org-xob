@@ -147,39 +147,43 @@ item. (credit https://emacs.stackexchange.com/a/26840)."
 Calling with C-u will force a restart."
   (interactive "P")
   ;; First set the directory based on current name
-  (unless (and org-xob-dir (file-directory-p org-xob-dir))
-    (let ((dir (cdr (assoc org-xob-current-name org-xob-known-dirs))))
-      (if dir
-          (setq org-xob-dir dir)
-        (message "Warning: No valid directory for current xob repository"))))
-  (if (equal arg '(4))
-      (setq org-xob-on-p nil))
-  (if (and
-       (if org-xob-on-p (progn (message "XOB: already started.") nil) t)
-       (and
-        (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
-        (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
-        (add-hook 'ediff-quit-hook #'org-xob--ediff-quit-hook)
-        (add-hook 'org-super-links-pre-link-hook #'org-xob--super-links-hook)
-        (message "XOB: hooks enabled."))
-       (not (setq org-xob--open-nodes nil))
-       (if (file-directory-p org-xob-dir) (message "XOB: directory found.")
-         (prog1 (message "XOB: directory not found, creating.")
-           (make-directory org-xob-dir t)))
-       (org-xob--load-state)
-       (org-xob--register-files)
-       (org-xob--process-files)
-       (org-xob--eval-capture-templates)
-       (org-link-make-regexps)
-       (org-xob--open-today)
-       (setq org-xob-new-day-timer
-             (run-at-time "00:00"
-                          (* 24 60 60)
-                          'org-xob--open-today)))
-      (progn
-        (setq org-xob-on-p t)
-        (message "XOB: started.")
-        (org-xob-info))
+  ;; (unless (and org-xob-dir (file-directory-p org-xob-dir))
+  ;;   (let ((dir (cdr (assoc org-xob-current-name org-xob-known-dirs))))
+  ;;     (if dir
+  ;;         (setq org-xob-dir dir)
+  ;;       (message "Warning: No valid directory for current xob repository"))))
+  (let* ((repo (completing-read "Select xob repository: "
+                                (mapcar #'car org-xob-known-dirs)
+                                nil t))
+         (dir (cdr (assoc repo org-xob-known-dirs))))
+    (when (and dir (file-directory-p dir))
+      (setq org-xob-dir dir)
+      (setq org-xob-current-name repo)
+      (if (equal arg '(4))
+          (setq org-xob-on-p nil))
+      (if (and
+           (if org-xob-on-p (progn (message "XOB: already started.") nil) t)
+           (and
+            (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
+            (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+            (add-hook 'ediff-quit-hook #'org-xob--ediff-quit-hook)
+            (add-hook 'org-super-links-pre-link-hook #'org-xob--super-links-hook)
+            (message "XOB: hooks enabled."))
+           (not (setq org-xob--open-nodes nil))
+           (org-xob--load-state)
+           (org-xob--register-files)
+           (org-xob--process-files)
+           (org-xob--eval-capture-templates)
+           (org-link-make-regexps)
+           (org-xob--open-today)
+           (setq org-xob-new-day-timer
+                 (run-at-time "00:00"
+                              (* 24 60 60)
+                              'org-xob--open-today))
+           (org-xob-with-xob-buffer
+            (setq org-xob-on-p t)
+            (message "XOB: started.")))
+          (message "Invalid xob repository: %s" repo)))
     (message "XOB: Unable to (re)start.")))
 
 ;;;###autoload
