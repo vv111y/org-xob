@@ -63,11 +63,14 @@
              (session-path (concat org-xob-dir "/" session-name))
              (buf1 (if (file-exists-p session-path)
                        (find-file session-path)
-                     (get-buffer-create session-name)
-                     ;; (write-file session-path)
-                     ))
-             (buf2 (get-buffer-create
-                    (concat "xob-C-" numbufs))))
+                     ;; Create a new buffer and ensure it's empty
+                     (with-current-buffer (get-buffer-create session-name)
+                       (erase-buffer)
+                       (current-buffer))))
+             (buf2 (with-current-buffer (get-buffer-create
+                                         (concat "xob-C-" numbufs))
+                     (erase-buffer)
+                     (current-buffer))))
     (with-current-buffer buf1
       (org-mode)
       (org-xob-mode 1)
