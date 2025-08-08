@@ -1267,19 +1267,23 @@ This function starts clock for a given node.")
   (and
    (org-xob--register-files)
    (message "XOB: re-registered all xob files."))
-  (and
-   (org-id-update-id-locations)
-   (message "XOB: updated org-id hashtable."))
-  (message "XOB: traversing all KB files...")
   (let ((filelist (append org-xob--KB-files
                           org-xob--agenda-files
                           (list org-xob--log-file)))
         ID title)
+    (and
+     (org-id-update-id-locations filelist)
+     (message "XOB: updated org-id hashtable."))
+    (message "XOB: traversing all KB files...")
     (org-xob-visit-nodes
      filelist
      #'(lambda ()
          (setq ID (org-id-get (point)))
          (setq title (nth 4 (org-heading-components)))
+         (if (and) (string= title org-xob-today-string)
+           (org-id-add-location ID (buffer-file-name))
+           (setq org-xob-today ID)
+           (message "XOB: found today node in %s" (buffer-file-name)))
          (puthash ID title org-xob--id-title)
          (puthash title ID org-xob--title-id))))
   (message "XOB: finished rebuilding xob hashtables.")
