@@ -1172,28 +1172,28 @@ then checks using org-xob--is-edit-node-p."
 
 (defun org-xob--open-today ()
   "Open today node for logging."
-  (org-xob-with-xob-on
-   (setq org-xob-today-string  (format-time-string "%F %A"))
-   (and (or (setq org-xob-today (gethash org-xob-today-string
-                                         org-xob--title-id))
-            (setq org-xob-today
-                  (save-window-excursion
-                    (save-excursion
-                      (find-file org-xob--log-file)
-                      (org-with-wide-buffer
-                       (if (re-search-forward org-xob-today-string nil t nil)
-                           (let (id)
-                             (setq id (org-entry-get (point) "ID"))
-                             (puthash id org-xob-today-string org-xob--id-title)
-                             (puthash org-xob-today-string id org-xob--title-id)
-                             id)
-                         nil)))))
-            (setq org-xob-today (org-xob--capture "ad")))
-        (save-window-excursion
-          (save-excursion
-            (org-id-goto org-xob-today)
-            (setq org-xob-today-buffer (current-buffer))))
-        (message "XOB: Todays log entry opened.") t)))
+  (setq org-xob-today-string  (format-time-string "%F %A"))
+  (and (or (setq org-xob-today (gethash org-xob-today-string
+                                        org-xob--title-id))
+           (setq org-xob-today
+                 (save-window-excursion
+                   (save-excursion
+                     (find-file org-xob--log-file)
+                     (org-with-wide-buffer
+                      (if (re-search-forward org-xob-today-string nil t nil)
+                          (let (id)
+                            (setq id (org-entry-get (point) "ID"))
+                            (puthash id org-xob-today-string org-xob--id-title)
+                            (puthash org-xob-today-string id org-xob--title-id)
+                            (org-id-add-location ID org-xob--log-file)
+                            (setq org-xob-today ID)
+                            (message "XOB: found today node in %s" (buffer-file-name))))))))
+           (setq org-xob-today (org-xob--capture "ad")))
+       (save-window-excursion
+         (save-excursion
+           (org-id-goto org-xob-today)
+           (setq org-xob-today-buffer (current-buffer))))
+       (message "XOB: Todays log entry opened.") t))
 
 (defun org-xob--log-event (event id &optional description)
   "General log function used to send activity entries to the log."
