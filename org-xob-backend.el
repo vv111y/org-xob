@@ -744,6 +744,7 @@ as a capture hook function."
         (org-entry-put (point) "MODIFIED" timestamp)
         (puthash ID title org-xob--id-title)
         (puthash title ID org-xob--title-id)
+        (org-id-add-location ID (buffer-file-name))
         (org-xob--log-event "new node" ID)
         (setq org-xob--last-captured ID))))
 
