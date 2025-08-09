@@ -87,6 +87,13 @@ When nil, no links are automatically displayed."
                  (const :tag "Don't auto-display links" nil))
   :group 'org-xob)
 
+(defcustom org-xob-auto-dual-pane t
+  "Automatically set up dual-pane window layout when starting org-xob.
+When t, automatically create and display dual-pane layout with context buffer on the right.
+When nil, start with single window and let user manually configure layout."
+  :type 'boolean
+  :group 'org-xob)
+
 ;;;; Variables
 ;;;;; State variables
 

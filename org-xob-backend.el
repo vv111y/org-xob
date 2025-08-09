@@ -323,6 +323,20 @@ in a single-pane display format."
       ;; Display only forlinks
       (org-xob-show-source 'forlinks)))))
 
+(defun org-xob--auto-setup-dual-pane ()
+  "Automatically set up dual-pane window layout if enabled."
+  (when org-xob-auto-dual-pane
+    (let ((current-window (selected-window))
+          (buf1 (current-buffer)))
+      ;; Only set up dual-pane if we're not already in a split configuration
+      ;; and we have a proper xob buffer with a pair buffer
+      (when (and (= (length (window-list)) 1)
+                 (org-xob-buffer-p buf1)
+                 (buffer-local-value 'org-xob--pair-buf buf1)
+                 (not (get-buffer-window (buffer-local-value 'org-xob--pair-buf buf1))))
+        (org-xob--dual-pane current-window)
+        (message "XOB: Auto-setup dual-pane layout complete")))))
+
 ;;;###autoload
 (defun org-xob-revert-edit ()
   "Revert the edit node at point back to the original."

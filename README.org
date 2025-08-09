@@ -186,6 +186,24 @@ org-xob can automatically display backlinks and forlinks when you open a node fo
 (define-key org-mode-map (kbd "C-c x a") 'org-xob-toggle-auto-display-links)
 #+END_SRC
 
+** Auto Dual-Pane Layout
+
+org-xob can automatically set up a dual-pane window layout when starting, with the main editing buffer on the left and context buffer on the right:
+
+#+BEGIN_SRC elisp
+;; Enable auto dual-pane layout (default: t)
+(setq org-xob-auto-dual-pane t)
+
+;; Disable auto dual-pane layout
+(setq org-xob-auto-dual-pane nil)
+
+;; Toggle interactively
+(define-key org-mode-map (kbd "C-c x p") 'org-xob-toggle-auto-dual-pane)
+
+;; Manually set up dual-pane layout
+(define-key org-mode-map (kbd "C-c x d") 'org-xob-setup-dual-pane)
+#+END_SRC
+
 * Changelog
 :PROPERTIES:
 :TOC:      :depth 0
@@ -194,8 +212,11 @@ org-xob can automatically display backlinks and forlinks when you open a node fo
 ** 0.6 (WIP)
 
 + Added auto-display links feature: automatically show backlinks and forlinks when opening nodes
-+ Added =org-xob-auto-display-links= customization variable
++ Added =org-xob-auto-display-links= customization variable  
 + Added =org-xob-toggle-auto-display-links= interactive command
++ Added auto dual-pane layout feature: automatically set up split-window layout when starting
++ Added =org-xob-auto-dual-pane= customization variable
++ Added =org-xob-toggle-auto-dual-pane= and =org-xob-setup-dual-pane= interactive commands
 
 ** 0.5
 

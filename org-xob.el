@@ -180,6 +180,8 @@ Calling with C-u will force a restart."
                               (* 24 60 60)
                               'org-xob--open-today))
            (org-xob-with-xob-buffer
+            ;; Auto-setup dual-pane if enabled
+            (org-xob--auto-setup-dual-pane)
             (setq org-xob-on-p t)
             (message "XOB: started.")))
           (message "Invalid xob repository: %s" repo)))
@@ -579,6 +581,13 @@ updated."
       (org-xob--dual-pane (selected-window))
       (org-xob--rewrite-buffer-2-pane))))
 
+;;;###autoload
+(defun org-xob-setup-dual-pane ()
+  "Manually set up dual-pane window layout with context buffer."
+  (interactive)
+  (org-xob-with-xob-buffer
+   (org-xob--auto-setup-dual-pane)))
+
 ;;;;; Context Presentation Commands
 
 ;;;###autoload
@@ -612,6 +621,17 @@ Cycles through: t -> backlinks -> forlinks -> nil -> t"
             ((eq org-xob-auto-display-links 'backlinks) "backlinks only")
             ((eq org-xob-auto-display-links 'forlinks) "forlinks only")
             (t "disabled"))))
+
+;;;###autoload
+(defun org-xob-toggle-auto-dual-pane ()
+  "Toggle the auto dual-pane layout setting."
+  (interactive)
+  (setq org-xob-auto-dual-pane (not org-xob-auto-dual-pane))
+  (message "org-xob auto dual-pane: %s" 
+           (if org-xob-auto-dual-pane "enabled" "disabled"))
+  ;; If enabling and xob is running, set up dual-pane now
+  (when (and org-xob-auto-dual-pane org-xob-on-p)
+    (org-xob--auto-setup-dual-pane)))
 
 ;;;###autoload
 (defun org-xob-ql-search (qname query)
