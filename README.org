@@ -157,6 +157,19 @@ New [2025-08-07]: multi-repo support. If you need to partition your knowledge ba
 | org-xob-refresh-contexts | Refresh context item at point           |
 |-------------------------+-----------------------------------------|
 
+|----------------------------+------------------------------------------------------|
+| Bulk Context Operations    | (Apply to ALL context entries in buffer)            |
+|----------------------------+------------------------------------------------------|
+| org-xob-bulk-to-summary    | Show summary for all context entries                |
+| org-xob-bulk-to-section    | Show section for all context entries                |
+| org-xob-bulk-to-node-tree  | Show tree structure for all context entries         |
+| org-xob-bulk-to-full-node  | Show full content for all context entries           |
+| org-xob-bulk-clear-all     | Clear all context entries in the buffer             |
+|----------------------------+------------------------------------------------------|
+
+Note: Bulk operations work across ALL sources (backlinks, forlinks, etc.) in the context buffer. 
+Use the org-xob hydra with C-s, C-S, C-t, C-T, C-c for quick access to bulk operations.
+
 ** Tips
 
 + You can customize settings in the =org-xob= group.
@@ -217,6 +230,9 @@ org-xob can automatically set up a dual-pane window layout when starting, with t
 + Added auto dual-pane layout feature: automatically set up split-window layout when starting
 + Added =org-xob-auto-dual-pane= customization variable
 + Added =org-xob-toggle-auto-dual-pane= and =org-xob-setup-dual-pane= interactive commands
++ Added bulk context operations: apply display actions to ALL context entries at once
++ Added =org-xob-bulk-to-summary=, =org-xob-bulk-to-section=, =org-xob-bulk-to-node-tree=, =org-xob-bulk-to-full-node=, and =org-xob-bulk-clear-all= commands
++ Extended org-xob hydra with bulk operation keybindings (C-s, C-S, C-t, C-T, C-c)
 
 ** 0.5
 

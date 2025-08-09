@@ -996,6 +996,26 @@ Otherwise apply to source at point."
      (org-up-heading-safe)
      (outline-hide-subtree))))
 
+(defun org-xob--map-all-sources (func)
+  "Apply the function func to every child-item of ALL xob sources in the current buffer.
+This provides bulk operations across all context sources (backlinks, forlinks, etc.)."
+  (save-excursion
+    (save-window-excursion
+      (org-with-wide-buffer
+       (goto-char (point-min))
+       (let ((source-count 0))
+         (while (re-search-forward org-heading-regexp nil t)
+           (when (org-xob--is-source-p)
+             (save-excursion
+               (when (org-goto-first-child)
+                 (while (progn
+                          (save-excursion (funcall func))
+                          (setq source-count (1+ source-count))
+                          (outline-get-next-sibling)))))
+             ;; Hide the processed source
+             (outline-hide-subtree)))
+         (message "XOB: Applied action to %d items across all sources" source-count))))))
+
 ;;;;; KB Context Functions
 
 (defun org-xob--node-get-link-entries (source &optional EID)

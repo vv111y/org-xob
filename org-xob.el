@@ -103,6 +103,14 @@
   ("t" (org-xob-to-node-tree) "tree")
   ("T" (org-xob-to-full-node) "full")
   ("e" (org-xob-to-edit) "edit")
+  
+  ;; Bulk operations (capital letters)
+  ("C-s" (org-xob-bulk-to-summary) "bulk: summary")
+  ("C-S" (org-xob-bulk-to-section) "bulk: section") 
+  ("C-t" (org-xob-bulk-to-node-tree) "bulk: tree")
+  ("C-T" (org-xob-bulk-to-full-node) "bulk: full")
+  ("C-c" (org-xob-bulk-clear-all) "bulk: clear all")
+  
   ("q" nil "Quit" :exit t)
   )
 
@@ -726,6 +734,120 @@ sQuery Form: ")
     (save-excursion
       (when-let ((id (org-entry-get (point) "PID")))
         (org-xob--edit-node id (gethash id org-xob--id-title))))))
+
+;;;;; Bulk Context Operations
+
+;;;###autoload
+(defun org-xob-bulk-to-summary ()
+  "Show summary for ALL context entries in the buffer."
+  (interactive)
+  (org-xob--map-all-sources
+   #'(lambda ()
+       (let ((pid (org-entry-get (point) "PID")))
+         (when (org-uuidgen-p pid)
+           (org-xob--clear-node)
+           (org-set-tags "sum")
+           (when-let ((str (org-xob--select-content 
+                           pid 
+                           #'(lambda ()
+                               (progn
+                                 (org-end-of-meta-data t)
+                                 (let ((p (org--paragraph-at-point)))
+                                   (if p
+                                       (buffer-substring-no-properties
+                                        (or (org-element-property :contents-begin p)
+                                            (org-element-property :begin p))
+                                        (or (org-element-property :contents-end p)
+                                            (org-element-property :end p))))))))))
+             (org-end-of-subtree)
+             (newline)
+             (insert str)
+             (outline-hide-subtree)
+             (org-show-entry)))))))
+
+;;;###autoload
+(defun org-xob-bulk-to-section ()
+  "Show section for ALL context entries in the buffer."
+  (interactive)
+  (org-xob--map-all-sources
+   #'(lambda ()
+       (let ((pid (org-entry-get (point) "PID")))
+         (when (org-uuidgen-p pid)
+           (org-xob--clear-node)
+           (org-set-tags "sec")
+           (when-let ((str (org-xob--select-content 
+                           pid 
+                           #'(lambda () 
+                               (let ((beg) (end))
+                                 (org-end-of-meta-data t)
+                                 (org-back-over-empty-lines)
+                                 (setq beg (point))
+                                 (outline-next-heading)
+                                 (setq end (- (point) 1))
+                                 (buffer-substring beg end))))))
+             (org-end-of-subtree)
+             (newline)
+             (insert str)
+             (outline-hide-subtree)
+             (org-show-entry)))))))
+
+;;;###autoload
+(defun org-xob-bulk-to-node-tree ()
+  "Show node tree for ALL context entries in the buffer."
+  (interactive)
+  (org-xob--map-all-sources
+   #'(lambda ()
+       (let ((pid (org-entry-get (point) "PID")))
+         (when (org-uuidgen-p pid)
+           (org-xob--clear-node)
+           (org-set-tags "tree")
+           (when-let ((str (org-xob--select-content 
+                           pid 
+                           #'(lambda ()
+                               (let (lines)
+                                 (org-map-tree
+                                  (lambda ()
+                                    (push (buffer-substring-no-properties
+                                           (line-beginning-position)
+                                           (line-end-position))
+                                          lines)))
+                                 (setq lines (nreverse lines))
+                                 (pop lines)
+                                 (mapconcat 'identity lines "\n"))))))
+             (org-end-of-subtree)
+             (newline)
+             (if (org-kill-is-subtree-p str)
+                 (org-paste-subtree (+ 1 (org-current-level)) str)
+               (insert str))
+             (outline-hide-subtree)
+             (org-show-entry)))))))
+
+;;;###autoload
+(defun org-xob-bulk-to-full-node ()
+  "Show full node for ALL context entries in the buffer."
+  (interactive)
+  (org-xob--map-all-sources
+   #'(lambda ()
+       (let ((pid (org-entry-get (point) "PID")))
+         (when (org-uuidgen-p pid)
+           (org-xob--clear-node)
+           (org-set-tags "full")
+           (when-let ((str (org-xob--select-content 
+                           pid 
+                           #'(lambda () (org-xob--get-full-node 3 nil)))))
+             (org-end-of-subtree)
+             (newline)
+             (insert str)
+             (outline-hide-subtree)
+             (org-show-entry)))))))
+
+;;;###autoload
+(defun org-xob-bulk-clear-all ()
+  "Clear ALL context entries in the buffer."
+  (interactive)
+  (org-xob--map-all-sources
+   #'(lambda ()
+       (org-xob--clear-node))))
 
 ;;;;; Activity Commands
 ;;;###autoload
