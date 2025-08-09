@@ -793,16 +793,18 @@ as a capture hook function."
     org-xob--last-captured))
 
 (defun org-xob--link-hook-fn ()
-  "If a link is a xob node, then reopen node in xob edit mode."
+  "If a link is a xob node, then reopen node in xob edit mode.
+Only acts on ID links that are registered xob nodes in the hash table."
   (let ((link (org-element-context))
         ID title)
-    (if (equal "ID" (org-element-property :type link))
-        (progn
-          (setq ID (org-element-property :path link))
-          (setq title (gethash ID org-xob--id-title))
-          (if title
-              (org-xob--edit-node ID title)))
-      nil)))
+    (when (equal "ID" (org-element-property :type link))
+      (setq ID (org-element-property :path link))
+      (setq title (gethash ID org-xob--id-title))
+      ;; Only act if this ID is actually a registered xob node
+      (when title
+        (org-xob--edit-node ID title)
+        ;; Return t to indicate we handled this link
+        t))))
 
 (defun org-xob--super-links-hook ()
   "Adjust linking actions depending on whether the source is an original
