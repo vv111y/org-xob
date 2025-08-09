@@ -558,10 +558,14 @@ in subheadings. Returns the ID if true, nil otherwise."
     (if temp
         (if DEEPCHECK
             (and
-             (string= "t" (org-entry-get (point) "xob" (not top)))
-             (member (org-entry-get (point) "TYPE" (not top)) org-xob--node-types)
+             ;; Must have explicit xob property set to "t" at THIS heading level (no inheritance)
+             (string= "t" (org-entry-get (point) "xob" top))
+             ;; Must have a valid xob node type at THIS heading level (no inheritance)  
+             (member (org-entry-get (point) "TYPE" top) org-xob--node-types)
+             ;; Must have a valid UUID format
              (eq 0 (org-uuidgen-p temp))
-             (not (org-entry-get (point) "EDIT" (not top)))
+             ;; Must not be an edit node
+             (not (org-entry-get (point) "EDIT" top))
              temp)
           (if (gethash temp org-xob--id-title) temp)))))
 
@@ -1347,10 +1351,11 @@ This function starts clock for a given node.")
      #'(lambda ()
          (setq ID (org-id-get (point)))
          (setq title (nth 4 (org-heading-components)))
-         (if (and) (string= title org-xob-today-string)
-           (org-id-add-location ID (buffer-file-name))
-           (setq org-xob-today ID)
-           (message "XOB: found today node in %s" (buffer-file-name)))
+         (if (string= title org-xob-today-string)
+             (progn
+               (org-id-add-location ID (buffer-file-name))
+               (setq org-xob-today ID)
+               (message "XOB: found today node in %s" (buffer-file-name))))
          (puthash ID title org-xob--id-title)
          (puthash title ID org-xob--title-id))))
   (message "XOB: finished rebuilding xob hashtables.")
