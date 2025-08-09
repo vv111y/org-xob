@@ -167,8 +167,19 @@ New [2025-08-07]: multi-repo support. If you need to partition your knowledge ba
 | org-xob-bulk-clear-all     | Clear all context entries in the buffer             |
 |----------------------------+------------------------------------------------------|
 
+|------------------------------+-----------------------------------------------------------|
+| Region ↔ Node Conversion     | (Convert between text regions and nodes)                 |
+|------------------------------+-----------------------------------------------------------|
+| org-xob-region-to-node       | Convert selected text to new node, replace with link     |
+| org-xob-node-to-region       | Convert node link back to inline text content            |
+|------------------------------+-----------------------------------------------------------|
+
 Note: Bulk operations work across ALL sources (backlinks, forlinks, etc.) in the context buffer. 
 Use the org-xob hydra with C-s, C-S, C-t, C-T, C-c for quick access to bulk operations.
+
+Region-to-node conversion allows you to:
+1. Select text and convert it to a new node (=r= in hydra or =org-xob-region-to-node=)
+2. Convert node links back to inline text (=R= in hydra or =org-xob-node-to-region=)
 
 ** Tips
 
@@ -233,6 +244,10 @@ org-xob can automatically set up a dual-pane window layout when starting, with t
 + Added bulk context operations: apply display actions to ALL context entries at once
 + Added =org-xob-bulk-to-summary=, =org-xob-bulk-to-section=, =org-xob-bulk-to-node-tree=, =org-xob-bulk-to-full-node=, and =org-xob-bulk-clear-all= commands
 + Extended org-xob hydra with bulk operation keybindings (C-s, C-S, C-t, C-T, C-c)
++ Added region ↔ node conversion feature: bidirectional conversion between text regions and nodes
++ Added =org-xob-region-to-node= command to convert selected text to new node with link replacement
++ Added =org-xob-node-to-region= command to convert node links back to inline text content
++ Extended org-xob hydra with region conversion keybindings (r, R)
 
 ** 0.5
 

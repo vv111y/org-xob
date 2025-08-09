@@ -103,14 +103,14 @@
   ("t" (org-xob-to-node-tree) "tree")
   ("T" (org-xob-to-full-node) "full")
   ("e" (org-xob-to-edit) "edit")
-  
+
   ;; Bulk operations (capital letters)
   ("C-s" (org-xob-bulk-to-summary) "bulk: summary")
-  ("C-S" (org-xob-bulk-to-section) "bulk: section") 
+  ("C-S" (org-xob-bulk-to-section) "bulk: section")
   ("C-t" (org-xob-bulk-to-node-tree) "bulk: tree")
   ("C-T" (org-xob-bulk-to-full-node) "bulk: full")
   ("C-c" (org-xob-bulk-clear-all) "bulk: clear all")
-  
+
   ("q" nil "Quit" :exit t)
   )
 
@@ -562,6 +562,40 @@ updated."
            (org-entry-put (point) "TYPE" "n.bib.article")
            (org-entry-put (point) "NOTER_DOCUMENT" "~/Zotero/storage/")))))))
 
+;;;;; Region to Node Conversion
+
+;;;###autoload
+(defun org-xob-region-to-node ()
+  "Convert selected text region to a new xob node and replace with a link.
+Prompts for the node title and creates a new node with the region content."
+  (interactive)
+  (org-xob-with-xob-on
+   (if (use-region-p)
+       (let ((title (read-string "Node title: "))
+             (beg (region-beginning))
+             (end (region-end)))
+         (when (and title (not (string-empty-p title)))
+           (let ((node-id (org-xob--region-to-node-with-link beg end title)))
+             (message "Created node '%s' with ID: %s" title node-id)
+             (org-xob--log-event "region->node conversion" node-id))))
+     (message "No region selected"))))
+
+;;;###autoload
+(defun org-xob-node-to-region ()
+  "Convert a node link at point back to inline text content.
+Replaces the link with the content of the referenced node."
+  (interactive)
+  (org-xob-with-xob-on
+   (let ((link (org-element-context)))
+     (if (and (eq (org-element-type link) 'link)
+              (string= (org-element-property :type link) "id"))
+         (let ((node-id (org-element-property :path link)))
+           (when (gethash node-id org-xob--id-title)
+             (org-xob--node-to-region node-id)
+             (message "Converted node to inline text: %s"
+                      (gethash node-id org-xob--id-title))))
+       (message "Point is not on an xob node link")))))
+
 ;;;;; Display Commands
 
 ;; org-xob--display
@@ -623,7 +657,7 @@ Cycles through: t -> backlinks -> forlinks -> nil -> t"
          ((eq org-xob-auto-display-links 'backlinks) 'forlinks)
          ((eq org-xob-auto-display-links 'forlinks) nil)
          (t t)))
-  (message "org-xob auto-display links: %s" 
+  (message "org-xob auto-display links: %s"
            (cond
             ((eq org-xob-auto-display-links t) "both backlinks and forlinks")
             ((eq org-xob-auto-display-links 'backlinks) "backlinks only")
@@ -635,7 +669,7 @@ Cycles through: t -> backlinks -> forlinks -> nil -> t"
   "Toggle the auto dual-pane layout setting."
   (interactive)
   (setq org-xob-auto-dual-pane (not org-xob-auto-dual-pane))
-  (message "org-xob auto dual-pane: %s" 
+  (message "org-xob auto dual-pane: %s"
            (if org-xob-auto-dual-pane "enabled" "disabled"))
   ;; If enabling and xob is running, set up dual-pane now
   (when (and org-xob-auto-dual-pane org-xob-on-p)

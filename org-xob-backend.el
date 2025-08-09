@@ -1595,5 +1595,78 @@ This replaces both org-xob--register-files and org-xob--process-files."
               (nth 4 (org-heading-components))) 14)
            "]")))
 
+;; --- Region to Node Conversion ---
+
+(defun org-xob--region-to-node-with-link (beg end title)
+  "Convert text region to a new node and replace with a link.
+BEG and END define the region, TITLE is the node title.
+Returns the ID of the created node."
+  (let* ((region-text (buffer-substring-no-properties beg end))
+         (timestamp (concat "[" (format-time-string "%F %a") "]"))
+         node-id)
+    ;; Create new node in KB file
+    (save-excursion
+      (save-window-excursion
+        (with-current-buffer (find-file org-xob--KB-file)
+          (goto-char (point-max))
+          (unless (bolp) (insert "\n"))
+          (insert "\n* " title "\n")
+          (let ((node-start (point)))
+            ;; Set node properties
+            (setq node-id (org-id-get-create))
+            (org-entry-put (point) "xob" "t")
+            (org-entry-put (point) "TYPE" "n.n")
+            (org-entry-put (point) "CREATED" timestamp)
+            (org-entry-put (point) "MODIFIED" timestamp)
+            ;; Add content
+            (org-end-of-meta-data t)
+            (insert region-text)
+            (unless (string-suffix-p "\n" region-text)
+              (insert "\n"))
+            ;; Update hash tables
+            (puthash node-id title org-xob--id-title)
+            (puthash title node-id org-xob--title-id)
+            (org-id-add-location node-id (buffer-file-name))
+            ;; Log event
+            (org-xob--log-event "region->node" node-id)
+            (save-buffer)))))
+    
+    ;; Replace region with org-super-link
+    (delete-region beg end)
+    (goto-char beg)
+    (org-super-links--insert-link (org-id-find node-id 'MARKERP))
+    
+    node-id))
+
+(defun org-xob--node-to-region (node-id)
+  "Convert a node link to inline text content.
+NODE-ID is the ID of the node to convert back to text.
+The link at point should be replaced with the node's content."
+  (let* ((link (org-element-context))
+         (link-beg (org-element-property :begin link))
+         (link-end (org-element-property :end link))
+         node-content)
+    
+    ;; Get node content
+    (save-excursion
+      (save-window-excursion
+        (org-id-goto node-id)
+        (org-end-of-meta-data t)
+        (let ((content-start (point))
+              (content-end (save-excursion
+                             (org-end-of-subtree t t)
+                             (point))))
+          (setq node-content (buffer-substring-no-properties content-start content-end))
+          ;; Clean up trailing whitespace
+          (setq node-content (string-trim-right node-content)))))
+    
+    ;; Replace link with content
+    (when (and link-beg link-end)
+      (delete-region link-beg link-end)
+      (goto-char link-beg)
+      (insert node-content)
+      ;; Log event
+      (org-xob--log-event "node->region" node-id))))
+
 (provide 'org-xob-backend)
 ;;; org-xob-backend.el ends here
