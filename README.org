@@ -187,6 +187,10 @@ Region-to-node conversion allows you to:
 + Use =org-xob-auto-display-links= to automatically show backlinks and forlinks when opening nodes.
 + Toggle auto-display behavior with =M-x org-xob-toggle-auto-display-links=.
 
+** Known Limitations
+
++ **Node Removal**: The =org-xob-remove-node= function attempts to clean up both outgoing and incoming links when removing a node from the system. However, due to org-super-links internal behavior, some link cleanup operations may not complete successfully. In such cases, warning messages will be displayed, and users may need to manually remove any remaining links if desired. The core functionality (removing the node from the xob system and optionally deleting content) always works correctly.
+
 * Configuration
 
 ** Auto-Display Links

@@ -346,36 +346,85 @@ Current version performs simple, blunt, whole content replacement."
        (org-xob--update-original id)))))
 
 ;;;###autoload
-(defun org-xob-remove-node (&optional ID)
-  "Removes node at point from xob system, but does not delete the node itself.
-Removes node from the hash tables, and any backlinks in other nodes referencing it.
-But ignore any links that reference it. Override xob property.
-If called with optional ID argument, then remove the node with that ID."
-  (interactive)
+(defun org-xob-remove-node (&optional ID delete-content)
+  "Removes node at point from xob system, with optional content deletion.
+Removes node from the hash tables, and cleans up both outgoing (forlinks)
+and incoming (backlinks) references to maintain knowledge graph integrity.
+Removes xob properties to de-register the node from the system.
+
+If DELETE-CONTENT is non-nil, also deletes the actual org subtree content.
+If called with optional ID argument, then remove the node with that ID.
+
+When called interactively:
+- With no prefix: removes from xob system but keeps content
+- With C-u prefix: prompts whether to also delete content
+- With C-u C-u prefix: removes from system AND deletes content"
+  (interactive
+   (list nil
+         (cond
+          ((equal current-prefix-arg '(16)) t)  ; C-u C-u - delete content
+          ((equal current-prefix-arg '(4))     ; C-u - prompt
+           (y-or-n-p "Also delete node content? "))
+          (t nil))))  ; no prefix - keep content
   (org-xob-with-xob-on
    (save-window-excursion
      (save-excursion
-       (if ID
-           (org-id-goto ID))
+       (when ID (org-id-goto ID))
        (let* ((ID (org-id-get (point)))
               (title (gethash ID org-xob--id-title))
               (forlinks (org-xob--node-get-links 'forlinks))
+              (backlinks (org-xob--node-get-links 'backlinks))
               link-element)
+
+         ;; Clean up outgoing links (forlinks) - links FROM this node TO others
+         ;; Note: Link cleanup may not always succeed due to org-super-links limitations
+         ;; Users may need to manually remove remaining links if necessary
          (dolist (el forlinks)
            (save-excursion
-             (org-id-goto el)
-             (save-restriction
-               (org-narrow-to-subtree)
-               (outline-show-all)
-               (setq link-element (org-super-links--find-link ID))
-               (if link-element
-                   (org-super-links--delete-link link-element)))))
+             (condition-case err
+                 (progn
+                   (org-id-goto el)
+                   (save-restriction
+                     (org-narrow-to-subtree)
+                     (outline-show-all)
+                     (setq link-element (org-super-links--find-link ID))
+                     (when link-element
+                       (org-super-links--delete-link link-element))))
+               (error 
+                (message "Warning: Could not remove outgoing link to %s (may need manual cleanup)" el)))))
+         
+         ;; Clean up incoming links (backlinks) - links FROM others TO this node
+         ;; Note: Link cleanup may not always succeed due to org-super-links limitations
+         (dolist (el backlinks)
+           (save-excursion
+             (condition-case err
+                 (progn
+                   (org-id-goto el)
+                   (save-restriction
+                     (org-narrow-to-subtree)
+                     (outline-show-all)
+                     ;; Find and remove the link from this node back to our target
+                     (setq link-element (org-super-links--find-link ID))
+                     (when link-element
+                       (org-super-links--delete-link link-element))))
+               (error 
+                (message "Warning: Could not remove incoming link from %s (may need manual cleanup)" el)))))         ;; Remove from xob system
          (org-xob--log-event "removed" ID)
          (remhash ID org-xob--id-title)
          (remhash title org-xob--title-id)
          (org-entry-delete (point) "TYPE")
          (org-entry-delete (point) "xob")
-         (org-xob--save-state))))))
+
+         ;; Optionally delete the actual content
+         (when delete-content
+           (org-xob--log-event "content deleted" ID)
+           (org-cut-subtree))
+
+         (org-xob--save-state)
+
+         (message "Node '%s' %s from xob system"
+                  title
+                  (if delete-content "removed and deleted" "removed")))))))
 
 ;;;###autoload
 (defun org-xob-heading-to-node ()
