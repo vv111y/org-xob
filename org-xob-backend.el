@@ -1181,27 +1181,33 @@ then checks using org-xob--is-edit-node-p."
 (defun org-xob--open-today ()
   "Open today node for logging."
   (setq org-xob-today-string  (format-time-string "%F %A"))
-  (and (or (setq org-xob-today (gethash org-xob-today-string
-                                        org-xob--title-id))
-           (setq org-xob-today
-                 (save-window-excursion
-                   (save-excursion
-                     (find-file org-xob--log-file)
-                     (org-with-wide-buffer
-                      (if (re-search-forward org-xob-today-string nil t nil)
-                          (let (id)
-                            (setq id (org-entry-get (point) "ID"))
-                            (puthash id org-xob-today-string org-xob--id-title)
-                            (puthash org-xob-today-string id org-xob--title-id)
-                            (org-id-add-location ID org-xob--log-file)
-                            (setq org-xob-today ID)
-                            (message "XOB: found today node in %s" (buffer-file-name))))))))
-           (setq org-xob-today (org-xob--capture "ad")))
+  (message "XOB: Looking for today node, log file is: %s" org-xob--log-file)
+  (and (setq org-xob-today (or (gethash org-xob-today-string
+                                        org-xob--title-id)
+                               (save-window-excursion
+                                 (save-excursion
+                                   (if (and org-xob--log-file (file-exists-p org-xob--log-file))
+                                       (progn
+                                         (message "XOB: Opening log file: %s" org-xob--log-file)
+                                         (find-file org-xob--log-file)
+                                         (org-with-wide-buffer
+                                          (if (re-search-forward org-xob-today-string nil t nil)
+                                              (let (id)
+                                                (setq id (org-entry-get (point) "ID"))
+                                                (puthash id org-xob-today-string org-xob--id-title)
+                                                (puthash org-xob-today-string id org-xob--title-id)
+                                                (org-id-add-location id org-xob--log-file)
+                                                (message "XOB: found today node")
+                                                id))))
+                                     (message "XOB: Warning - log file not found: %s" org-xob--log-file))))
+                               (progn
+                                 (message "XOB: Creating new today node via capture")
+                                 (org-xob--capture "ad"))))
        (save-window-excursion
          (save-excursion
            (org-id-goto org-xob-today)
-           (setq org-xob-today-buffer (current-buffer))))
-       (message "XOB: Todays log entry opened.") t))
+           (setq org-xob-today-buffer (current-buffer)))))
+  (message "XOB: Todays log entry opened."))
 
 (defun org-xob--log-event (event id &optional description)
   "General log function used to send activity entries to the log."
@@ -1273,7 +1279,7 @@ This function starts clock for a given node.")
   (clrhash org-xob--title-id)
   (message "XOB: cleared hash tables.")
   (and
-   (org-xob--register-files)
+   (org-xob--scan-and-register-files)
    (message "XOB: re-registered all xob files."))
   (let ((filelist (append org-xob--KB-files
                           org-xob--agenda-files
@@ -1397,102 +1403,98 @@ If there are no saved tables, then create new empty ones."
        (push source org-xob-available-sources)))
 
 ;; --- file management ---
-(defun org-xob--register-files ()
-  "Scan through the xob directory, properly identify and register various xob files."
+(defun org-xob--scan-and-register-files ()
+  "Scan directory and register all xob files. Create missing files if needed.
+This replaces both org-xob--register-files and org-xob--process-files."
   (org-xob--clear-file-variables)
-  (mapc
-   (lambda (filename)
-     (unless (string-match-p "#" filename)
-       (with-temp-buffer
-         (insert-file-contents-literally filename nil 0 1024 nil)
-         (let* ((x (car (org-collect-keywords '("PROPERTY"))))
-                (current (if (member "xob-current-file t" x) t nil)))
-           (if (member "xob t" x)
-               (cond
-                ((member "xob-log t" x)
-                 (push  filename org-xob--log-files)
-                 (if current (setq org-xob--log-file filename)))
-                ((member "xob-agenda t" x)
-                 (push  filename org-xob--agenda-files)
-                 (if  current (setq org-xob--agenda-file filename)))
-                ((member "xob-archive t" x)
-                 (push  filename org-xob--archive-files)
-                 (if current (setq org-xob--archive-file filename)))
-                (t
-                 (push filename org-xob--KB-files)
-                 (if current (setq org-xob--KB-file filename)))))))))
-   (directory-files org-xob-dir 'full "\.org$" t))
-  t)
 
-(defun org-xob--process-files ()
-  "Called after files have been regisetered. Properly setup various file variables.
-If necessary create new files."
-  (cl-mapcar #'(lambda (filetype prefix filelist)
-                 (save-window-excursion
-                   (save-excursion
-                     (let (filename)
-                       (unless
-                           (and (boundp filetype)
-                                (setq filename (symbol-value filetype))
-                                filename
-                                (file-exists-p filename)
-                                (not (equal filename org-xob-dir)))
-                         (message "XOB: current file for %s missing, initializing new." filetype)
-                         (org-xob--new-file filetype prefix filelist))))))
-             '(org-xob--agenda-file
-               org-xob--log-file
-               org-xob--archive-file
-               org-xob--KB-file)
-             '(org-xob--agenda-filename-prefix
-               org-xob--log-filename-prefix
-               org-xob--archive-filename-prefix
-               org-xob--KB-filename-prefix)
-             '(org-xob--agenda-files
-               org-xob--log-files
-               org-xob--archive-files
-               org-xob--KB-files))
+  ;; First pass: scan existing files and register them
+  (dolist (filepath (directory-files org-xob-dir t "\\.org$"))
+    (unless (string-match-p "#" filepath)
+      (org-xob--register-single-file filepath)))
+
+  ;; Second pass: ensure we have current files of each type
+  (org-xob--ensure-current-files)
+
+  ;; Set up org-id files after registration
   (setq org-id-extra-files (append org-xob--KB-files
                                    org-xob--agenda-files
                                    org-xob--log-files))
-  ;; (setq org-agenda-files (append org-agenda-files
-  ;;                                org-xob--agenda-files
-  ;;                                org-xob--log-files))
   t)
 
-(defun org-xob--new-file (filepointer fileprefix filelist)
-  "creates a new file, pushes it to it's appropriate list and sets it as current.
-Buffer remains open. Returns the filename."
-  (let* ((filename (concat
-                    (symbol-value fileprefix)
-                    (format "%03d" (+ 1 (length (eval filelist))))
-                    ".org"))
-         (full-path (concat org-xob-dir filename)))
-    (save-window-excursion
+(defun org-xob--register-single-file (filepath)
+  "Register a single file based on its properties."
+  (with-temp-buffer
+    (insert-file-contents-literally filepath nil 0 1024)
+    (let* ((props (car (org-collect-keywords '("PROPERTY"))))
+           (is-xob (member "xob t" props))
+           (is-current (member "xob-current-file t" props)))
+      (when is-xob
+        (cond
+         ((member "xob-log t" props)
+          (push filepath org-xob--log-files)
+          (when is-current (setq org-xob--log-file filepath)))
+         ((member "xob-agenda t" props)
+          (push filepath org-xob--agenda-files)
+          (when is-current (setq org-xob--agenda-file filepath)))
+         ((member "xob-archive t" props)
+          (push filepath org-xob--archive-files)
+          (when is-current (setq org-xob--archive-file filepath)))
+         (t
+          (push filepath org-xob--KB-files)
+          (when is-current (setq org-xob--KB-file filepath))))))))
+
+(defun org-xob--ensure-current-files ()
+  "Ensure we have a current file for each type. Create if missing."
+  (let ((file-specs '((org-xob--agenda-file  org-xob--agenda-filename-prefix  org-xob--agenda-files  org-xob--agenda-header)
+                      (org-xob--log-file     org-xob--log-filename-prefix     org-xob--log-files     org-xob--log-header)
+                      (org-xob--archive-file org-xob--archive-filename-prefix org-xob--archive-files org-xob--archive-header)
+                      (org-xob--KB-file      org-xob--KB-filename-prefix      org-xob--KB-files      nil))))
+    (dolist (spec file-specs)
+      (let ((current-var (nth 0 spec))
+            (prefix-var (nth 1 spec))
+            (list-var (nth 2 spec))
+            (type-header (nth 3 spec)))
+        (unless (and (symbol-value current-var)
+                     (file-exists-p (symbol-value current-var)))
+          (org-xob--create-new-file current-var prefix-var list-var type-header))))))
+
+(defun org-xob--create-new-file (current-var prefix-var list-var type-header)
+  "Create a new file of the specified type."
+  (let* ((prefix (symbol-value prefix-var))
+         (existing-files (symbol-value list-var))
+         (file-number (+ 1 (length existing-files)))
+         (filename (format "%s%03d.org" prefix file-number))
+         (filepath (expand-file-name filename org-xob-dir)))
+
+    ;; Remove current status from any existing file of this type
+    (when (symbol-value current-var)
+      (org-xob--remove-current-status (symbol-value current-var)))
+
+    ;; Create the new file
+    (with-temp-file filepath
+      (insert org-xob--xob-header)
+      (when type-header
+        (insert type-header))
+      (insert org-xob--current-header))
+
+    ;; Update the variables
+    (add-to-list list-var filepath)
+    (set current-var filepath)
+
+    (message "XOB: Created new %s file: %s"
+             (symbol-name current-var) filename)
+    filepath))
+
+(defun org-xob--remove-current-status (filepath)
+  "Remove xob-current-file property from a file."
+  (when (and filepath (file-exists-p filepath))
+    (with-current-buffer (find-file-noselect filepath)
       (save-excursion
-        (find-file full-path)
         (goto-char (point-min))
-        ;; Only add headers if file is empty or doesn't have xob property
-        (unless (save-excursion 
-                  (goto-char (point-min))
-                  (re-search-forward "^#\\+PROPERTY: xob t$" nil t))
-          (goto-char (point-min))
-          (insert org-xob--xob-header)
-          (if (string= (symbol-value fileprefix) org-xob--agenda-filename-prefix)
-              (insert org-xob--agenda-header))
-          (if (string= (symbol-value fileprefix) org-xob--log-filename-prefix)
-              (insert org-xob--log-header))
-          (if (string= (symbol-value fileprefix) org-xob--archive-filename-prefix)
-              (insert org-xob--archive-header))
-          ;; Only add current header if it's not already there
-          (unless (save-excursion
-                    (goto-char (point-min))
-                    (re-search-forward "^#\\+PROPERTY: xob-current-file t$" nil t))
-            (insert org-xob--current-header)))
-        (save-buffer)))
-    (add-to-list filelist filename)
-    (if (eval filepointer) (org-xob--uncurrent-file filepointer))
-    (set filepointer filename)
-    filename))
+        (when (re-search-forward "^#\\+PROPERTY: xob-current-file t$" nil t)
+          (delete-region (line-beginning-position) (1+ (line-end-position)))
+          (save-buffer))))))
 
 (defun org-xob--clear-file-variables ()
   "All file associated variables set to nil."
