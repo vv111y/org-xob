@@ -38,7 +38,8 @@ If you installed from MELPA, you're done.  Just run one of the commands below.
   Install these required packages:
 
   + =org-super-links=
-  + =org-ql= (coming soon, can be skpped for now)
+  + =org-ql=
+  + =helm=
   + =Other= I believe these are part of current emacs versions: org, org-element, org-id, cl, cl-lib
 
   Then put this file in your load-path, and put this in your init file:
@@ -76,6 +77,11 @@ If no current file is found for either of the file types, then a new numbered fi
 ~org-id-link-to-org-use-id~ is set to either: ~t~, ~create-if-interactive~, or ~create-if-interactive-and-no-custom-id~
 
 ~org-id-method~ is set to ~uuid~
+
+#+begin_src elisp
+  (setq org-id-link-to-org-use-id t)
+  (setq org-id-method uuid)
+#+end_src
 
 * Usage
 :PROPERTIES:
@@ -153,12 +159,43 @@ New [2025-08-07]: multi-repo support. If you need to partition your knowledge ba
 
 ** Tips
 
-+ (Coming soon) You can customize settings in the =package-name= group.
++ You can customize settings in the =org-xob= group.
++ Use =org-xob-auto-display-links= to automatically show backlinks and forlinks when opening nodes.
++ Toggle auto-display behavior with =M-x org-xob-toggle-auto-display-links=.
+
+* Configuration
+
+** Auto-Display Links
+
+org-xob can automatically display backlinks and forlinks when you open a node for editing:
+
+#+BEGIN_SRC elisp
+;; Auto-display both backlinks and forlinks (default: t)
+(setq org-xob-auto-display-links t)
+
+;; Auto-display only backlinks
+(setq org-xob-auto-display-links 'backlinks)
+
+;; Auto-display only forlinks  
+(setq org-xob-auto-display-links 'forlinks)
+
+;; Disable auto-display
+(setq org-xob-auto-display-links nil)
+
+;; Toggle interactively
+(define-key org-mode-map (kbd "C-c x a") 'org-xob-toggle-auto-display-links)
+#+END_SRC
 
 * Changelog
 :PROPERTIES:
 :TOC:      :depth 0
 :END:
+
+** 0.6 (WIP)
+
++ Added auto-display links feature: automatically show backlinks and forlinks when opening nodes
++ Added =org-xob-auto-display-links= customization variable
++ Added =org-xob-toggle-auto-display-links= interactive command
 
 ** 0.5
 

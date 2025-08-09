@@ -75,6 +75,18 @@
   :type 'string
   :group 'org-xob)
 
+(defcustom org-xob-auto-display-links t
+  "Automatically display backlinks and forlinks when opening a node.
+When t, both backlinks and forlinks are displayed.
+When 'backlinks, only backlinks are displayed.
+When 'forlinks, only forlinks are displayed.
+When nil, no links are automatically displayed."
+  :type '(choice (const :tag "Display both backlinks and forlinks" t)
+                 (const :tag "Display only backlinks" backlinks)
+                 (const :tag "Display only forlinks" forlinks)
+                 (const :tag "Don't auto-display links" nil))
+  :group 'org-xob)
+
 ;;;; Variables
 ;;;;; State variables
 

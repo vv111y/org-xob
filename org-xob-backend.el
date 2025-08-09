@@ -304,7 +304,24 @@ in a single-pane display format."
        (let ((node (make-open-node :ID ID :title title :sources nil)))
          (add-to-list 'org-xob--open-nodes node)
          (org-xob--add-source node org-xob--source-backlinks)
-         (org-xob--add-source node org-xob--source-forlinks))))))
+         (org-xob--add-source node org-xob--source-forlinks))
+       ;; Auto-display links if enabled (after node is fully set up)
+       (org-xob--auto-display-links ID)))))
+
+(defun org-xob--auto-display-links (node-id)
+  "Automatically display links for a newly opened node based on org-xob-auto-display-links setting."
+  (when org-xob-auto-display-links
+    (cond
+     ((eq org-xob-auto-display-links t)
+      ;; Display both backlinks and forlinks
+      (org-xob-show-source 'backlinks)
+      (org-xob-show-source 'forlinks))
+     ((eq org-xob-auto-display-links 'backlinks)
+      ;; Display only backlinks
+      (org-xob-show-source 'backlinks))
+     ((eq org-xob-auto-display-links 'forlinks)
+      ;; Display only forlinks
+      (org-xob-show-source 'forlinks)))))
 
 ;;;###autoload
 (defun org-xob-revert-edit ()

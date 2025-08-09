@@ -596,6 +596,24 @@ updated."
    (org-xob-show-source 'forlinks arg)))
 
 ;;;###autoload
+(defun org-xob-toggle-auto-display-links ()
+  "Toggle the auto-display links setting.
+Cycles through: t -> backlinks -> forlinks -> nil -> t"
+  (interactive)
+  (setq org-xob-auto-display-links
+        (cond
+         ((eq org-xob-auto-display-links t) 'backlinks)
+         ((eq org-xob-auto-display-links 'backlinks) 'forlinks)
+         ((eq org-xob-auto-display-links 'forlinks) nil)
+         (t t)))
+  (message "org-xob auto-display links: %s" 
+           (cond
+            ((eq org-xob-auto-display-links t) "both backlinks and forlinks")
+            ((eq org-xob-auto-display-links 'backlinks) "backlinks only")
+            ((eq org-xob-auto-display-links 'forlinks) "forlinks only")
+            (t "disabled"))))
+
+;;;###autoload
 (defun org-xob-ql-search (qname query)
   "Use org-ql to search the KB. Creates a new source in the context buffer."
   (interactive "sQuery Name:
