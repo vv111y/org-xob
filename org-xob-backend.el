@@ -1433,12 +1433,10 @@ If necessary create new files."
                      (let (filename)
                        (unless
                            (and (boundp filetype)
-                                filetype
-                                (setq filename (eval filetype))
+                                (setq filename (symbol-value filetype))
+                                filename
                                 (file-exists-p filename)
-                                (not (equal filename org-xob-dir))
-                                (find-file-noselect filename)
-                                (message "XOB: found file for %s" filetype))
+                                (not (equal filename org-xob-dir)))
                          (message "XOB: current file for %s missing, initializing new." filetype)
                          (org-xob--new-file filetype prefix filelist))))))
              '(org-xob--agenda-file
@@ -1467,19 +1465,29 @@ Buffer remains open. Returns the filename."
   (let* ((filename (concat
                     (symbol-value fileprefix)
                     (format "%03d" (+ 1 (length (eval filelist))))
-                    ".org")))
+                    ".org"))
+         (full-path (concat org-xob-dir filename)))
     (save-window-excursion
       (save-excursion
-        (find-file (concat org-xob-dir filename))
+        (find-file full-path)
         (goto-char (point-min))
-        (insert org-xob--xob-header)
-        (if (string= fileprefix org-xob--agenda-filename-prefix)
-            (insert org-xob--agenda-header))
-        (if (string= fileprefix org-xob--log-filename-prefix)
-            (insert org-xob--log-header))
-        (if (string= fileprefix org-xob--archive-filename-prefix)
-            (insert org-xob--archive-header))
-        (insert org-xob--current-header)
+        ;; Only add headers if file is empty or doesn't have xob property
+        (unless (save-excursion 
+                  (goto-char (point-min))
+                  (re-search-forward "^#\\+PROPERTY: xob t$" nil t))
+          (goto-char (point-min))
+          (insert org-xob--xob-header)
+          (if (string= (symbol-value fileprefix) org-xob--agenda-filename-prefix)
+              (insert org-xob--agenda-header))
+          (if (string= (symbol-value fileprefix) org-xob--log-filename-prefix)
+              (insert org-xob--log-header))
+          (if (string= (symbol-value fileprefix) org-xob--archive-filename-prefix)
+              (insert org-xob--archive-header))
+          ;; Only add current header if it's not already there
+          (unless (save-excursion
+                    (goto-char (point-min))
+                    (re-search-forward "^#\\+PROPERTY: xob-current-file t$" nil t))
+            (insert org-xob--current-header)))
         (save-buffer)))
     (add-to-list filelist filename)
     (if (eval filepointer) (org-xob--uncurrent-file filepointer))
@@ -1502,9 +1510,9 @@ Buffer remains open. Returns the filename."
   (save-excursion
     (with-current-buffer (find-file (eval file))
       (goto-char (point-min))
-      (re-search-forward "CURRENT")
-      (kill-whole-line 1)
-      (save-buffer))))
+      (when (re-search-forward "^#\\+PROPERTY: xob-current-file t$" nil t)
+        (kill-whole-line 1)
+        (save-buffer)))))
 
 ;; --- misc functions ---
 
