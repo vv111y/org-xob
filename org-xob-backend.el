@@ -767,7 +767,8 @@ to select the node type first."
     :action #'(nth 4 (org-heading-components))))
 
 (defun org-xob--new-node (&optional heading)
-  "Both a hook function and for general node creation. If orgmode 'heading' is given,
+  "Both a hook function and for general node creation.
+  If 'heading' marker is on an org heading,
 then convert it into a new node in place. Otherwise it is assumed to be called
 as a capture hook function."
   (if (or (org-capture-get :xob-node) heading)
@@ -782,7 +783,9 @@ as a capture hook function."
         (org-entry-put (point) "MODIFIED" timestamp)
         (puthash ID title org-xob--id-title)
         (puthash title ID org-xob--title-id)
-        (org-id-add-location ID (buffer-file-name))
+        (when heading
+          (org-id-add-location ID (buffer-file-name
+                                   (marker-buffer heading))))
         (org-xob--log-event "new node" ID)
         (setq org-xob--last-captured ID))))
 
@@ -794,6 +797,10 @@ as a capture hook function."
       (progn
         (setq org-xob--last-title title)
         (org-capture nil "nn")))
+    (if-let* ((file (buffer-file-name
+                     (marker-buffer org-capture-last-stored-marker))))
+        (org-id-add-location ID file)
+      (message "xob: org-id failed to add new node %s" title))
     org-xob--last-captured))
 
 (defun org-xob--link-hook-fn ()
