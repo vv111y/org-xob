@@ -456,7 +456,19 @@ item. (credit https://emacs.stackexchange.com/a/26840)."
   ;; This makes it easy and much less verbose to define keys
   (let ((map (make-sparse-keymap "org-xob-context-mode-map"))
         (maps (list
-               ;; "C-RET" #'(lambda () (message "Override!"))
+               ;; TODO need single key option and evil override too
+               ;; "c" #'org-xob-clear-heading
+               ;; "s" #'org-xob-to-summary
+               ;; "S" #'org-xob-to-section
+               ;; "t" #'org-xob-to-node-tree
+               ;; "f" #'org-xob-to-full-node
+               ;; "e" #'org-xob-to-edit
+               "C-c c" #'org-xob-clear-heading
+               "C-c s" #'org-xob-to-summary
+               "C-c S" #'org-xob-to-section
+               "C-c t" #'org-xob-to-node-tree
+               "C-c f" #'org-xob-to-full-node
+               "C-c e" #'org-xob-to-edit
                )))
     (cl-loop for (key fn) on maps by #'cddr
              do (progn
