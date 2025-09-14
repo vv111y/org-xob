@@ -136,16 +136,17 @@ item. (credit https://emacs.stackexchange.com/a/26840)."
        (invisible-p (point-at-eol))))
 
 (defun org-xob-empty-entry-p ()
-  "Returns true if this entry is empty."
+  "Return non-nil if the current heading contains no text.
+Whitespace and blank lines are ignored."
   (when (org-at-heading-p)
-    (let (a b)
-      (save-excursion
-        (org-end-of-subtree)
-        (setq a (point)))
-      (save-excursion
-        (end-of-line)
-        (setq b (point)))
-      (= a b))))
+    (let ((heading-end (save-excursion
+                         (end-of-line)
+                         (point)))
+          (entry-end (save-excursion
+                       (outline-next-heading)
+                       (skip-chars-backward " \t\n")
+                       (point))))
+      (= heading-end entry-end))))
 
 ;;;; Commands
 ;;;;; Main Commands
