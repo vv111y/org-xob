@@ -141,7 +141,7 @@ Returns ID if successful, nil otherwise."
           (car
            (org-ql-select org-xob-buffers
              `(and (property "EDIT" ,ID)
-                   (tags "edit"))
+                   t) ;; (tags "edit"))
              :action '(point-marker))))
     (when (markerp m)
       (set-buffer (marker-buffer m))
@@ -259,7 +259,8 @@ the windows."
 the correct location."
   (org-xob--edit-write
    #'(lambda ()
-       (insert "* " title "  :edit:")
+       (message "[xob] Writing single-pane edit node in buffer: %s" (buffer-name))
+       (insert "* " title) ;; Removed :edit: tag
        (insert (org-xob--select-content
                 ID
                 #'(lambda () (org-xob--get-full-node 2 'meta)))))))
@@ -269,6 +270,7 @@ the correct location."
 the correct location."
   (org-xob--edit-write
    #'(lambda ()
+       (message "[xob] Writing dual-pane edit node in buffer: %s" (buffer-name))
        (insert (org-xob--select-content
                 ID
                 #'(lambda () (org-xob--get-full-node 1 'meta)))))))
@@ -278,11 +280,12 @@ the correct location."
   (goto-char (point-max))
   (newline)
   (save-excursion (funcall func))
+  (message "[xob] Finished writing node, now modifying to edit node in buffer: %s" (buffer-name))
   (org-xob--mod-to-edit-node)
   (org-flag-subtree t))
 
 (defun org-xob--mod-to-edit-node (&optional refresh)
-  (org-set-tags "edit")
+  ;; (org-set-tags "edit")
   (org-entry-put (point) "EDIT" (org-entry-get (point) "ID"))
   (unless refresh
     (org-entry-put (point) "ID" (uuidgen-4))))
@@ -301,6 +304,10 @@ in a single-pane display format."
        (if (eq org-xob--display 'single)
            (org-xob--edit-write-single-pane ID title)
          (org-xob--edit-write-dual-pane ID title))
+       ;; Visual: highlight edit heading line (only in edit buffer)
+       (org-back-to-heading t)
+       (org-xob--apply-edit-heading-visuals)
+       ;; Now add sources/context (may switch buffer)
        (let ((node (make-open-node :ID ID :title title :sources nil)))
          (add-to-list 'org-xob--open-nodes node)
          (org-xob--add-source node org-xob--source-backlinks)
@@ -560,7 +567,7 @@ in subheadings. Returns the ID if true, nil otherwise."
             (and
              ;; Must have explicit xob property set to "t" at THIS heading level (no inheritance)
              (string= "t" (org-entry-get (point) "xob" top))
-             ;; Must have a valid xob node type at THIS heading level (no inheritance)  
+             ;; Must have a valid xob node type at THIS heading level (no inheritance)
              (member (org-entry-get (point) "TYPE" top) org-xob--node-types)
              ;; Must have a valid UUID format
              (eq 0 (org-uuidgen-p temp))
@@ -576,7 +583,7 @@ no inheritance check in subheadings."
   (when-let ((id (org-entry-get (point) "EDIT" (not top))))
     (and (string= "t" (org-entry-get (point) "xob" (not top)))
          (gethash id org-xob--id-title)
-         (member "edit" (org-get-tags))
+         ;; (member "edit" (org-get-tags))
          id)))
 
 (defun org-xob--is-open-node-p (ID)
@@ -845,138 +852,174 @@ Returns mark for the link subheader."
           (org-back-to-heading))
         (point-marker)))))
 
+;;;; UX: visuals helpers
+
+(defun org-xob--apply-edit-heading-visuals ()
+  "Apply custom face to the node heading line in an edit buffer."
+  (when (org-at-heading-p)
+    (save-excursion
+      (org-back-to-heading t)
+      (let ((beg (line-beginning-position))
+            (end (line-end-position)))
+        (when (and (boundp 'org-xob--edit-heading-ov)
+                   (overlayp org-xob--edit-heading-ov))
+          (delete-overlay org-xob--edit-heading-ov))
+        (setq-local org-xob--edit-heading-ov (make-overlay beg end))
+        (overlay-put org-xob--edit-heading-ov 'face 'org-xob-edit-heading-face)))))
+
+(defun org-xob--context-hide-properties ()
+  "Hide all PROPERTIES drawers in the current context buffer via overlays."
+  (let ((spec (assq 'org-xob-props buffer-invisibility-spec)))
+    (unless spec
+      (add-to-invisibility-spec 'org-xob-props)))
+  (save-excursion
+    (save-restriction
+      (widen)
+      (goto-char (point-min))
+      (while (re-search-forward "^[ \t]*:PROPERTIES:\s-*$" nil t)
+        (let ((beg (line-beginning-position)))
+          (when (re-search-forward "^[ \t]*:END:\s-*$" nil t)
+            (let ((end (line-end-position)))
+              (let ((ov (make-overlay beg end)))
+                (overlay-put ov 'invisible 'org-xob-props)
+                (overlay-put ov 'face 'org-xob-properties-drawer-face))))))))
+
 ;;;;;; --- Node Versioning ---
 
-(defun org-xob--save-version (old new)
-  "Create a diff between prior node state and current, then save it."
-  (let ((old (org-xob--get-full-node (org-current-level) 'meta)))
-    ()))
+  (defun org-xob--save-version (old new)
+    "Create a diff between prior node state and current, then save it."
+    (let ((old (org-xob--get-full-node (org-current-level) 'meta)))
+      ()))
 
-(defun org-xob--diff-node (new old)
-  "Creates a diff using =org-xob--delta-executable=.
+  (defun org-xob--diff-node (new old)
+    "Creates a diff using =org-xob--delta-executable=.
 The order of versions is reversed; the diff allows the reconstruction of
 the prior state from the current."
-  (shell-command))
-;; (defun org-xob--new-node-diff (nodeID)
-;;   (let ((old-id (org-id-store-link node)))))
+    (shell-command))
+  ;; (defun org-xob--new-node-diff (nodeID)
+  ;;   (let ((old-id (org-id-store-link node)))))
 
-(defun org-xob--diff-filename (node)
-  (concat
-   ;; node id
-   "-"
-   (format-time-string "%j-%H-%M")))
+  (defun org-xob--diff-filename (node)
+    (concat
+     ;; node id
+     "-"
+     (format-time-string "%j-%H-%M")))
 
-(defun org-xob--node-add-time-property (property)
-  "Convenience function to add high resolution time property.
+  (defun org-xob--node-add-time-property (property)
+    "Convenience function to add high resolution time property.
 Maybe useful for syncing."
-  (org-entry-put (point) property
-                 (number-to-string
-                  (car (time-convert (current-time) '10000)))))
+    (org-entry-put (point) property
+                   (number-to-string
+                    (car (time-convert (current-time) '10000)))))
 
 ;;;;; Contexts Functions
 
-;; TEST
-(defun org-xob--is-source-p (&optional PID ID)
-  "Check if heading at point is a valid xob source. If PID and ID
+  ;; TEST
+  (defun org-xob--is-source-p (&optional PID ID)
+    "Check if heading at point is a valid xob source. If PID and ID
 arguments are supplied, then check the associated heading."
-  (interactive)
-  (if-let ((temp (or ID
-                     (org-entry-get (point) "ID")))
-           (pid (or PID
-                    (org-entry-get (point) "PID")))
-           (node (org-xob--get-open-node pid))
-           (srcs (open-node-sources node))
-           ((cl-find-if #'(lambda (x) (string= temp x))
-                        srcs
-                        :key #'(lambda (s) (plist-get s :ID)))))
-      t nil))
+    (interactive)
+    (if-let ((temp (or ID
+                       (org-entry-get (point) "ID")))
+             (pid (or PID
+                      (org-entry-get (point) "PID")))
+             (node (org-xob--get-open-node pid))
+             (srcs (open-node-sources node))
+             ((cl-find-if #'(lambda (x) (string= temp x))
+                          srcs
+                          :key #'(lambda (s) (plist-get s :ID)))))
+        t nil))
 
-(defun org-xob--add-source (node source-type)
-  "Create a new source of source-type for the given node."
-  (let ((newsrc (copy-tree source-type)))
-    (plist-put newsrc :ID (uuidgen-4))
-    (plist-put newsrc :PID (open-node-ID node))
-    (plist-put newsrc :title (open-node-title node))
-    (funcall (plist-get newsrc :getfn) newsrc)
-    ;; (setq srcs (add-to-list srcs newsrc))
-    (push newsrc (open-node-sources node))
-    newsrc))
+  (defun org-xob--add-source (node source-type)
+    "Create a new source of source-type for the given node."
+    (let ((newsrc (copy-tree source-type)))
+      (plist-put newsrc :ID (uuidgen-4))
+      (plist-put newsrc :PID (open-node-ID node))
+      (plist-put newsrc :title (open-node-title node))
+      (funcall (plist-get newsrc :getfn) newsrc)
+      ;; (setq srcs (add-to-list srcs newsrc))
+      (push newsrc (open-node-sources node))
+      newsrc))
 
-(defun org-xob-show-source (source &optional arg)
-  "Show context source for opened node at point. If this context material is already
+  (defun org-xob-show-source (source &optional arg)
+    "Show context source for opened node at point. If this context material is already
 displayed, then refresh it. With optional C-u, force repopulating the item list."
-  ;; in an edit node? get id, name, and which buffer is the context buffer
-  (if-let* ((eid (org-xob--is-edit-node-p))
-            (node (org-xob--get-open-node eid))
-            (srcs (open-node-sources node))
-            (src (cl-find-if #'(lambda (x) (if (equal source x) x))
-                             srcs
-                             :key #'(lambda (x) (car-safe (cdr-safe x)))))
-            (title (truncate-string-to-width
-                    (nth 4 (org-heading-components)) 25))
-            (bufc (if (eq org-xob--display 'dual)
-                      org-xob--pair-buf
-                    (current-buffer))))
-      (save-window-excursion
-        (save-excursion
-          (with-current-buffer bufc
-            (org-with-wide-buffer
-             (evil-save-state
-               ;; (when (eq '(4) arg))                    ;; if arg then repop items
-               (funcall (plist-get src :getfn) src eid)
-               ;; TODO redo for overheading
-               (if (org-xob--goto-buffer-heading
-                    (plist-get src :ID))
-                   (org-xob--source-refresh src)		;; found, refresh
-                 (org-xob--source-write src))			;; not found, then write src
-               (if (pulse-available-p)
-                   (pulse-momentary-highlight-one-line (point))))))))
-    (message "Source is not available.")))
+    ;; in an edit node? get id, name, and which buffer is the context buffer
+    (if-let* ((eid (org-xob--is-edit-node-p))
+              (node (org-xob--get-open-node eid))
+              (srcs (open-node-sources node))
+              (src (cl-find-if #'(lambda (x) (if (equal source x) x))
+                               srcs
+                               :key #'(lambda (x) (car-safe (cdr-safe x)))))
+              (title (truncate-string-to-width
+                      (nth 4 (org-heading-components)) 25))
+              (bufc (if (eq org-xob--display 'dual)
+                        org-xob--pair-buf
+                      (current-buffer))))
+        (save-window-excursion
+          (save-excursion
+            (with-current-buffer bufc
+              (org-with-wide-buffer
+               (evil-save-state
+                 ;; (when (eq '(4) arg))                    ;; if arg then repop items
+                 (funcall (plist-get src :getfn) src eid)
+                 ;; TODO redo for overheading
+                 (if (org-xob--goto-buffer-heading
+                      (plist-get src :ID))
+                     (org-xob--source-refresh src)		;; found, refresh
+                   (org-xob--source-write src))			;; not found, then write src
+                 (if (pulse-available-p)
+                     (pulse-momentary-highlight-one-line (point))))))))
+      (message "Source is not available.")))
 
-(defun org-xob--this-node-sources (id)
-  "Returns node context sources as a list of their ids."
-  (when-let* ((node (org-xob--get-open-node id))
-              (srcs (open-node-sources node)))
-    (mapcar #'(lambda (x) (plist-get x :ID))
-            srcs)))
+  (defun org-xob--this-node-sources (id)
+    "Returns node context sources as a list of their ids."
+    (when-let* ((node (org-xob--get-open-node id))
+                (srcs (open-node-sources node)))
+      (mapcar #'(lambda (x) (plist-get x :ID))
+              srcs)))
 
-;; TODO need over-heading both dual and single pane
-(defun org-xob--source-write (source)
-  "Open a source tree into the context buffer. If it is already there,
+  ;; TODO need over-heading both dual and single pane
+  (defun org-xob--source-write (source)
+    "Open a source tree into the context buffer. If it is already there,
 then refresh it. source items are shown as org headings.
 source is a plist that describes the content source."
-  (let (m)
-    (unless (org-xob--goto-buffer-heading (plist-get source :ID))
-      (goto-char (point-max)) ;; TODO goto super-heading, then to end of tree
-      (org-insert-heading '(4) 'invisible-ok 'TOP) ;; TODO insert sub-tree
-      (org-edit-headline (plist-get source :title))
-      (org-set-tags (plist-get source :tags))
-      (org-entry-put (point) "ID" (plist-get source :ID))
-      (org-entry-put (point) "PID" (plist-get source :PID)))
-    (org-xob--source-refresh source)
-    (org-flag-subtree t)
-    (org-show-children 1)))
+    (let (m)
+      (unless (org-xob--goto-buffer-heading (plist-get source :ID))
+        (goto-char (point-max)) ;; TODO goto super-heading, then to end of tree
+        (org-insert-heading '(4) 'invisible-ok 'TOP) ;; TODO insert sub-tree
+        (org-edit-headline (plist-get source :title))
+        (org-set-tags (plist-get source :tags))
+        (org-entry-put (point) "ID" (plist-get source :ID))
+        (org-entry-put (point) "PID" (plist-get source :PID)))
+      (org-xob--source-refresh source)
+      ;; Visual: hide properties drawers in context buffer
+      (org-xob--context-hide-properties)
+      (org-flag-subtree t)
+      (org-show-children 1)))
 
 
-;; TODO check state type, lookup + call
-(defun org-xob--source-refresh (source)
-  "Remake source tree. Check if items need to be added or removed."
-  (if (string= (org-entry-get (point) "ID") ;; TODO new, test
-               (plist-get source :ID))
-      (save-restriction
-        (org-narrow-to-subtree)
-        (let ((temp (copy-tree (plist-get source :items))))
-          (org-xob--map-source
-           (lambda ()
-             (let ((pid (org-entry-get (point) "PID")))
-               (if (member pid temp)
-                   (setq temp (delete pid temp))
-                 (progn
-                   (org-mark-subtree)
-                   (call-interactively 'delete-region))))))
-          (if temp
-              (dolist (el temp)
-                (org-xob--source-add-item el)))))
+  ;; TODO check state type, lookup + call
+  (defun org-xob--source-refresh (source)
+    "Remake source tree. Check if items need to be added or removed."
+    (if (string= (org-entry-get (point) "ID") ;; TODO new, test
+                 (plist-get source :ID))
+        (save-restriction
+          (org-narrow-to-subtree)
+          (let ((temp (copy-tree (plist-get source :items))))
+            (org-xob--map-source
+             (lambda ()
+               (let ((pid (org-entry-get (point) "PID")))
+                 (if (member pid temp)
+                     (setq temp (delete pid temp))
+                   (progn
+                     (org-mark-subtree)
+                     (call-interactively 'delete-region))))))
+            (if temp
+                (dolist (el temp)
+                  (org-xob--source-add-item el)))))
+      ;; Visual: hide properties after refresh as new items may add drawers
+      (org-xob--context-hide-properties))
     (message "xob: can't refresh context here, source ID does not match.")))
 
 (defun org-xob--source-add-item (ID)
@@ -1136,13 +1179,12 @@ to all source items."
              (eq 0 (org-uuidgen-p (property "ID" ID)))))
 
 (org-ql-defpred is-xob-edit (&optional ID)
-  "Checks for edit tag and that EDIT property is not empty. If argument ID is given,
+  "Checks that EDIT property is not empty. If argument ID is given,
 then also check if EDIT is equal to it."
-  :body (and (tags "edit")
-             (when-let ((eid (property "EDIT")))
-               (if ID
-                   (string= ID eid)
-                 eid))))
+  :body (when-let ((eid (property "EDIT")))
+          (if ID
+              (string= ID eid)
+            eid)))
 
 (org-ql-defpred is-xob-edit-deep (&optional ID)
   "Checks if heading has EDIT with optional ID,
@@ -1150,14 +1192,15 @@ then checks using org-xob--is-edit-node-p."
   :body (and (if ID (string= ID (property "EDIT")))
              (org-xob--is-edit-node-p)))
 
-(org-ql-defpred is-xob-original (&optional ID)
-  "Quick check if heading has an ID, but no edit tag."
-  :body (and (property "ID" ID)
-             (not (tags "EDIT"))))
+;; TODO redo without using tags, no longer being used
+;; (org-ql-defpred is-xob-original (&optional ID)
+;;   "Quick check if heading has an ID, but no edit tag."
+;;   :body (and (property "ID" ID)
+;;              (not (tags "EDIT"))))
 
 (org-ql-defpred is-xob-original-deep ()
   "Deepcheck if heading is a xob original node."
-  :body (and (not (tags "EDIT"))
+  :body (and t ;; (not (tags "EDIT"))
              (not (property "PID"))
              (not (property "EDIT"))
              (property "xob" t)
@@ -1642,12 +1685,12 @@ Returns the ID of the created node."
             ;; Log event
             (org-xob--log-event "region->node" node-id)
             (save-buffer)))))
-    
+
     ;; Replace region with org-super-link
     (delete-region beg end)
     (goto-char beg)
     (org-super-links--insert-link (org-id-find node-id 'MARKERP))
-    
+
     node-id))
 
 (defun org-xob--node-to-region (node-id)
@@ -1658,7 +1701,7 @@ The link at point should be replaced with the node's content."
          (link-beg (org-element-property :begin link))
          (link-end (org-element-property :end link))
          node-content)
-    
+
     ;; Get node content
     (save-excursion
       (save-window-excursion
@@ -1671,7 +1714,7 @@ The link at point should be replaced with the node's content."
           (setq node-content (buffer-substring-no-properties content-start content-end))
           ;; Clean up trailing whitespace
           (setq node-content (string-trim-right node-content)))))
-    
+
     ;; Replace link with content
     (when (and link-beg link-end)
       (delete-region link-beg link-end)

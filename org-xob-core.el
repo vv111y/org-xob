@@ -307,6 +307,22 @@ n.b  -- bibliographic entries")
   "Regex to clean log entry descriptions.")
 
 
+;;;; Faces (UX visuals)
+
+(defface org-xob-edit-heading-face
+  '((((class color) (background dark))
+     :background "#2a2e39" :foreground "#ffd75f" :weight bold)
+    (((class color) (background light))
+     :background "#fff5cc" :foreground "#5f00af" :weight bold))
+  "Face to highlight the node heading line in xob edit buffers."
+  :group 'org-xob)
+
+(defface org-xob-properties-drawer-face
+  '((((class color)) :foreground "#888888" :inherit fixed-pitch)
+    (t :inherit shadow))
+  "Face to de-emphasize PROPERTIES drawers in xob context buffers."
+  :group 'org-xob)
+
 ;;;;; Keymaps
 
 (defvar org-xob-map
