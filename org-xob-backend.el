@@ -991,9 +991,12 @@ then refresh it. source items are shown as org headings.
 source is a plist that describes the content source."
     (let (m)
       (unless (org-xob--goto-buffer-heading (plist-get source :ID))
-        (goto-char (point-max)) ;; TODO goto super-heading, then to end of tree
-        (org-insert-heading '(4) 'invisible-ok 'TOP) ;; TODO insert sub-tree
-        (org-edit-headline (plist-get source :title))
+        ;; Always insert source heading at root level
+        (goto-char (point-max))
+        (unless (org-at-heading-p)
+          (insert "\n"))
+        (insert "* " (plist-get source :title) "\n")
+        (forward-line -1)
         (org-set-tags (plist-get source :tags))
         (org-entry-put (point) "ID" (plist-get source :ID))
         (org-entry-put (point) "PID" (plist-get source :PID)))
@@ -1032,12 +1035,14 @@ source is a plist that describes the content source."
 Assumes point is on the source heading."
   (let ((title (gethash ID org-xob--id-title)))
     (save-excursion
-      (if title
-          (progn
-            (org-insert-subheading '(4))
-            (org-edit-headline title)
-            ;; todo replace copy
-            (org-entry-put (point) "PID" ID))
+      (when title
+        ;; Always insert as direct child (**), never deeper
+        (org-back-to-heading t)
+        (outline-next-heading)
+        (insert "** " title "\n")
+        (forward-line -1)
+        (org-entry-put (point) "PID" ID))
+      (unless title
         (message "no kb node found for ID: %s" ID)))))
 
 (defun org-xob--map-source (func &optional ID)
