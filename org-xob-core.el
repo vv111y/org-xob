@@ -317,19 +317,13 @@ n.b  -- bibliographic entries")
   "Face to highlight the node heading line in xob edit buffers."
   :group 'org-xob)
 
-(defface org-xob-properties-drawer-face
-  '((((class color)) :foreground "#888888" :inherit fixed-pitch)
-    (t :inherit shadow))
-  "Face to de-emphasize PROPERTIES drawers in xob context buffers."
-  :group 'org-xob)
-
 ;; Faces for context buffer source headings
 (defface org-xob-context-backlinks-face
-  '((t :background "#e0f7fa" :foreground "#006064" :weight bold))
+  '((t :background "#2a2e4e" :foreground "dodgerblue" :weight bold))
   "Face for context buffer backlinks source headings.")
 
 (defface org-xob-context-forlinks-face
-  '((t :background "#fff3e0" :foreground "#e65100" :weight bold))
+  '((t :background "#4a1e1e" :foreground "orange" :weight bold))
   "Face for context buffer forlinks source headings.")
 
 (defface org-xob-properties-drawer-face
