@@ -86,8 +86,7 @@
                     org-xob--c-buff buf2)))
     (with-current-buffer buf2
       (org-mode)
-      (org-xob-mode 1)
-      (org-xob--minimize-context-drawer-indicator)
+      (org-xob-context-mode 1)
       (setq-local org-xob--buf 'child
                   org-xob--pair-buf buf1
                   buffer-offer-save nil))

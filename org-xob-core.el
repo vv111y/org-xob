@@ -61,10 +61,6 @@
   :group 'org-mode
   :link '(url-link "http://github.com/vv111y/org-xob.el"))
 
-(defcustom org-xob-something nil
-  "This setting does something."
-  :type 'something)
-
 (defcustom org-xob-known-dirs (list (cons "Default" "~/xob/"))
   "List of known xob directories, as an alist of (name . directory-path)."
   :type '(alist :key-type string :value-type directory)
@@ -92,6 +88,30 @@ When nil, no links are automatically displayed."
 When t, automatically create and display dual-pane layout with context buffer on the right.
 When nil, start with single window and let user manually configure layout."
   :type 'boolean
+  :group 'org-xob)
+
+;;;; Faces
+
+(defface org-xob-edit-heading-face
+  '((((class color) (background dark))
+     :background "#2a2e39" :foreground "#ffd75f" :weight bold)
+    (((class color) (background light))
+     :background "#fff5cc" :foreground "#5f00af" :weight bold))
+  "Face to highlight the node heading line in xob edit buffers."
+  :group 'org-xob)
+
+;; Faces for context buffer source headings
+(defface org-xob-context-backlinks-face
+  '((t :background "#2a2e4e" :foreground "dodgerblue" :weight bold))
+  "Face for context buffer backlinks source headings.")
+
+(defface org-xob-context-forlinks-face
+  '((t :background "#4a1e1e" :foreground "orange" :weight bold))
+  "Face for context buffer forlinks source headings.")
+
+(defface org-xob-properties-drawer-face
+  '((t :inherit nil :foreground "#222222" :height 0.2 :weight light))
+  "Face to visually minimize PROPERTIES drawers in xob context buffers."
   :group 'org-xob)
 
 ;;;; Variables
@@ -307,31 +327,116 @@ n.b  -- bibliographic entries")
   "Regex to clean log entry descriptions.")
 
 
-;;;; Faces (UX visuals)
+;;;; Macros
+(defmacro org-xob-with-xob-on (&rest body)
+  (declare (debug (body)))
+  `(if org-xob-on-p
+       (progn
+         ,@body)
+     (message "xob is not on.")))
 
-(defface org-xob-edit-heading-face
-  '((((class color) (background dark))
-     :background "#2a2e39" :foreground "#ffd75f" :weight bold)
-    (((class color) (background light))
-     :background "#fff5cc" :foreground "#5f00af" :weight bold))
-  "Face to highlight the node heading line in xob edit buffers."
-  :group 'org-xob)
+(defmacro org-xob-with-xob-buffer (&rest body)
+  `(progn (or (org-xob-edit-buffer-p (current-buffer))
+              (and (org-xob-edit-buffer-p org-xob-last-buffer)
+                   (switch-to-buffer org-xob-last-buffer))
+              (switch-to-buffer (setq org-xob-last-buffer
+                                      (org-xob-new-buffer))))
+          ,@body))
 
-;; Faces for context buffer source headings
-(defface org-xob-context-backlinks-face
-  '((t :background "#2a2e4e" :foreground "dodgerblue" :weight bold))
-  "Face for context buffer backlinks source headings.")
 
-(defface org-xob-context-forlinks-face
-  '((t :background "#4a1e1e" :foreground "orange" :weight bold))
-  "Face for context buffer forlinks source headings.")
+(provide 'org-xob-core)
+;;;; Minor Mode & Keybindings
 
-(defface org-xob-properties-drawer-face
-  '((t :inherit nil :foreground "#222222" :height 0.2 :weight light))
-  "Face to visually minimize PROPERTIES drawers in xob context buffers."
-  :group 'org-xob)
+;;;###autoload
+(define-minor-mode org-xob-mode
+  "Org-Exobrain Minor Mode."
+  :lighter "Ⓧ"
+  :keymap  (let ((map (make-sparse-keymap))) map)
+  :group 'org-xob
+  :require 'org-xob
+  (if org-xob-mode
+      (progn
+        ;; (remove-hook 'kill-buffer-hook #'org-xob--close-buffer-hook 'local)
+        )
+    (progn
+      ;; (unless org-xob-on-p (org-xob-start))
+      ;; (add-hook 'kill-buffer-hook #'org-xob--close-buffer-hook nil 'local)
+      )))
 
-;;;;; Keymaps
+;;;###autoload
+(define-minor-mode org-xob-context-mode
+  "Org-Exobrain Minor Mode."
+  :lighter "Ⓧ"
+  :keymap org-xob-context-mode-map
+  :group 'org-xob
+  :require 'org-xob
+  (if org-xob-context-mode
+      (progn
+        )
+    (progn
+      (org-xob--minimize-context-drawer-indicator)
+      )))
+
+;;;; Hydra option
+;;;###autoload
+(defhydra org-xob-hydra (:columns 4)
+  ("h" (org-xob--up-heading) "up")
+  ("j" (org-goto-sibling) "next")
+  ("k" (org-goto-sibling 'previous) "previous")
+  ("l" (org-xob--down-heading) "down")
+  ("L" (org-show-children) "children")
+  ("c" (org-xob-clear-heading) "clear")
+  ("s" (org-xob-to-summary) "summary")
+  ("S" (org-xob-to-section) "section")
+  ("t" (org-xob-to-node-tree) "tree")
+  ("T" (org-xob-to-full-node) "full")
+  ("e" (org-xob-to-edit) "edit")
+
+  ;; Bulk operations (capital letters)
+  ("C-s" (org-xob-bulk-to-summary) "bulk: summary")
+  ("C-S" (org-xob-bulk-to-section) "bulk: section")
+  ("C-t" (org-xob-bulk-to-node-tree) "bulk: tree")
+  ("C-T" (org-xob-bulk-to-full-node) "bulk: full")
+  ("C-c" (org-xob-bulk-clear-all) "bulk: clear all")
+
+  ("q" nil "Quit" :exit t)
+  )
+
+;;;; context buffer navigation
+(defun org-xob--up-heading ()
+  "Xob hydra navigation: fold heading at point first, otherwise go up to parent."
+  (if (or (org-xob-folded-p)
+          (org-xob-empty-entry-p))
+      (org-up-heading-safe)
+    (outline-hide-subtree)))
+
+(defun org-xob--down-heading ()
+  "Xob hydra navigation: unfold heading one level first before going in."
+  (if (org-xob-folded-p)
+      (progn (org-show-entry)
+             (org-show-children))
+    (org-goto-first-child)))
+
+(defun org-xob-folded-p ()
+  "Returns non-nil if point is on a folded headline or plain list
+item. (credit https://emacs.stackexchange.com/a/26840)."
+  (and (or (org-at-heading-p)
+           (org-at-item-p))
+       (invisible-p (point-at-eol))))
+
+(defun org-xob-empty-entry-p ()
+  "Returns true if this entry is empty."
+  (when (org-at-heading-p)
+    (let (a b)
+      (save-excursion
+        (org-end-of-subtree)
+        (setq a (point)))
+      (save-excursion
+        (end-of-line)
+        (setq b (point)))
+      (= a b))))
+
+;;;; Keymaps
 
 (defvar org-xob-map
   ;; This makes it easy and much less verbose to define keys
@@ -359,22 +464,4 @@ n.b  -- bibliographic entries")
                     (setq key (kbd key)))
                   (define-key map key fn)))
     map))
-;;;; Macros
-(defmacro org-xob-with-xob-on (&rest body)
-  (declare (debug (body)))
-  `(if org-xob-on-p
-       (progn
-         ,@body)
-     (message "xob is not on.")))
-
-(defmacro org-xob-with-xob-buffer (&rest body)
-  `(progn (or (org-xob-edit-buffer-p (current-buffer))
-              (and (org-xob-edit-buffer-p org-xob-last-buffer)
-                   (switch-to-buffer org-xob-last-buffer))
-              (switch-to-buffer (setq org-xob-last-buffer
-                                      (org-xob-new-buffer))))
-          ,@body))
-
-
-(provide 'org-xob-core)
 ;;; org-xob-core.el ends here
