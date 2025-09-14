@@ -323,6 +323,15 @@ n.b  -- bibliographic entries")
   "Face to de-emphasize PROPERTIES drawers in xob context buffers."
   :group 'org-xob)
 
+;; Faces for context buffer source headings
+(defface org-xob-context-backlinks-face
+  '((t :background "#e0f7fa" :foreground "#006064" :weight bold))
+  "Face for context buffer backlinks source headings.")
+
+(defface org-xob-context-forlinks-face
+  '((t :background "#fff3e0" :foreground "#e65100" :weight bold))
+  "Face for context buffer forlinks source headings.")
+
 ;;;;; Keymaps
 
 (defvar org-xob-map

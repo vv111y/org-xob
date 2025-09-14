@@ -1,3 +1,17 @@
+;; Apply distinct faces to context buffer source headings
+(defun org-xob--apply-context-source-heading-faces ()
+  "Apply custom faces to context buffer source headings by tag."
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward "^\\* .+:KB:\\(backlinks\\|forlinks\\):" nil t)
+      (let* ((beg (line-beginning-position))
+             (end (line-end-position))
+             (tag (match-string 1))
+             (face (cond
+                    ((string= tag "backlinks") 'org-xob-context-backlinks-face)
+                    ((string= tag "forlinks") 'org-xob-context-forlinks-face))))
+        (let ((ov (make-overlay beg end)))
+          (overlay-put ov 'face face))))))
 ;;; org-xob-backend.el --- Advanced knowledge management system in Org-mode -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020 Willy Rempel
@@ -1000,11 +1014,13 @@ source is a plist that describes the content source."
         (org-set-tags (plist-get source :tags))
         (org-entry-put (point) "ID" (plist-get source :ID))
         (org-entry-put (point) "PID" (plist-get source :PID)))
-      (org-xob--source-refresh source)
-      ;; Visual: hide properties drawers in context buffer
-      (org-xob--context-hide-properties)
-      (org-flag-subtree t)
-      (org-show-children 1)))
+  (org-xob--source-refresh source)
+  ;; Visual: hide properties drawers in context buffer
+  (org-xob--context-hide-properties)
+  ;; Apply context source heading faces
+  (org-xob--apply-context-source-heading-faces)
+  (org-flag-subtree t)
+  (org-show-children 1)))
 
 
   ;; TODO check state type, lookup + call
@@ -1026,8 +1042,10 @@ source is a plist that describes the content source."
             (if temp
                 (dolist (el temp)
                   (org-xob--source-add-item el)))))
-      ;; Visual: hide properties after refresh as new items may add drawers
-      (org-xob--context-hide-properties))
+  ;; Visual: hide properties after refresh as new items may add drawers
+  (org-xob--context-hide-properties)
+  ;; Apply context source heading faces after refresh
+  (org-xob--apply-context-source-heading-faces))
     (message "xob: can't refresh context here, source ID does not match.")))
 
 (defun org-xob--source-add-item (ID)
