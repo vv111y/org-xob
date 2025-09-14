@@ -270,7 +270,6 @@ the correct location."
 the correct location."
   (org-xob--edit-write
    #'(lambda ()
-       (message "[xob] Writing dual-pane edit node in buffer: %s" (buffer-name))
        (insert (org-xob--select-content
                 ID
                 #'(lambda () (org-xob--get-full-node 1 'meta)))))))
@@ -280,7 +279,6 @@ the correct location."
   (goto-char (point-max))
   (newline)
   (save-excursion (funcall func))
-  (message "[xob] Finished writing node, now modifying to edit node in buffer: %s" (buffer-name))
   (org-xob--mod-to-edit-node)
   (org-flag-subtree t))
 
@@ -855,17 +853,24 @@ Returns mark for the link subheader."
 ;;;; UX: visuals helpers
 
 (defun org-xob--apply-edit-heading-visuals ()
-  "Apply custom face to the node heading line in an edit buffer."
-  (when (org-at-heading-p)
-    (save-excursion
-      (org-back-to-heading t)
+  "Apply custom face to all edit node headings in the buffer."
+  (save-excursion
+    (goto-char (point-min))
+    (unless (boundp 'org-xob--edit-heading-ovs)
+      (setq-local org-xob--edit-heading-ovs nil))
+    ;; Remove old overlays
+    (mapc #'delete-overlay org-xob--edit-heading-ovs)
+    (setq org-xob--edit-heading-ovs nil)
+    ;; Apply overlays to all headings with EDIT property
+    (while (re-search-forward "^\*+ .*$" nil t)
       (let ((beg (line-beginning-position))
             (end (line-end-position)))
-        (when (and (boundp 'org-xob--edit-heading-ov)
-                   (overlayp org-xob--edit-heading-ov))
-          (delete-overlay org-xob--edit-heading-ov))
-        (setq-local org-xob--edit-heading-ov (make-overlay beg end))
-        (overlay-put org-xob--edit-heading-ov 'face 'org-xob-edit-heading-face)))))
+        (save-excursion
+          (org-back-to-heading t)
+          (when (org-entry-get (point) "EDIT")
+            (let ((ov (make-overlay beg end)))
+              (overlay-put ov 'face 'org-xob-edit-heading-face)
+              (push ov org-xob--edit-heading-ovs))))))))
 
 (defun org-xob--context-hide-properties ()
   "Hide all PROPERTIES drawers in the current context buffer via overlays."
