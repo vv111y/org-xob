@@ -2331,7 +2331,7 @@ org-xob--templates
         bl)
 (set-difference al bl)
 
-(org-xob--eval-capture-templates)
+;; (org-xob--eval-capture-templates) -- deprecated; templates resolve dynamically now
 ;;; change mod date on save
 
 

@@ -390,9 +390,9 @@ When called interactively:
                      (setq link-element (org-super-links--find-link ID))
                      (when link-element
                        (org-super-links--delete-link link-element))))
-               (error 
+               (error
                 (message "Warning: Could not remove outgoing link to %s (may need manual cleanup)" el)))))
-         
+
          ;; Clean up incoming links (backlinks) - links FROM others TO this node
          ;; Note: Link cleanup may not always succeed due to org-super-links limitations
          (dolist (el backlinks)
@@ -407,7 +407,7 @@ When called interactively:
                      (setq link-element (org-super-links--find-link ID))
                      (when link-element
                        (org-super-links--delete-link link-element))))
-               (error 
+               (error
                 (message "Warning: Could not remove incoming link from %s (may need manual cleanup)" el)))))         ;; Remove from xob system
          (org-xob--log-event "removed" ID)
          (remhash ID org-xob--id-title)
@@ -435,7 +435,7 @@ When called interactively:
      (let ((title (nth 4 (org-heading-components))))
        (if (gethash title org-xob--title-id)
            (message "heading title conflicts with a xob node. Please rename.")
-         (when org-at-heading-p
+         (when (org-at-heading-p)
            (org-xob--new-node (point-marker))
            (let ((filename (buffer-file-name)))
              (unless (member filename org-xob--KB-files)
@@ -831,18 +831,18 @@ sQuery Form: ")
          (when (org-uuidgen-p pid)
            (org-xob--clear-node)
            (org-set-tags "sum")
-           (when-let ((str (org-xob--select-content 
-                           pid 
-                           #'(lambda ()
-                               (progn
-                                 (org-end-of-meta-data t)
-                                 (let ((p (org--paragraph-at-point)))
-                                   (if p
-                                       (buffer-substring-no-properties
-                                        (or (org-element-property :contents-begin p)
-                                            (org-element-property :begin p))
-                                        (or (org-element-property :contents-end p)
-                                            (org-element-property :end p))))))))))
+           (when-let ((str (org-xob--select-content
+                            pid
+                            #'(lambda ()
+                                (progn
+                                  (org-end-of-meta-data t)
+                                  (let ((p (org--paragraph-at-point)))
+                                    (if p
+                                        (buffer-substring-no-properties
+                                         (or (org-element-property :contents-begin p)
+                                             (org-element-property :begin p))
+                                         (or (org-element-property :contents-end p)
+                                             (org-element-property :end p))))))))))
              (org-end-of-subtree)
              (newline)
              (insert str)
@@ -859,16 +859,16 @@ sQuery Form: ")
          (when (org-uuidgen-p pid)
            (org-xob--clear-node)
            (org-set-tags "sec")
-           (when-let ((str (org-xob--select-content 
-                           pid 
-                           #'(lambda () 
-                               (let ((beg) (end))
-                                 (org-end-of-meta-data t)
-                                 (org-back-over-empty-lines)
-                                 (setq beg (point))
-                                 (outline-next-heading)
-                                 (setq end (- (point) 1))
-                                 (buffer-substring beg end))))))
+           (when-let ((str (org-xob--select-content
+                            pid
+                            #'(lambda ()
+                                (let ((beg) (end))
+                                  (org-end-of-meta-data t)
+                                  (org-back-over-empty-lines)
+                                  (setq beg (point))
+                                  (outline-next-heading)
+                                  (setq end (- (point) 1))
+                                  (buffer-substring beg end))))))
              (org-end-of-subtree)
              (newline)
              (insert str)
@@ -885,19 +885,19 @@ sQuery Form: ")
          (when (org-uuidgen-p pid)
            (org-xob--clear-node)
            (org-set-tags "tree")
-           (when-let ((str (org-xob--select-content 
-                           pid 
-                           #'(lambda ()
-                               (let (lines)
-                                 (org-map-tree
-                                  (lambda ()
-                                    (push (buffer-substring-no-properties
-                                           (line-beginning-position)
-                                           (line-end-position))
-                                          lines)))
-                                 (setq lines (nreverse lines))
-                                 (pop lines)
-                                 (mapconcat 'identity lines "\n"))))))
+           (when-let ((str (org-xob--select-content
+                            pid
+                            #'(lambda ()
+                                (let (lines)
+                                  (org-map-tree
+                                   (lambda ()
+                                     (push (buffer-substring-no-properties
+                                            (line-beginning-position)
+                                            (line-end-position))
+                                           lines)))
+                                  (setq lines (nreverse lines))
+                                  (pop lines)
+                                  (mapconcat 'identity lines "\n"))))))
              (org-end-of-subtree)
              (newline)
              (if (org-kill-is-subtree-p str)
@@ -916,9 +916,9 @@ sQuery Form: ")
          (when (org-uuidgen-p pid)
            (org-xob--clear-node)
            (org-set-tags "full")
-           (when-let ((str (org-xob--select-content 
-                           pid 
-                           #'(lambda () (org-xob--get-full-node 3 nil)))))
+           (when-let ((str (org-xob--select-content
+                            pid
+                            #'(lambda () (org-xob--get-full-node 3 nil)))))
              (org-end-of-subtree)
              (newline)
              (insert str)
