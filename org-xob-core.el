@@ -332,6 +332,11 @@ n.b  -- bibliographic entries")
   '((t :background "#fff3e0" :foreground "#e65100" :weight bold))
   "Face for context buffer forlinks source headings.")
 
+(defface org-xob-properties-drawer-face
+  '((t :inherit nil :foreground "#222222" :height 0.2 :weight light))
+  "Face to visually minimize PROPERTIES drawers in xob context buffers."
+  :group 'org-xob)
+
 ;;;;; Keymaps
 
 (defvar org-xob-map
