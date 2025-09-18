@@ -56,6 +56,7 @@
 
 ;;;; Customization
 
+;;;###autoload
 (defgroup org-xob nil
   "Settings for `org-xob'."
   :group 'org-mode
@@ -101,16 +102,21 @@ When nil, start with single window and let user manually configure layout."
   :group 'org-xob)
 
 ;; Faces for context buffer source headings
+;; (defface org-xob-context-backlinks-face
+;;   '((t :background "#2a2e4e" :foreground "dodgerblue" :weight bold))
+;;   "Face for context buffer backlinks source headings.")
 (defface org-xob-context-backlinks-face
-  '((t :background "#2a2e4e" :foreground "dodgerblue" :weight bold))
-  "Face for context buffer backlinks source headings.")
+  '((t (:background "#2a2e4e" :foreground "dodgerblue" :weight bold)))
+  "Face for XOB context backlinks."
+  :group 'org-xob)
 
 (defface org-xob-context-forlinks-face
-  '((t :background "#4a1e1e" :foreground "orange" :weight bold))
-  "Face for context buffer forlinks source headings.")
+  '((t (:background "#4a1e1e" :foreground "orange" :weight bold)))
+  "Face for context buffer forlinks source headings."
+  :group 'org-xob)
 
 (defface org-xob-properties-drawer-face
-  '((t :inherit nil :foreground "#222222" :height 0.2 :weight light))
+  '((t (:inherit nil :foreground "#222222" :height 0.2 :weight light)))
   "Face to visually minimize PROPERTIES drawers in xob context buffers."
   :group 'org-xob)
 
@@ -442,8 +448,7 @@ item. (credit https://emacs.stackexchange.com/a/26840)."
   ;; This makes it easy and much less verbose to define keys
   (let ((map (make-sparse-keymap "org-xob-map"))
         (maps (list
-               ;; Mappings go here, e.g.:
-               ;; "C-RET" #'(lambda () (message "Override!"))
+               ;; Mappings go here
                )))
     (cl-loop for (key fn) on maps by #'cddr
              do (progn
@@ -452,6 +457,7 @@ item. (credit https://emacs.stackexchange.com/a/26840)."
                   (define-key map key fn)))
     map))
 
+;;;###autoload
 (defvar org-xob-context-mode-map
   ;; This makes it easy and much less verbose to define keys
   (let ((map (make-sparse-keymap "org-xob-context-mode-map"))
