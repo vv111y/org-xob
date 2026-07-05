@@ -120,33 +120,35 @@ Returns ID if successful, nil otherwise."
     ID))
 
 (defun org-xob--id-goto (ID)
-  (when (and (org-not-nil ID)
-             org-xob-all-buffers)
-    (setq m
-          (car
-           (org-ql-select org-xob-all-buffers
-             `(or (property "ID" ,ID)
-                  (property "EDIT" ,ID)
-                  (property "PID" ,ID))
-             :action '(point-marker))))
-    (when (markerp m)
-      (set-buffer (marker-buffer m))
-      (goto-char m)
-      (point))))
+  (let (m)
+    (when (and (org-not-nil ID)
+               org-xob-all-buffers)
+      (setq m
+            (car
+             (org-ql-select org-xob-all-buffers
+               `(or (property "ID" ,ID)
+                    (property "EDIT" ,ID)
+                    (property "PID" ,ID))
+               :action '(point-marker))))
+      (when (markerp m)
+        (set-buffer (marker-buffer m))
+        (goto-char m)
+        (point)))))
 
 (defun org-xob--goto-edit (ID)
-  (when (and (org-not-nil ID)
-             org-xob-buffers)
-    (setq m
-          (car
-           (org-ql-select org-xob-buffers
-             `(and (property "EDIT" ,ID)
-                   t) ;; (tags "edit"))
-             :action '(point-marker))))
-    (when (markerp m)
-      (set-buffer (marker-buffer m))
-      (goto-char m)
-      (point))))
+  (let (m)
+    (when (and (org-not-nil ID)
+               org-xob-buffers)
+      (setq m
+            (car
+             (org-ql-select org-xob-buffers
+               `(and (property "EDIT" ,ID)
+                     t) ;; (tags "edit"))
+               :action '(point-marker))))
+      (when (markerp m)
+        (set-buffer (marker-buffer m))
+        (goto-char m)
+        (point)))))
 
 (defun org-xob--goto-buffer-heading (ID)
   "Find heading with ID in current buffer. If found then return point at
