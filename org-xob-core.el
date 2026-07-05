@@ -787,9 +787,11 @@ This replaces both org-xob--register-files and org-xob--process-files."
   (org-xob--ensure-current-files)
 
   ;; Set up org-id files after registration
-  (setq org-id-extra-files (append org-xob--KB-files
-                                   org-xob--agenda-files
-                                   org-xob--log-files))
+  (setq org-id-extra-files (cl-union org-id-extra-files
+                                     (append org-xob--KB-files
+                                             org-xob--agenda-files
+                                             org-xob--log-files)
+                                     :test #'string=))
   t)
 
 (defun org-xob--register-single-file (filepath)
