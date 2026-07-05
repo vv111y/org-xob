@@ -611,8 +611,8 @@ as a text string, either \'1D\' or \'2D\'."
   (when (or (org-xob--is-node-p)
             (org-xob--is-edit-node-p))
     (org-back-to-heading)
-    (while (and (or (not (org-xob--is-node-p top))
-                    (not (org-xob--is-edit-node-p top)))
+    (while (and (not (or (org-xob--is-node-p nil nil t)
+                         (org-xob--is-edit-node-p t)))
                 (org-up-heading-safe)))))
 
 (defun org-xob--eval-capture-templates ()
