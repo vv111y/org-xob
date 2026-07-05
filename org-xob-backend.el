@@ -1113,13 +1113,13 @@ where the backlinks are in a BACKLINKS drawer."
                  (org-xob--node-get-links (plist-get source :name))))))
 
 (defun org-xob--node-get-links (linktype)
-  "Return list of link paths within the node at point. If linktype is 'backlinks'
-then return only links in the backlinks drawer. If linktype is 'forlinks'
+  "Return list of link paths within the node at point. If linktype is 'backlinks
+then return only links in the backlinks drawer. If linktype is 'forlinks
 then return all other links."
-  (let* ((test (if (eq linktype 'backlinks)
-                   (lambda (x) x)
-                 (if (eq linktype 'forlinks)
-                     (lambda (x) (not x))))))
+  (let* ((test (cl-case linktype
+                (backlinks (lambda (x) x))
+                (forlinks (lambda (x) (not x)))
+                (t (error "Unknown linktype: %s" linktype)))))
     (save-excursion
       (save-restriction
         (org-back-to-heading t)
