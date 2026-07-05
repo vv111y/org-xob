@@ -755,7 +755,9 @@ If there are no saved tables, then create new empty ones."
           (insert-file-contents (concat org-xob-dir file))
           (goto-char (point-min))
           (set symbol (read (current-buffer))))
-      (error (message "Error loading file %s" file)))))
+      (error
+       (message "Error loading %s, initializing new hash table" symbol)
+       (set symbol (make-hash-table :test 'equal :size org-xob--table-size))))))
 
 ;; --- contextual resources ---
 
