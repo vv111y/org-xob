@@ -795,8 +795,7 @@ as a capture hook function."
         (setq org-xob--last-captured ID))))
 
 (defun org-xob--capture (title)
-  (let* ((org-capture-templates org-xob--templates)
-         ID)
+  (let* ((org-capture-templates org-xob--templates))
     (if (member title org-xob--auto-templates)
         (org-capture nil title)
       (progn
@@ -804,7 +803,7 @@ as a capture hook function."
         (org-capture nil "nn")))
     (if-let* ((file (buffer-file-name
                      (marker-buffer org-capture-last-stored-marker))))
-        (org-id-add-location ID file)
+        (org-id-add-location org-xob--last-captured file)
       (message "xob: org-id failed to add new node %s" title))
     org-xob--last-captured))
 
