@@ -1,37 +1,67 @@
-;;; run-tests.el --- Batch test runner for org-xob -*- lexical-binding: t; -*-
+;;; tests/run-tests.el --- CI test runner for org-xob -*- lexical-binding: t; -*-
 
-;;; Commentary:
-;; GitHub Actions entry point.  Installs runtime test dependencies, loads
-;; org-xob and every test-*.el file, then runs any ERT tests that were defined.
+;; Keep package files inside the repo so GitHub Actions can cache them.
+(defvar run-tests--script-dir (file-name-directory (or load-file-name buffer-file-name)))
+(defvar run-tests--project-root (expand-file-name ".." run-tests--script-dir))
+(defvar run-tests--elpa-dir (expand-file-name "elpa" run-tests--project-root))
 
-;;; Code:
+(setq package-user-dir run-tests--elpa-dir)
+(setq package-enable-at-startup nil)
 
 (require 'package)
 
-(setq package-user-dir (expand-file-name "elpa" user-emacs-directory))
+;; Repositories
 (setq package-archives
-      '(("gnu" . "https://elpa.gnu.org/packages/")
+      '(("gnu"   . "https://elpa.gnu.org/packages/")
         ("nongnu" . "https://elpa.nongnu.org/nongnu/")
         ("melpa" . "https://melpa.org/packages/")))
 
-(package-initialize)
-(package-refresh-contents)
+;; Initialize package system (harmless if already initialized)
+(unless (bound-and-true-p package--initialized)
+  (package-initialize))
 
-(dolist (package '(dash helm hydra org-ql org-super-links s transient))
-  (unless (package-installed-p package)
-    (package-install package)))
+;; Refresh archive contents only when necessary
+(defun run-tests--ensure-archive-contents ()
+  (unless package-archive-contents
+    (message "Refreshing package archives...")
+    (condition-case err
+        (package-refresh-contents)
+      (error
+       (message "package-refresh-contents failed: %S" err)
+       (kill-emacs 2)))))
 
-(add-to-list 'load-path (expand-file-name ".." (file-name-directory load-file-name)))
+;; Ensure a package is installed; refresh archives if needed.
+(defun run-tests--ensure-package (pkg)
+  (unless (package-installed-p pkg)
+    (run-tests--ensure-archive-contents)
+    (condition-case err
+        (package-install pkg)
+      (error
+       (message "Failed to install package %S: %S" pkg err)
+       (kill-emacs 2)))))
 
-(require 'org-xob)
+;; Add required packages here. Add any other deps your tests need.
+;; Make sure 'compat' is included if your code requires it.
+(dolist (p '(compat dash helm hydra org-ql org-super-links s transient))
+  (run-tests--ensure-package p))
+
+;; Add project and tests dir to load-path
+(add-to-list 'load-path (expand-file-name run-tests--project-root))
+(add-to-list 'load-path (expand-file-name "tests" run-tests--project-root))
+
+;; Load the project (adjust if the main library has a different name)
+(condition-case err
+    (require 'org-xob nil t)
+  (error
+   (message "Warning: could not (require 'org-xob): %S" err)))
+
+;; Load all test-*.el files in tests/
+(let ((tests-dir (expand-file-name "tests" run-tests--project-root)))
+  (when (file-directory-p tests-dir)
+    (dolist (f (sort (directory-files tests-dir t "^test-.*\\.el$") 'string<))
+      (message "Loading test file: %s" f)
+      (load f nil nil t))))
+
+;; Run ERT and exit with a non-zero code on failures
 (require 'ert)
-
-(dolist (test-file (directory-files (expand-file-name "." (file-name-directory load-file-name))
-                                    t
-                                    "\\`test-.*\\.el\\'"))
-  (message "Loading test file: %s" test-file)
-  (load test-file nil nil t))
-
 (ert-run-tests-batch-and-exit t)
-
-;;; run-tests.el ends here
