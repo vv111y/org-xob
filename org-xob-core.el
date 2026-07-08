@@ -350,8 +350,46 @@ n.b  -- bibliographic entries")
           ,@body))
 
 
-(provide 'org-xob-core)
 ;;;; Minor Mode & Keybindings
+
+(defvar org-xob-map
+  ;; This makes it easy and much less verbose to define keys
+  (let ((map (make-sparse-keymap "org-xob-map"))
+        (maps (list
+               ;; Mappings go here
+               )))
+    (cl-loop for (key fn) on maps by #'cddr
+             do (progn
+                  (when (stringp key)
+                    (setq key (kbd key)))
+                  (define-key map key fn)))
+    map))
+
+;;;###autoload
+(defvar org-xob-context-mode-map
+  ;; This makes it easy and much less verbose to define keys
+  (let ((map (make-sparse-keymap "org-xob-context-mode-map"))
+        (maps (list
+               ;; TODO need single key option and evil override too
+               ;; "c" #'org-xob-clear-heading
+               ;; "s" #'org-xob-to-summary
+               ;; "S" #'org-xob-to-section
+               ;; "t" #'org-xob-to-node-tree
+               ;; "f" #'org-xob-to-full-node
+               ;; "e" #'org-xob-to-edit
+               "C-c c" #'org-xob-clear-heading
+               "C-c s" #'org-xob-to-summary
+               "C-c S" #'org-xob-to-section
+               "C-c t" #'org-xob-to-node-tree
+               "C-c f" #'org-xob-to-full-node
+               "C-c e" #'org-xob-to-edit
+               )))
+    (cl-loop for (key fn) on maps by #'cddr
+             do (progn
+                  (when (stringp key)
+                    (setq key (kbd key)))
+                  (define-key map key fn)))
+    map))
 
 ;;;###autoload
 (define-minor-mode org-xob-mode
@@ -442,46 +480,6 @@ item. (credit https://emacs.stackexchange.com/a/26840)."
         (setq b (point)))
       (= a b))))
 
-;;;; Keymaps
-
-(defvar org-xob-map
-  ;; This makes it easy and much less verbose to define keys
-  (let ((map (make-sparse-keymap "org-xob-map"))
-        (maps (list
-               ;; Mappings go here
-               )))
-    (cl-loop for (key fn) on maps by #'cddr
-             do (progn
-                  (when (stringp key)
-                    (setq key (kbd key)))
-                  (define-key map key fn)))
-    map))
-
-;;;###autoload
-(defvar org-xob-context-mode-map
-  ;; This makes it easy and much less verbose to define keys
-  (let ((map (make-sparse-keymap "org-xob-context-mode-map"))
-        (maps (list
-               ;; TODO need single key option and evil override too
-               ;; "c" #'org-xob-clear-heading
-               ;; "s" #'org-xob-to-summary
-               ;; "S" #'org-xob-to-section
-               ;; "t" #'org-xob-to-node-tree
-               ;; "f" #'org-xob-to-full-node
-               ;; "e" #'org-xob-to-edit
-               "C-c c" #'org-xob-clear-heading
-               "C-c s" #'org-xob-to-summary
-               "C-c S" #'org-xob-to-section
-               "C-c t" #'org-xob-to-node-tree
-               "C-c f" #'org-xob-to-full-node
-               "C-c e" #'org-xob-to-edit
-               )))
-    (cl-loop for (key fn) on maps by #'cddr
-             do (progn
-                  (when (stringp key)
-                    (setq key (kbd key)))
-                  (define-key map key fn)))
-    map))
 ;;;; Backend
 ;;;;; org-ql predicates
 (org-ql-defpred is-xob-node-deep ()
@@ -992,3 +990,4 @@ The link at point should be replaced with the node's content."
       (org-xob--log-event "node->region" node-id))))
 
 ;;; org-xob-core.el ends here
+(provide 'org-xob-core)
