@@ -1,6 +1,11 @@
-;; Method 1: Direct load (best for testing)
-(load-file "/Users/will/DevWorkspace/1MyTools/Emacs/zettle/org-xob/org-xob.el")
+;;; tests/test_1.el --- simple loader for CI -*- lexical-binding: t; -*-
 
-;; Method 2: Using require (if directory is in load-path)
-(add-to-list 'load-path "/Users/will/DevWorkspace/1MyTools/Emacs/zettle/org-xob/org-xob.el")
+;; CI-friendly loader: add the repository root to load-path and require org-xob.
+;; This replaces the old developer-local absolute-path references.
+
+(let ((project-root (expand-file-name ".." (file-name-directory (or load-file-name buffer-file-name)))))
+  (add-to-list 'load-path project-root))
+
 (require 'org-xob)
+
+(provide 'test-1)
