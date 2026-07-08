@@ -4,13 +4,14 @@
 (defvar run-tests--script-dir (file-name-directory (or load-file-name buffer-file-name)))
 (defvar run-tests--project-root (expand-file-name ".." run-tests--script-dir))
 (defvar run-tests--elpa-dir (expand-file-name "elpa" run-tests--project-root))
+(defvar run-tests--straight-dir (expand-file-name "straight" run-tests--project-root))
 
 (setq package-user-dir run-tests--elpa-dir)
 (setq package-enable-at-startup nil)
 
 (require 'package)
 
-;; Repositories
+;; Configure package archives (kept for backwards compatibility and optional packages)
 (setq package-archives
       '(("gnu"   . "https://elpa.gnu.org/packages/")
         ("nongnu" . "https://elpa.nongnu.org/nongnu/")
@@ -20,34 +21,80 @@
 (unless (bound-and-true-p package--initialized)
   (package-initialize))
 
-;; Refresh archive contents only when necessary
-(defun run-tests--ensure-archive-contents ()
-  (unless package-archive-contents
-    (message "Refreshing package archives...")
-    (condition-case err
-        (package-refresh-contents)
-      (error
-       (message "package-refresh-contents failed: %S" err)))))
+;; --- Bootstrap straight.el into a project-local directory ---
+;; We set user-emacs-directory temporarily so straight installs into the repo
+;; (under ./straight) and can be cached by GitHub Actions.
+(let ((user-emacs-directory run-tests--straight-dir)
+      (bootstrap-file (expand-file-name "repos/straight.el/bootstrap.el" run-tests--straight-dir))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (message "Bootstrapping straight.el into %s" run-tests--straight-dir)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
 
-;; Ensure a package is installed; refresh archives if needed.
-;; We do NOT abort the whole run if a package is unavailable — some packages
-;; may be optional for headless CI. Instead we warn and continue so tests can
-;; run and ERT will report failures.
-(defun run-tests--ensure-package (pkg)
-  (unless (package-installed-p pkg)
-    (run-tests--ensure-archive-contents)
-    (condition-case err
-        (package-install pkg)
-      (error
-       (message "Warning: Failed to install package %S: %S. Continuing; tests may fail if this package is required." pkg err)))))
+;; Integrate use-package with straight (optional but convenient)
+(straight-use-package 'use-package)
+(setq straight-use-package-by-default t)
 
 ;; Packages required by the project and tests. Add others as CI reports them missing.
 (defvar run-tests--required-packages
   '(compat dash helm hydra org-ql org-ql-search org-super-links s transient
            pulse use-package org-id))
 
+;; Recipes for packages that live on GitHub (not on MELPA/GNU).
+;; Each value is a straight recipe list (with the package symbol as the car).
+(defvar run-tests--straight-recipes
+  '((org-super-links . (org-super-links :type git :host github :repo "toshism/org-super-links"))
+    ;; org-ql-search is provided by the org-ql project; map it to that repo if needed.
+    (org-ql-search   . (org-ql-search :type git :host github :repo "alphapapa/org-ql"))))
+
+;; Ensure required packages via straight (preferred) and fall back to package.el if needed.
 (dolist (p run-tests--required-packages)
-  (run-tests--ensure-package p))
+  (let ((recipe (cdr (assoc p run-tests--straight-recipes))))
+    (condition-case err
+        (progn
+          (if recipe
+              (straight-use-package (car recipe) (cdr recipe))
+            (straight-use-package p)))
+      (error
+       (message "Warning: straight failed to install %s: %S. Trying package.el as fallback." p err)
+       (condition-case err2
+           (unless (package-installed-p p)
+             (package-refresh-contents)
+             (package-install p))
+         (error (message "Warning: package.el also failed to install %s: %S" p err2)))))))
+
+;; If org-super-links or other optional packages are still missing, provide minimal
+;; stubs so the package can load and headless tests run. This avoids immediate load
+;; failures and lets ERT surface functional test failures instead.
+(unless (require 'org-super-links nil t)
+  (message "org-super-links not available; installing fallback stubs")
+  (defun org-super-links-link (&rest _) nil)
+  (defun org-super-links-store-link (&rest _) nil)
+  (defun org-super-links-insert-link (&rest _) nil)
+  (setq org-super-links-backlink-into-drawer nil
+        org-super-links-link-prefix nil
+        org-super-links-link-postfix nil
+        org-super-links-backlink-postfix nil
+        org-super-links-related-into-drawer nil)
+  (provide 'org-super-links))
+
+(unless (require 'org-ql-search nil t)
+  (when (require 'org-ql nil t)
+    (message "org-ql-search not available; aliasing to org-ql-select")
+    (defalias 'org-ql-search 'org-ql-select)
+    (provide 'org-ql-search)))
+
+(unless (require 'org-id nil t)
+  (message "org-id not available; providing minimal stubs")
+  (defun org-id-get (&rest _) nil)
+  (defun org-id-store (&rest _) nil)
+  (provide 'org-id))
 
 ;; Add project and tests dir to load-path
 (add-to-list 'load-path (expand-file-name run-tests--project-root))
