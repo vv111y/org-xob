@@ -22,13 +22,14 @@
   (package-initialize))
 
 ;; --- Bootstrap straight.el into a project-local directory ---
-;; We set user-emacs-directory temporarily so straight installs into the repo
-;; (under ./straight) and can be cached by GitHub Actions.
-(let ((user-emacs-directory run-tests--straight-dir)
-      (bootstrap-file (expand-file-name "repos/straight.el/bootstrap.el" run-tests--straight-dir))
-      (bootstrap-version 5))
+;; Ensure the directory path ends with a separator; straight.el expects
+;; user-emacs-directory to be a directory path (with trailing slash).
+(let* ((run-tests--straight-dir (expand-file-name "straight" run-tests--project-root))
+       (user-emacs-directory (file-name-as-directory run-tests--straight-dir))
+       (bootstrap-file (expand-file-name "repos/straight.el/bootstrap.el" user-emacs-directory))
+       (bootstrap-version 5))
   (unless (file-exists-p bootstrap-file)
-    (message "Bootstrapping straight.el into %s" run-tests--straight-dir)
+    (message "Bootstrapping straight.el into %s" user-emacs-directory)
     (with-current-buffer
         (url-retrieve-synchronously
          "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
