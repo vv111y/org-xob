@@ -387,22 +387,51 @@ changed since opening this copy."
   "paste clip at the end of the headings top section.
 Point needs to be on the heading."
   (org-with-wide-buffer
-   (if (org-goto-first-child)
-       (progn
-         (newline 2)
-         (forward-line -1))
-     (org-end-of-subtree)
-     (newline))
-   (org-xob--smart-paste clip)))
+   (let ((destination-level (org-current-level)))
+     (if (org-goto-first-child)
+         (progn
+           (newline 2)
+           (forward-line -1))
+       (org-end-of-subtree)
+       (newline))
+     (org-xob--smart-paste clip destination-level))))
 
-(defun org-xob--smart-paste (&optional clip)
+(defun org-xob--normalize-clip-headings (clip destination-level)
+  "Return CLIP with its minimum heading level below DESTINATION-LEVEL.
+CLIP is normalized in an Org temporary buffer.  Leading non-heading text is
+left unchanged while every heading in CLIP is shifted by the same amount, so
+relative nesting is preserved."
+  (with-temp-buffer
+    (org-mode)
+    (insert clip)
+    (goto-char (point-min))
+    (let (minimum-level)
+      (while (re-search-forward "^\\(\\*+\\) " nil t)
+        (let ((level (length (match-string 1))))
+          (setq minimum-level (if minimum-level
+                                  (min minimum-level level)
+                                level))))
+      (when minimum-level
+        (let ((shift (- (1+ destination-level) minimum-level)))
+          (goto-char (point-min))
+          (while (re-search-forward "^\\(\\*+\\) " nil t)
+            (replace-match
+             (make-string (+ (length (match-string 1)) shift) ?*)
+             t t nil 1)))))
+    (buffer-string)))
+
+(defun org-xob--smart-paste (&optional clip destination-level)
   "If the paste is an org subtree, then properly adjust levels for the current heading.
 Otherwise just yank. If heading is a xob node, then update modified time property."
   (save-excursion
     (if clip
         (if (org-kill-is-subtree-p clip)
             (org-paste-subtree nil clip nil nil)
-          (insert clip))
+          (if (string-match-p "^\\*+ " clip)
+              (insert (org-xob--normalize-clip-headings
+                       clip
+                       (or destination-level (org-current-level) 0)))
+            (insert clip)))
       (if (org-kill-is-subtree-p)
           (org-paste-subtree nil clip t t)
         (yank))))
