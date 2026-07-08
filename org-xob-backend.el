@@ -814,7 +814,7 @@ as a capture hook function."
 Only acts on ID links that are registered xob nodes in the hash table."
   (let ((link (org-element-context))
         ID title)
-    (when (equal "ID" (org-element-property :type link))
+    (when (equal "id" (org-element-property :type link))
       (setq ID (org-element-property :path link))
       (setq title (gethash ID org-xob--id-title))
       ;; Only act if this ID is actually a registered xob node
