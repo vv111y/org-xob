@@ -27,22 +27,26 @@
     (condition-case err
         (package-refresh-contents)
       (error
-       (message "package-refresh-contents failed: %S" err)
-       (kill-emacs 2)))))
+       (message "package-refresh-contents failed: %S" err)))))
 
 ;; Ensure a package is installed; refresh archives if needed.
+;; We do NOT abort the whole run if a package is unavailable — some packages
+;; may be optional for headless CI. Instead we warn and continue so tests can
+;; run and ERT will report failures.
 (defun run-tests--ensure-package (pkg)
   (unless (package-installed-p pkg)
     (run-tests--ensure-archive-contents)
     (condition-case err
         (package-install pkg)
       (error
-       (message "Failed to install package %S: %S" pkg err)
-       (kill-emacs 2)))))
+       (message "Warning: Failed to install package %S: %S. Continuing; tests may fail if this package is required." pkg err)))))
 
-;; Add required packages here. Add any other deps your tests need.
-;; Make sure 'compat' is included if your code requires it.
-(dolist (p '(compat dash helm hydra org-ql org-super-links s transient))
+;; Packages required by the project and tests. Add others as CI reports them missing.
+(defvar run-tests--required-packages
+  '(compat dash helm hydra org-ql org-ql-search org-super-links s transient
+           pulse use-package org-id))
+
+(dolist (p run-tests--required-packages)
   (run-tests--ensure-package p))
 
 ;; Add project and tests dir to load-path
