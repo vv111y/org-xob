@@ -30,13 +30,31 @@
        (bootstrap-version 5))
   (unless (file-exists-p bootstrap-file)
     (message "Bootstrapping straight.el into %s" user-emacs-directory)
+    ;; Avoid symlink creation on CI; copy files instead (more portable on runners).
+    (setq straight-use-symlinks nil)
     (with-current-buffer
         (url-retrieve-synchronously
          "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
          'silent 'inhibit-cookies)
       (goto-char (point-max))
       (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
+  ;; If bootstrap still failed to produce the expected bootstrap.el, fall back
+  ;; to directly cloning the straight.el repo into straight/repos/straight.el.
+  (unless (file-exists-p bootstrap-file)
+    (message "straight bootstrap file missing; attempting git clone fallback")
+    (let ((target (expand-file-name "repos/straight.el" user-emacs-directory)))
+      (unless (file-directory-p target)
+        (message "Cloning straight.el -> %s" target)
+        (unless (zerop (call-process "git" nil nil nil "clone" "--depth" "1"
+                                    "https://github.com/raxod502/straight.el" target))
+          (message "Warning: git clone failed for straight.el")))
+      (let ((bf (expand-file-name "bootstrap.el" target)))
+        (when (file-exists-p bf)
+          (setq bootstrap-file bf)))))
+  ;; Load the bootstrap file if present, otherwise signal a clear error.
+  (if (file-exists-p bootstrap-file)
+      (load bootstrap-file nil 'nomessage)
+    (error "straight.el bootstrap failed and fallback didn't produce %s" bootstrap-file)))
 
 ;; Integrate use-package with straight (optional but convenient)
 (straight-use-package 'use-package)
