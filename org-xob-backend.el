@@ -804,7 +804,7 @@ to select the node type first."
 
 (defun org-xob--new-node (&optional heading)
   "Both a hook function and for general node creation.
-  If 'heading' marker is on an org heading,
+   If 'heading' marker is on an org heading,
 then convert it into a new node in place. Otherwise it is assumed to be called
 as a capture hook function."
   (if (or (org-capture-get :xob-node) heading)

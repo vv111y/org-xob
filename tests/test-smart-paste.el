@@ -42,7 +42,7 @@ Return the resulting buffer text."
     (org-xob-test--paste-top-section
      "* Destination\nTop section.\n** Existing child\nChild body.\n"
      "Intro text.\n* Imported\nBody.\n")
-    "* Destination\nTop section.\nIntro text.\n** Imported\nBody.\n\n** Existing child\nChild body.\n")))
+    "* Destination\nTop section.\n\nIntro text.\n** Imported\nBody.\n\n** Existing child\nChild body.\n")))
 
 (ert-deftest org-xob-smart-paste-mixed-headings-preserves-leading-text ()
   "Leading non-heading text remains top-section content before normalized headings."
@@ -69,7 +69,5 @@ Return the resulting buffer text."
     (org-xob-test--paste-top-section
      "* Destination\n"
      "Plain text only.\n")
-    "* Destination\nPlain text only.\n")))
-
-(provide 'test-smart-paste)
+    "* Destination\nPlain text only.\n\n")))(provide 'test-smart-paste)
 ;;; test-smart-paste.el ends here
