@@ -998,7 +998,283 @@ displayed, then refresh it. With optional C-u, force repopulating the item list.
              (evil-save-state
                ;; (when (eq '(4) arg))                    ;; if arg then repop items
                (funcall (plist-get src :getfn) src eid)
-               (org-show-subtree))))))))
+               ;; TODO redo for overheading
+               (if (org-xob--goto-buffer-heading
+                    (plist-get src :ID))
+                   (org-xob--source-refresh src)		;; found, refresh
+                 (org-xob--source-write src))			;; not found, then write src
+               (if (pulse-available-p)
+                   (pulse-momentary-highlight-one-line (point))))))))
+    (message "Source is not available.")))
+
+;; optional: Return a cookie which can be used to delete this remapping with face-remap-remove-relative.
+;; TODO use defface
+(defun org-xob--minimize-context-drawer-indicator ()
+  "Visually minimize folded drawer indicators in the current buffer."
+  (face-remap-add-relative 'org-drawer '(:foreground "gray10" :height 0.2))
+  (face-remap-add-relative 'org-special-keyword '(:foreground "gray10")))
+
+;; Call this after context buffer updates
+(defun org-xob--update-context-buffer ()
+  "Update the context buffer for the current node."
+  (interactive)
+  (let ((node-id (org-entry-get (point) "ID")))
+    (when node-id
+      (org-xob--update-original node-id)
+      (org-xob--minimize-context-drawer-indicator))))
+
+(defun org-xob--this-node-sources (id)
+  "Returns node context sources as a list of their ids."
+  (when-let* ((node (org-xob--get-open-node id))
+              (srcs (open-node-sources node)))
+    (mapcar #'(lambda (x) (plist-get x :ID))
+            srcs)))
+
+;; TODO need over-heading both dual and single pane
+(defun org-xob--source-write (source)
+  "Open a source tree into the context buffer. If it is already there,
+then refresh it. source items are shown as org headings.
+source is a plist that describes the content source."
+  (let (m)
+    (unless (org-xob--goto-buffer-heading (plist-get source :ID))
+      ;; Always insert source heading at root level
+      (goto-char (point-max))
+      (unless (org-at-heading-p)
+        (insert "\n"))
+      (insert "* " (plist-get source :title) "\n")
+      (forward-line -1)
+      (org-set-tags (plist-get source :tags))
+      (org-entry-put (point) "ID" (plist-get source :ID))
+      (org-entry-put (point) "PID" (plist-get source :PID)))
+    (org-xob--source-refresh source)
+    ;; Apply context source heading faces
+    (org-xob--apply-context-source-heading-faces)
+    (org-flag-subtree t)
+    (org-show-children 1)))
+
+
+;; TODO check state type, lookup + call
+(defun org-xob--source-refresh (source)
+  "Remake source tree. Check if items need to be added or removed."
+  (if (string= (org-entry-get (point) "ID") ;; TODO new, test
+               (plist-get source :ID))
+      (save-restriction
+        (org-narrow-to-subtree)
+        (let ((temp (copy-tree (plist-get source :items))))
+          (org-xob--map-source
+           (lambda ()
+             (let ((pid (org-entry-get (point) "PID")))
+               (if (member pid temp)
+                   (setq temp (delete pid temp))
+                 (progn
+                   (org-mark-subtree)
+                   (call-interactively 'delete-region))))))
+          (if temp
+              (dolist (el temp)
+                (org-xob--source-add-item el))))))
+  (message "xob: can't refresh context here, source ID does not match."))
+
+(defun org-xob--source-add-item (ID)
+  "Appends a single entry to the end of the source subtree.
+Assumes point is on the source heading."
+  (let ((title (gethash ID org-xob--id-title)))
+    (save-excursion
+      (when title
+        ;; Always insert as direct child (**), never deeper
+        (org-back-to-heading t)
+        (outline-next-heading)
+        (insert "** " title "\n")
+        (forward-line -1)
+        (org-entry-put (point) "PID" ID))
+      (unless title
+        (message "no kb node found for ID: %s" ID)))))
+
+(defun org-xob--map-source (func &optional ID)
+  "Apply the function func to every child-item of a xob source.
+If the optional ID of a xob source is given, then apply func to that source.
+Otherwise apply to source at point."
+  (if ID (org-xob--id-goto ID))
+  (org-with-wide-buffer
+   (org-save-outline-visibility
+       ;; (org-narrow-to-subtree)
+       (if (and (org-xob--is-source-p)
+                (org-goto-first-child))
+           (while (progn
+                    (save-excursion (funcall func))
+                    (outline-get-next-sibling)))
+         (message "XOB: map-source, nothing to do here.") nil)
+     (org-up-heading-safe)
+     (outline-hide-subtree))))
+
+(defun org-xob--map-all-sources (func)
+  "Apply the function func to every child-item of ALL xob sources in the current buffer.
+This provides bulk operations across all context sources (backlinks, forlinks, etc.)."
+  (save-excursion
+    (save-window-excursion
+      (org-with-wide-buffer
+       (goto-char (point-min))
+       (let ((source-count 0))
+         (while (re-search-forward org-heading-regexp nil t)
+           (when (org-xob--is-source-p)
+             (save-excursion
+               (when (org-goto-first-child)
+                 (while (progn
+                          (save-excursion (funcall func))
+                          (setq source-count (1+ source-count))
+                          (outline-get-next-sibling)))))
+             ;; Hide the processed source
+             (outline-hide-subtree)))
+         (message "XOB: Applied action to %d items across all sources" source-count))))))
+
+;;;;; KB Context Functions
+
+(defun org-xob--node-get-link-entries (source &optional EID)
+  "Populates source item list from the node. The items are represented by their
+respective node IDs. Two kinds of links are distinguished: backlinks and forlinks
+(which are all other links to xob KB nodes). Assumes org-super-links convention
+where the backlinks are in a BACKLINKS drawer."
+  (save-window-excursion
+    (save-excursion
+      (if EID
+          (org-xob--goto-edit EID)
+        (org-id-goto (plist-get source :PID)))
+      (plist-put source :items
+                 (org-xob--node-get-links (plist-get source :name))))))
+
+(defun org-xob--node-get-links (linktype)
+  "Return list of link paths within the node at point. If linktype is 'backlinks
+then return only links in the backlinks drawer. If linktype is 'forlinks
+then return all other links."
+  (let* ((test (cl-case linktype
+                 (backlinks (lambda (x) x))
+                 (forlinks (lambda (x) (not x)))
+                 (t (error "Unknown linktype: %s" linktype)))))
+    (save-excursion
+      (save-restriction
+        (org-back-to-heading t)
+        (org-narrow-to-subtree)
+        (delete-dups
+         (delq nil
+               (org-element-map (org-element-parse-buffer) 'link
+                 (lambda (link)
+                   (let (ID)
+                     (if (funcall test (equal (org-element-property
+                                               :drawer-name (cadr (org-element-lineage link)))
+                                              "BACKLINKS"))
+                         (if (and (not (string= "xobdel"
+                                                (org-element-property :type link)))
+                                  (org-xob--is-node-p
+                                   (setq ID (org-element-property :path link))))
+                             ID
+                           nil)))))))))))
+
+;; TODO test with new sources packaging
+(defun org-xob--context-copy-paste (&optional tag selector insertor)
+  "Wrapper function to display new content in a context item from the
+knowledge base. Executes function selector while point is at the heading
+of the origin node in the KB. selector must be a lambda that returns
+the the contents of interest as a string.
+If no arguments are given, then the context item is cleared.
+When called with point on the given context item, only that item will be
+updated. If called on a context source heading, then the update is applied
+to all source items."
+  (let ((func #'(lambda ()
+
+                  (let ((pid (org-entry-get (point) "PID")) str)
+                    (when (org-uuidgen-p pid)
+                      (org-xob--clear-node)
+                      (org-set-tags tag)
+                      (and selector
+                           (stringp
+                            (setq str (org-xob--select-content pid selector)))
+                           (progn
+                             (org-end-of-subtree)
+                             (newline)
+                             (if insertor
+                                 (funcall insertor str)
+                               (insert str)
+                               (outline-hide-subtree)
+                               (org-show-entry)))))))))
+    (save-window-excursion
+      (org-with-wide-buffer
+       (if (pulse-available-p)
+           (pulse-momentary-highlight-one-line (point)))
+       (if (org-xob--is-source-p)
+           (org-xob--map-source func)
+         (funcall func))))))
+
+(defun org-xob--clear-node ()
+  "clears the contents of the heading but does not touch the Properties drawer."
+  (save-excursion
+    (org-back-to-heading t)
+    (org-mark-subtree)
+    (org-end-of-meta-data)
+    (call-interactively #'delete-region)
+    (deactivate-mark 'force)))
+
+;;;;; Activity
+
+(defun org-xob--open-today ()
+  "Open today node for logging."
+  (setq org-xob-today-string  (format-time-string "%F %A"))
+  (message "XOB: Looking for today node, log file is: %s" org-xob--log-file)
+  (and (setq org-xob-today (or (gethash org-xob-today-string
+                                        org-xob--title-id)
+                               (save-window-excursion
+                                 (save-excursion
+                                   (if (and org-xob--log-file (file-exists-p org-xob--log-file))
+                                       (progn
+                                         (message "XOB: Opening log file: %s" org-xob--log-file)
+                                         (find-file org-xob--log-file)
+                                         (org-with-wide-buffer
+                                          (if (re-search-forward org-xob-today-string nil t nil)
+                                              (let (id)
+                                                (setq id (org-entry-get (point) "ID"))
+                                                (puthash id org-xob-today-string org-xob--id-title)
+                                                (puthash org-xob-today-string id org-xob--title-id)
+                                                (org-id-add-location id org-xob--log-file)
+                                                (message "XOB: found today node")
+                                                id))))
+                                     (message "XOB: Warning - log file not found: %s" org-xob--log-file))))
+                               (progn
+                                 (message "XOB: Creating new today node via capture")
+                                 (org-xob--capture "ad"))))
+       (save-window-excursion
+         (save-excursion
+           (org-id-goto org-xob-today)
+           (setq org-xob-today-buffer (current-buffer)))))
+  (message "XOB: Todays log entry opened."))
+
+(defun org-xob--log-event (event id &optional description)
+  "General log function used to send activity entries to the log."
+  (save-window-excursion
+    (save-excursion
+      (save-restriction
+        (let ((title (if (org-uuidgen-p id) (gethash id org-xob--id-title)
+                       (replace-regexp-in-string org-xob--log-re "" id)))
+              (descrpt (if description
+                           (replace-regexp-in-string org-xob--log-re "" description))))
+          (unless org-xob-today
+            (org-xob--open-today))
+          (org-id-goto org-xob-today)
+          (if t
+              (progn
+                (org-narrow-to-subtree)
+                (org-xob--paste-top-section
+                 (concat "| " (format-time-string "%r")
+                         " | " event
+                         " | " title
+                         ;; " | " descrpt
+                         " |"))
+                t)
+            nil))))))
+
+(defun org-xob--auto-clock-in ()
+  "Maybe? automatically clock node editing activity.
+This function starts clock for a given node.")
+
+(defun org-xob--auto-clock-out ()
+  "Maybe?. This functions stops the automatic clock for the given node.")
 
 (provide 'org-xob-backend)
 ;;; org-xob-backend.el ends here
