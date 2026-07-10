@@ -418,7 +418,7 @@ relative nesting is preserved."
             (replace-match
              (make-string (+ (length (match-string 1)) shift) ?*)
              t t nil 1)))))
-    (buffer-string)))
+    (string-trim-right (buffer-string) "\n")))
 
 (defun org-xob--smart-paste (&optional clip destination-level)
   "If the paste is an org subtree, then properly adjust levels for the current heading.
@@ -1146,9 +1146,9 @@ where the backlinks are in a BACKLINKS drawer."
 then return only links in the backlinks drawer. If linktype is 'forlinks
 then return all other links."
   (let* ((test (cl-case linktype
-                (backlinks (lambda (x) x))
-                (forlinks (lambda (x) (not x)))
-                (t (error "Unknown linktype: %s" linktype)))))
+                 (backlinks (lambda (x) x))
+                 (forlinks (lambda (x) (not x)))
+                 (t (error "Unknown linktype: %s" linktype)))))
     (save-excursion
       (save-restriction
         (org-back-to-heading t)
