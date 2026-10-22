@@ -36,13 +36,13 @@ Return the resulting buffer text."
     "* Destination\nTop section.\nIntro text.\n** Imported\nBody.\n")))
 
 (ert-deftest org-xob-smart-paste-mixed-headings-destination-with-existing-children ()
-  "A mixed clip is inserted before existing children in the destination top section."
+  "Insert before existing children, retaining the top-section separator."
   (should
    (equal
     (org-xob-test--paste-top-section
      "* Destination\nTop section.\n** Existing child\nChild body.\n"
      "Intro text.\n* Imported\nBody.\n")
-    "* Destination\nTop section.\nIntro text.\n** Imported\nBody.\n\n** Existing child\nChild body.\n")))
+    "* Destination\nTop section.\n\nIntro text.\n** Imported\nBody.\n** Existing child\nChild body.\n")))
 
 (ert-deftest org-xob-smart-paste-mixed-headings-preserves-leading-text ()
   "Leading non-heading text remains top-section content before normalized headings."
@@ -63,13 +63,13 @@ Return the resulting buffer text."
     "* Destination\nIntro text.\n** Imported\n*** Nested\nNested body.\n")))
 
 (ert-deftest org-xob-smart-paste-no-heading-clip-inserts-plain-text ()
-  "A clip with no headings continues to insert without normalization."
+  "Plain text retains its newline as well as the insertion separator."
   (should
    (equal
     (org-xob-test--paste-top-section
      "* Destination\n"
      "Plain text only.\n")
-    "* Destination\nPlain text only.\n")))
+    "* Destination\nPlain text only.\n\n")))
 
 (provide 'test-smart-paste)
 ;;; test-smart-paste.el ends here

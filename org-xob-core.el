@@ -469,16 +469,14 @@ item. (credit https://emacs.stackexchange.com/a/26840)."
        (invisible-p (point-at-eol))))
 
 (defun org-xob-empty-entry-p ()
-  "Returns true if this entry is empty."
+  "Return non-nil if the heading at point has only whitespace below it.
+Child headings and metadata count as content.  Leave point unchanged."
   (when (org-at-heading-p)
-    (let (a b)
-      (save-excursion
-        (org-end-of-subtree)
-        (setq a (point)))
-      (save-excursion
-        (end-of-line)
-        (setq b (point)))
-      (= a b))))
+    (save-excursion
+      (let ((heading-end (line-end-position)))
+        (org-end-of-subtree t t)
+        (skip-chars-backward " \t\r\n" heading-end)
+        (= (point) heading-end)))))
 
 ;;;; Backend
 ;;;;; org-ql predicates
