@@ -72,82 +72,6 @@
 (require 'org-xob-core)
 (require 'org-xob-backend)
 
-;;;; Minor Mode & Keybindings
-
-;;;###autoload
-(define-minor-mode org-xob-mode
-  "Org-Exobrain Minor Mode."
-  :lighter "Ⓧ"
-  :keymap  (let ((map (make-sparse-keymap))) map)
-  :group 'org-xob
-  :require 'org-xob
-  (if org-xob-mode
-      (progn
-        ;; (remove-hook 'kill-buffer-hook #'org-xob--close-buffer-hook 'local)
-        )
-    (progn
-      ;; (unless org-xob-on-p (org-xob-start))
-      ;; (add-hook 'kill-buffer-hook #'org-xob--close-buffer-hook nil 'local)
-      )))
-
-;;;###autoload
-(defhydra org-xob-hydra (:columns 4)
-  ("h" (org-xob--up-heading) "up")
-  ("j" (org-goto-sibling) "next")
-  ("k" (org-goto-sibling 'previous) "previous")
-  ("l" (org-xob--down-heading) "down")
-  ("L" (org-show-children) "children")
-  ("c" (org-xob-clear-heading) "clear")
-  ("s" (org-xob-to-summary) "summary")
-  ("S" (org-xob-to-section) "section")
-  ("t" (org-xob-to-node-tree) "tree")
-  ("T" (org-xob-to-full-node) "full")
-  ("e" (org-xob-to-edit) "edit")
-
-  ;; Bulk operations (capital letters)
-  ("C-s" (org-xob-bulk-to-summary) "bulk: summary")
-  ("C-S" (org-xob-bulk-to-section) "bulk: section")
-  ("C-t" (org-xob-bulk-to-node-tree) "bulk: tree")
-  ("C-T" (org-xob-bulk-to-full-node) "bulk: full")
-  ("C-c" (org-xob-bulk-clear-all) "bulk: clear all")
-
-  ("q" nil "Quit" :exit t)
-  )
-
-(defun org-xob--up-heading ()
-  "Xob hydra navigation: fold heading at point first, otherwise go up to parent."
-  (if (or (org-xob-folded-p)
-          (org-xob-empty-entry-p))
-      (org-up-heading-safe)
-    (outline-hide-subtree)))
-
-(defun org-xob--down-heading ()
-  "Xob hydra navigation: unfold heading one level first before going in."
-  (if (org-xob-folded-p)
-      (progn (org-show-entry)
-             (org-show-children))
-    (org-goto-first-child)))
-
-(defun org-xob-folded-p ()
-  "Returns non-nil if point is on a folded headline or plain list
-item. (credit https://emacs.stackexchange.com/a/26840)."
-  (and (or (org-at-heading-p)
-           (org-at-item-p))
-       (invisible-p (point-at-eol))))
-
-(defun org-xob-empty-entry-p ()
-  "Return non-nil if the current heading contains no text.
-Whitespace and blank lines are ignored."
-  (when (org-at-heading-p)
-    (let ((heading-end (save-excursion
-                         (end-of-line)
-                         (point)))
-          (entry-end (save-excursion
-                       (outline-next-heading)
-                       (skip-chars-backward " \t\n")
-                       (point))))
-      (= heading-end entry-end))))
-
 ;;;; Commands
 ;;;;; Main Commands
 ;;;###autoload
@@ -155,46 +79,39 @@ Whitespace and blank lines are ignored."
   "Start the xob system: load state or initialize new. Open new day node.
 Calling with C-u will force a restart."
   (interactive "P")
-  ;; First set the directory based on current name
-  ;; (unless (and org-xob-dir (file-directory-p org-xob-dir))
-  ;;   (let ((dir (cdr (assoc org-xob-current-name org-xob-known-dirs))))
-  ;;     (if dir
-  ;;         (setq org-xob-dir dir)
-  ;;       (message "Warning: No valid directory for current xob repository"))))
   (let* ((repo (completing-read "Select xob repository: "
                                 (mapcar #'car org-xob-known-dirs)
                                 nil t))
          (dir (cdr (assoc repo org-xob-known-dirs))))
-    (when (and dir (file-directory-p dir))
+    (if (not (and dir (file-directory-p dir)))
+        (message "Invalid xob repository: %s" repo)
       (setq org-xob-dir dir)
       (setq org-xob-current-name repo)
-      (if (equal arg '(4))
-          (setq org-xob-on-p nil))
-      (if (and
-           (if org-xob-on-p (progn (message "XOB: already started.") nil) t)
-           (and
-            (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
-            (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
-            (add-hook 'ediff-quit-hook #'org-xob--ediff-quit-hook)
-            (add-hook 'org-super-links-pre-link-hook #'org-xob--super-links-hook)
-            (message "XOB: hooks enabled."))
-           (not (setq org-xob--open-nodes nil))
-           (org-xob--load-state)
-           (org-xob--scan-and-register-files)
-           (org-xob--eval-capture-templates)
-           (org-link-make-regexps)
-           (org-xob--open-today)
-           (setq org-xob-new-day-timer
-                 (run-at-time "00:00"
-                              (* 24 60 60)
-                              'org-xob--open-today))
-           (org-xob-with-xob-buffer
-            ;; Auto-setup dual-pane if enabled
-            (org-xob--auto-setup-dual-pane)
-            (setq org-xob-on-p t)
-            (message "XOB: started.")))
-          (message "Invalid xob repository: %s" repo)))
-    (message "XOB: Unable to (re)start.")))
+      (when (equal arg '(4))
+        (setq org-xob-on-p nil))
+      (if org-xob-on-p
+          (message "XOB: already started.")
+        (add-hook 'org-capture-prepare-finalize-hook #'org-xob--new-node)
+        (add-hook 'org-follow-link-hook #'org-xob--link-hook-fn)
+        (add-hook 'ediff-quit-hook #'org-xob--ediff-quit-hook)
+        (add-hook 'org-super-links-pre-link-hook #'org-xob--super-links-hook)
+        (setq org-xob--open-nodes nil)
+        (org-xob--load-state)
+        (if (or (zerop (hash-table-count org-xob--title-id))
+                (zerop (hash-table-count org-xob--id-title)))
+            (org-xob-rebuild)
+          (org-xob--scan-and-register-files))
+        (org-xob--eval-capture-templates)
+        (org-link-make-regexps)
+        (org-xob--open-today)
+        (setq org-xob-new-day-timer
+              (run-at-time "00:00"
+                           (* 24 60 60)
+                           'org-xob--open-today))
+        (org-xob-with-xob-buffer
+         (org-xob--auto-setup-dual-pane)
+         (setq org-xob-on-p t)
+         (message "XOB: started."))))))
 
 ;;;###autoload
 (defun org-xob-stop ()
@@ -391,9 +308,9 @@ When called interactively:
                      (setq link-element (org-super-links--find-link ID))
                      (when link-element
                        (org-super-links--delete-link link-element))))
-               (error 
+               (error
                 (message "Warning: Could not remove outgoing link to %s (may need manual cleanup)" el)))))
-         
+
          ;; Clean up incoming links (backlinks) - links FROM others TO this node
          ;; Note: Link cleanup may not always succeed due to org-super-links limitations
          (dolist (el backlinks)
@@ -408,7 +325,7 @@ When called interactively:
                      (setq link-element (org-super-links--find-link ID))
                      (when link-element
                        (org-super-links--delete-link link-element))))
-               (error 
+               (error
                 (message "Warning: Could not remove incoming link from %s (may need manual cleanup)" el)))))         ;; Remove from xob system
          (org-xob--log-event "removed" ID)
          (remhash ID org-xob--id-title)
@@ -436,14 +353,15 @@ When called interactively:
      (let ((title (nth 4 (org-heading-components))))
        (if (gethash title org-xob--title-id)
            (message "heading title conflicts with a xob node. Please rename.")
-         (org-xob--new-node (point))
-         (let ((filename (buffer-file-name)))
-           (unless (member filename org-xob--KB-files)
-             (save-excursion
-               (goto-char (point-min))
-               (insert org-xob--xob-header))
-             (save-buffer)
-             (push filename org-xob--KB-files))))))))
+         (when (org-at-heading-p)
+           (org-xob--new-node (point-marker))
+           (let ((filename (buffer-file-name)))
+             (unless (member filename org-xob--KB-files)
+               (save-excursion
+                 (goto-char (point-min))
+                 (insert org-xob--xob-header))
+               (save-buffer)
+               (push filename org-xob--KB-files)))))))))
 
 ;;;###autoload
 (defun org-xob-rename-node ()
@@ -512,30 +430,29 @@ then just use org-super-links."
     (org-xob--log-event "-> from" (org-entry-get (point) "ID"))
     (org-super-links-delete-link)))
 
-(defun org-xob--refile-region-internal (ID title)
+(defun org-xob--refile-region-internal (ID title beg end)
   (let* ((tbuffer (marker-buffer (org-id-find ID t)))
          (changes (nconc (prepare-change-group (current-buffer))
                          (prepare-change-group tbuffer)
                          (prepare-change-group org-xob-today-buffer)))
-         (beg (region-beginning))
-         (end (region-end))
+         (clip (buffer-substring beg end))
          (snip (buffer-substring-no-properties beg
-                                               (min end
-                                                    (+ 70 beg))))
+                                                (min end
+                                                     (+ 70 beg))))
          eid flag)
     (unwind-protect
         (progn
           (activate-change-group changes)
-          (kill-region (point) (mark))
+          (delete-region beg end)
           (save-window-excursion
             (save-excursion
               (if (setq eid (and (org-xob--goto-edit ID)
                                  (org-xob--is-edit-node-p)))
                   (progn
-                    (org-xob--paste-top-section)
+                    (org-xob--paste-top-section clip)
                     (org-xob-sync-edit))
                 (org-id-goto ID)
-                (org-xob--paste-top-section))
+                (org-xob--paste-top-section clip))
               (org-xob--log-event "refile" ID)
               (org-xob--log-event "-> snip" snip))
             (setq flag t))))
@@ -554,9 +471,12 @@ updated."
   (interactive "P")
   (org-xob-with-xob-on
    (when (use-region-p)
-     (org-xob--do-select-nodes
-      t arg
-      #'org-xob--refile-region-internal))))
+     (let ((beg (region-beginning))
+           (end (region-end)))
+       (org-xob--do-select-nodes
+        t arg
+        (lambda (ID title)
+          (org-xob--refile-region-internal ID title beg end)))))))
 
 ;;;###autoload
 (defun org-xob-add-node-labels ()
@@ -602,15 +522,17 @@ updated."
   (interactive)
   (org-xob-with-xob-on
    (when (use-region-p)
-     (save-window-excursion
-       (save-excursion
-         (let ((name (read-string "Paper title:")))
-           (org-xob--capture name)
-           (org-xob--refile-region-internal org-xob--last-captured
-                                            name)
-           (org-id-goto org-xob--last-captured)
-           (org-entry-put (point) "TYPE" "n.bib.article")
-           (org-entry-put (point) "NOTER_DOCUMENT" "~/Zotero/storage/")))))))
+     (let ((beg (region-beginning))
+           (end (region-end)))
+       (save-window-excursion
+         (save-excursion
+           (let ((name (read-string "Paper title:")))
+             (org-xob--capture name)
+             (org-xob--refile-region-internal org-xob--last-captured
+                                              name beg end)
+             (org-id-goto org-xob--last-captured)
+             (org-entry-put (point) "TYPE" "n.bib.article")
+             (org-entry-put (point) "NOTER_DOCUMENT" "~/Zotero/storage/"))))))))
 
 ;;;;; Region to Node Conversion
 
@@ -831,18 +753,18 @@ sQuery Form: ")
          (when (org-uuidgen-p pid)
            (org-xob--clear-node)
            (org-set-tags "sum")
-           (when-let ((str (org-xob--select-content 
-                           pid 
-                           #'(lambda ()
-                               (progn
-                                 (org-end-of-meta-data t)
-                                 (let ((p (org--paragraph-at-point)))
-                                   (if p
-                                       (buffer-substring-no-properties
-                                        (or (org-element-property :contents-begin p)
-                                            (org-element-property :begin p))
-                                        (or (org-element-property :contents-end p)
-                                            (org-element-property :end p))))))))))
+           (when-let ((str (org-xob--select-content
+                            pid
+                            #'(lambda ()
+                                (progn
+                                  (org-end-of-meta-data t)
+                                  (let ((p (org--paragraph-at-point)))
+                                    (if p
+                                        (buffer-substring-no-properties
+                                         (or (org-element-property :contents-begin p)
+                                             (org-element-property :begin p))
+                                         (or (org-element-property :contents-end p)
+                                             (org-element-property :end p))))))))))
              (org-end-of-subtree)
              (newline)
              (insert str)
@@ -859,16 +781,16 @@ sQuery Form: ")
          (when (org-uuidgen-p pid)
            (org-xob--clear-node)
            (org-set-tags "sec")
-           (when-let ((str (org-xob--select-content 
-                           pid 
-                           #'(lambda () 
-                               (let ((beg) (end))
-                                 (org-end-of-meta-data t)
-                                 (org-back-over-empty-lines)
-                                 (setq beg (point))
-                                 (outline-next-heading)
-                                 (setq end (- (point) 1))
-                                 (buffer-substring beg end))))))
+           (when-let ((str (org-xob--select-content
+                            pid
+                            #'(lambda ()
+                                (let ((beg) (end))
+                                  (org-end-of-meta-data t)
+                                  (org-back-over-empty-lines)
+                                  (setq beg (point))
+                                  (outline-next-heading)
+                                  (setq end (- (point) 1))
+                                  (buffer-substring beg end))))))
              (org-end-of-subtree)
              (newline)
              (insert str)
@@ -885,19 +807,19 @@ sQuery Form: ")
          (when (org-uuidgen-p pid)
            (org-xob--clear-node)
            (org-set-tags "tree")
-           (when-let ((str (org-xob--select-content 
-                           pid 
-                           #'(lambda ()
-                               (let (lines)
-                                 (org-map-tree
-                                  (lambda ()
-                                    (push (buffer-substring-no-properties
-                                           (line-beginning-position)
-                                           (line-end-position))
-                                          lines)))
-                                 (setq lines (nreverse lines))
-                                 (pop lines)
-                                 (mapconcat 'identity lines "\n"))))))
+           (when-let ((str (org-xob--select-content
+                            pid
+                            #'(lambda ()
+                                (let (lines)
+                                  (org-map-tree
+                                   (lambda ()
+                                     (push (buffer-substring-no-properties
+                                            (line-beginning-position)
+                                            (line-end-position))
+                                           lines)))
+                                  (setq lines (nreverse lines))
+                                  (pop lines)
+                                  (mapconcat 'identity lines "\n"))))))
              (org-end-of-subtree)
              (newline)
              (if (org-kill-is-subtree-p str)
@@ -916,9 +838,9 @@ sQuery Form: ")
          (when (org-uuidgen-p pid)
            (org-xob--clear-node)
            (org-set-tags "full")
-           (when-let ((str (org-xob--select-content 
-                           pid 
-                           #'(lambda () (org-xob--get-full-node 3 nil)))))
+           (when-let ((str (org-xob--select-content
+                            pid
+                            #'(lambda () (org-xob--get-full-node 3 nil)))))
              (org-end-of-subtree)
              (newline)
              (insert str)
