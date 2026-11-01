@@ -3,10 +3,16 @@
 ;; Assisted-by: OpenAI Codex
 ;; SPDX-License-Identifier: GPL-3.0-or-later
 
-(load (expand-file-name "tui-load-path.el" (file-name-directory load-file-name)) nil t)
-(require 'org-xob)
-(require 'org-xob-tui)
-(require 'json)
+(condition-case err
+    (progn
+      (load (expand-file-name "tui-load-path.el" (file-name-directory load-file-name)) nil t)
+      (require 'org-xob)
+      (require 'org-xob-tui)
+      (require 'json))
+  ((error quit)
+   (with-temp-file (getenv "EMACS_TUI_SMOKE_REPORT")
+     (insert (format "FAIL XOB fixture initialization: %S\n" err)))
+   (kill-emacs 1)))
 
 (defvar xob-smoke-source nil)
 (defvar xob-smoke-window nil)
