@@ -202,6 +202,8 @@ knowledge base."
 (defun org-xob--single-pane (win)
   "Use single pane interface. If dual-pane is open, then kill
 the windows."
+  (when org-xob-context-display-function
+    (user-error "Disable the popup context mode before changing window layouts"))
   (when (window-atom-root win)
     (when-let* ((buf (if (org-xob-buffer-p)
                          (window-buffer win)
@@ -215,6 +217,8 @@ the windows."
 
 (defun org-xob--dual-pane (win)
   "Use dual-pane interface."
+  (when org-xob-context-display-function
+    (user-error "Disable the popup context mode before changing window layouts"))
   (when-let* ((buf1 (switch-to-buffer
                      org-xob-last-buffer))
               (buf2 (buffer-local-value 'org-xob--pair-buf
@@ -332,7 +336,7 @@ in a single-pane display format."
 
 (defun org-xob--auto-setup-dual-pane ()
   "Automatically set up dual-pane window layout if enabled."
-  (when org-xob-auto-dual-pane
+  (when (and org-xob-auto-dual-pane (not org-xob-context-display-function))
     (let ((current-window (selected-window))
           (buf1 (current-buffer)))
       ;; Only set up dual-pane if we're not already in a split configuration
@@ -979,6 +983,13 @@ arguments are supplied, then check the associated heading."
 (defun org-xob-show-source (source &optional arg)
   "Show context source for opened node at point. If this context material is already
 displayed, then refresh it. With optional C-u, force repopulating the item list."
+  (if org-xob-context-display-function
+      (funcall org-xob-context-display-function source arg)
+    (org-xob--show-source-in-buffer source arg)))
+
+(defun org-xob--show-source-in-buffer (source &optional arg)
+  "Render SOURCE as Org headings in the legacy context buffer.
+ARG is the optional refresh argument from `org-xob-show-source'."
   ;; in an edit node? get id, name, and which buffer is the context buffer
   (if-let* ((eid (org-xob--is-edit-node-p))
             (node (org-xob--get-open-node eid))

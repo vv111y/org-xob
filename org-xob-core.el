@@ -125,6 +125,11 @@ When nil, start with single window and let user manually configure layout."
 
 (defvar org-xob-on-p nil)
 
+(defvar org-xob-context-display-function nil
+  "Optional context renderer called with a source symbol and refresh argument.
+When non-nil, context is rendered separately from the Org editing buffers and
+automatic split windows are disabled.  The renderer owns its UI resources.")
+
 (defvar org-xob-today nil "The current day node.")
 
 (defvar org-xob-new-day-timer nil

@@ -126,6 +126,9 @@
    (message "Warning: could not (require 'org-xob): %S" err)))
 
 ;; Load all test-*.el files in tests/
+(when-let* ((path (getenv "ORG_XOB_TEST_LOAD_PATH_FILE")))
+  (with-temp-file path (prin1 load-path (current-buffer))))
+
 (let ((tests-dir (expand-file-name "tests" run-tests--project-root)))
   (when (file-directory-p tests-dir)
     (dolist (f (sort (directory-files tests-dir t "^test-.*\\.el$") 'string<))

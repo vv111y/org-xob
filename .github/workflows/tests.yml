@@ -28,6 +28,7 @@ jobs:
         emacs_version:
           - 29.4
           - 30.1
+          - 31.1
 
     steps:
       - name: Check out repository
@@ -38,5 +39,26 @@ jobs:
         with:
           version: ${{ matrix.emacs_version }}
 
+      - name: Check out the fixed emacs-tui beta
+        uses: actions/checkout@v4
+        with:
+          repository: vv111y/emacs-tui
+          ref: fa186fe11f565fa6d41084ab4c2079728ebfe9a2
+          path: .deps/emacs-tui
+          persist-credentials: false
+
       - name: Run tests
-        run: emacs --batch -Q --load tests/run-tests.el
+        env:
+          ORG_XOB_TEST_LOAD_PATH_FILE: ${{ runner.temp }}/xob-test-load-path.el
+        run: emacs --batch -Q -L .deps/emacs-tui --load tests/run-tests.el
+
+      - name: Compile the optional context adapter
+        env:
+          ORG_XOB_TEST_LOAD_PATH_FILE: ${{ runner.temp }}/xob-test-load-path.el
+        run: emacs --batch -Q -l tests/tui-load-path.el --eval '(setq byte-compile-error-on-warn t)' -f batch-byte-compile org-xob-context.el org-xob-tui.el
+
+      - name: Exercise native child frames without splitting the editor
+        if: matrix.emacs_version == 31.1
+        env:
+          ORG_XOB_TEST_LOAD_PATH_FILE: ${{ runner.temp }}/xob-test-load-path.el
+        run: python3 .deps/emacs-tui/test/run-tty-smoke.py tests/tty-tui.el
