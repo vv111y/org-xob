@@ -164,5 +164,25 @@
       (should-not (memq timer timer-idle-list))
       (should-not (memq #'org-xob-tui--after-command post-command-hook)))))
 
+(ert-deftest org-xob-tui-global-disable-tolerates-disposed-view-buffers ()
+  (org-xob-tui-test--kb
+    (with-temp-buffer
+      (let ((view (generate-new-buffer " *xob disposable view*")))
+        (unwind-protect
+            (progn
+              (setq org-xob-tui-mode t)
+              (org-xob-tui-context-mode 1)
+              (setq org-xob-tui--sessions '((preview . session)))
+              ;; Ensure the source is visited before the view it disposes.
+              (bury-buffer view)
+              (cl-letf (((symbol-function 'emacs-tui-live-p) (lambda (_) nil))
+                        ((symbol-function 'emacs-tui-close) (lambda (_) (kill-buffer view))))
+                (org-xob-tui-mode -1))
+              (should-not (buffer-live-p view))
+              (should-not org-xob-tui-mode)
+              (should-not org-xob-tui-context-mode)
+              (should-not org-xob-tui--sessions))
+          (when (buffer-live-p view) (kill-buffer view)))))))
+
 (provide 'test-tui)
 ;;; test-tui.el ends here

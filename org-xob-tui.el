@@ -392,8 +392,10 @@ loaded explicitly; enabling this mode never starts a repository."
                (eq org-xob-context-display-function #'org-xob-tui--display))
       (setq org-xob-context-display-function org-xob-tui--previous-renderer))
     (dolist (buffer (buffer-list))
-      (with-current-buffer buffer
-        (when org-xob-tui-context-mode (org-xob-tui-context-mode -1))))))
+      ;; Closing a source's sessions kills view buffers in this same snapshot.
+      (when (buffer-live-p buffer)
+        (with-current-buffer buffer
+          (when org-xob-tui-context-mode (org-xob-tui-context-mode -1)))))))
 
 (provide 'org-xob-tui)
 ;;; org-xob-tui.el ends here
