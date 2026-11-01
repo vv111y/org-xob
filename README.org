@@ -48,6 +48,12 @@ If you installed from MELPA, you're done.  Just run one of the commands below.
 (require 'org-xob.el)
   #+END_SRC
 
+** Experimental floating context (Emacs 31.1+)
+
+The =feature/child-frame-context= branch offers an optional =emacs-tui= interface:
+toggleable child frames for backlinks, forward links, and clean text previews.
+See [[file:POPUP-CONTEXT.md][installation, controls, and testing instructions]].
+
 ** File Setup
 
 You need to set =org-xob-dir=, default value is "~/xob". xob only looks at files in this directory.

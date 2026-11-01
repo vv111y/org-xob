@@ -62,8 +62,8 @@
 
 ;; Packages required by the project and tests. Add others as CI reports them missing.
 (defvar run-tests--required-packages
-  '(compat dash helm hydra org-ql org-ql-search org-super-links s transient
-           pulse use-package org-id))
+  '(compat dash helm helm-org hydra org-ql org-ql-search org-super-links s transient
+           pulse use-package))
 
 ;; Recipes for packages that live on GitHub (not on MELPA/GNU).
 ;; Each value is a straight recipe list (with the package symbol as the car).
@@ -78,7 +78,7 @@
     (condition-case err
         (progn
           (if recipe
-              (straight-use-package (car recipe) (cdr recipe))
+              (straight-use-package recipe)
             (straight-use-package p)))
       (error
        (message "Warning: straight failed to install %s: %S. Trying package.el as fallback." p err)
@@ -88,20 +88,9 @@
              (package-install p))
          (error (message "Warning: package.el also failed to install %s: %S" p err2)))))))
 
-;; If org-super-links or other optional packages are still missing, provide minimal
-;; stubs so the package can load and headless tests run. This avoids immediate load
-;; failures and lets ERT surface functional test failures instead.
-(unless (require 'org-super-links nil t)
-  (message "org-super-links not available; installing fallback stubs")
-  (defun org-super-links-link (&rest _) nil)
-  (defun org-super-links-store-link (&rest _) nil)
-  (defun org-super-links-insert-link (&rest _) nil)
-  (setq org-super-links-backlink-into-drawer nil
-        org-super-links-link-prefix nil
-        org-super-links-link-postfix nil
-        org-super-links-backlink-postfix nil
-        org-super-links-related-into-drawer nil)
-  (provide 'org-super-links))
+;; Use the real dependency in batch and interactive tests alike.  Stubs would
+;; let batch tests pass while the subsequent native fixture cannot load XOB.
+(require 'org-super-links)
 
 (unless (require 'org-ql-search nil t)
   (when (require 'org-ql nil t)
@@ -126,6 +115,9 @@
    (message "Warning: could not (require 'org-xob): %S" err)))
 
 ;; Load all test-*.el files in tests/
+(when-let* ((path (getenv "ORG_XOB_TEST_LOAD_PATH_FILE")))
+  (with-temp-file path (prin1 load-path (current-buffer))))
+
 (let ((tests-dir (expand-file-name "tests" run-tests--project-root)))
   (when (file-directory-p tests-dir)
     (dolist (f (sort (directory-files tests-dir t "^test-.*\\.el$") 'string<))

@@ -663,8 +663,10 @@ sQuery Form: ")
 (defun org-xob-refresh-contexts ()
   "Refresh all displayed sources for node at point."
   (interactive)
-  (org-xob-map-node-sources (org-entry-get (point) "EDIT")
-                            'org-xob--source-refresh))
+  (if org-xob-context-display-function
+      (funcall org-xob-context-display-function 'refresh t)
+    (org-xob-map-node-sources (org-entry-get (point) "EDIT")
+                              'org-xob--source-refresh)))
 
 ;;;###autoload
 (defun org-xob-clear-heading ()

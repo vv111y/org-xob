@@ -1,0 +1,144 @@
+;;; tty-tui.el --- Real terminal XOB popup acceptance -*- lexical-binding: t; -*-
+;; Copyright (C) 2026 Willy Rempel
+;; Assisted-by: OpenAI Codex
+;; SPDX-License-Identifier: GPL-3.0-or-later
+
+(condition-case err
+    (progn
+      (load (expand-file-name "tui-load-path.el" (file-name-directory load-file-name)) nil t)
+      (require 'org-xob)
+      (require 'org-xob-tui)
+      (require 'json))
+  ((error quit)
+   (with-temp-file (getenv "EMACS_TUI_SMOKE_REPORT")
+     (insert (format "FAIL XOB fixture initialization: %S\n" err)))
+   (kill-emacs 1)))
+
+(defvar xob-smoke-source nil)
+(defvar xob-smoke-window nil)
+(defvar xob-smoke-parent nil)
+(defvar xob-smoke-frames nil)
+(defvar xob-smoke-text nil)
+(defvar xob-smoke-point nil)
+(defvar xob-smoke-phase 'typing)
+(defvar xob-smoke-attempts 0)
+
+(defun xob-smoke-fail (error-data)
+  (with-temp-file (getenv "EMACS_TUI_SMOKE_REPORT")
+    (insert (format "FAIL XOB native popups %s: %S\n" xob-smoke-phase error-data))
+    (when (get-buffer "*Messages*")
+      (insert (with-current-buffer "*Messages*" (buffer-string)))))
+  (kill-emacs 1))
+
+(defun xob-smoke-host ()
+  (cl-assert (eq (selected-window) xob-smoke-window))
+  (cl-assert (eq (selected-frame) xob-smoke-parent))
+  (cl-assert (eq (window-buffer xob-smoke-window) xob-smoke-source))
+  (cl-assert (= 1 (length (window-list xob-smoke-parent 'no-minibuffer)))))
+
+(defun xob-smoke-child-count (count)
+  (let ((children (cl-set-difference (frame-list) xob-smoke-frames)))
+    (cl-assert (= count (length children)))
+    (dolist (child children)
+      (cl-assert (eq (frame-parent child) xob-smoke-parent)))))
+
+(defun xob-smoke-send (id text)
+  (let* ((path (getenv "EMACS_TUI_SMOKE_INPUT")) (tmp (concat path ".tmp")))
+    (with-temp-file tmp (insert (json-encode `((id . ,id) (text . ,text)))))
+    (rename-file tmp path t)))
+
+(defun xob-smoke-check ()
+  (condition-case err
+      (with-current-buffer xob-smoke-source
+        (cl-incf xob-smoke-attempts)
+        (when (> xob-smoke-attempts 150) (error "Native input or resize timed out"))
+        (xob-smoke-host)
+        (pcase xob-smoke-phase
+          ('typing
+           (when (string-suffix-p " native-input" (buffer-string))
+             (setq xob-smoke-text (buffer-string) xob-smoke-point (point))
+             (xob-smoke-child-count 3)
+             (setq org-xob-tui--active 'forlinks)
+             (org-xob-tui-next 0)
+             (org-xob-tui-pin-preview)
+             (dotimes (_ 8) (org-xob-tui-reposition))
+             (org-xob-tui-resize)
+             (org-xob-tui-toggle 'backlinks)
+             (xob-smoke-child-count 2)
+             (org-xob-tui-toggle 'backlinks)
+             (xob-smoke-child-count 3)
+             (cl-assert (equal xob-smoke-text (buffer-string)))
+             (cl-assert (= xob-smoke-point (point)))
+             (cl-assert (equal org-xob-tui--pinned "b"))
+             (redisplay t)
+             (with-temp-file (getenv "EMACS_TUI_SMOKE_PAINT") (insert "XOB-POPUP-PROOF"))
+             (setq xob-smoke-phase 'small xob-smoke-attempts 0)
+             (with-temp-file (getenv "EMACS_TUI_SMOKE_READY") (insert "1"))))
+          ((or 'small 'large)
+           (when (= (frame-width xob-smoke-parent) (if (eq xob-smoke-phase 'small) 90 140))
+             (redisplay t)
+             (xob-smoke-child-count 3)
+             (cl-assert (equal xob-smoke-text (buffer-string)))
+             (cl-assert (= xob-smoke-point (point)))
+             (if (eq xob-smoke-phase 'small)
+                 (progn
+                   (setq xob-smoke-phase 'large xob-smoke-attempts 0)
+                   (with-temp-file (getenv "EMACS_TUI_SMOKE_READY") (insert "2")))
+               (setq xob-smoke-phase 'hidden xob-smoke-attempts 0)
+               (xob-smoke-send "hide-panels" "\C-cx0"))))
+          ('hidden
+           (when (null org-xob-tui--sessions)
+             (xob-smoke-child-count 0)
+             (cl-assert (equal xob-smoke-text (buffer-string)))
+             (setq xob-smoke-phase 'shown xob-smoke-attempts 0)
+             (xob-smoke-send "show-panels" "\C-cx0")))
+          ('shown
+           (when (= 3 (length org-xob-tui--sessions))
+             (xob-smoke-child-count 3)
+             (cl-assert (equal (alist-get 'forlinks org-xob-tui--positions) 'north-east))
+             (cl-assert (memq 'forlinks org-xob-tui--expanded))
+             (cl-assert (equal org-xob-tui--pinned "b"))
+             (org-xob-tui-mode -1)
+             (xob-smoke-child-count 0)
+             (cl-assert (null org-xob-context-display-function))
+             (cl-assert (null org-xob-tui--timer))
+             (cl-assert (equal xob-smoke-text (buffer-string)))
+             (cl-assert (= xob-smoke-point (point)))
+             (xob-smoke-host)
+             (with-temp-file (getenv "EMACS_TUI_SMOKE_REPORT")
+               (insert (format "PASS Emacs %s: three real TTY child frames; source typing; preview/pinning; eight positions; sizing; independent toggles; 120->90->140 resize; actual toggle keys; unchanged source/window; disposal\n" emacs-version)))
+             (kill-emacs 0)))))
+    ((error quit) (xob-smoke-fail err))))
+
+(defun xob-smoke-start ()
+  (condition-case err
+      (progn
+        (cl-assert (not (version< emacs-version "31.1")))
+        (cl-assert (featurep 'tty-child-frames))
+        (setq org-xob--id-title (make-hash-table :test 'equal)
+              org-id-locations (make-hash-table :test 'equal))
+        (puthash "a" "Alpha" org-xob--id-title)
+        (puthash "b" "Beta" org-xob--id-title)
+        (let ((other (get-buffer-create " *XOB fixture beta*")))
+          (with-current-buffer other
+            (org-mode)
+            (insert "* Beta\n:PROPERTIES:\n:ID: b\n:END:\nXOB-POPUP-PROOF\n"))
+          (switch-to-buffer (get-buffer-create "*XOB popup fixture*"))
+          (org-mode)
+          (org-xob-mode 1)
+          (setq org-xob-buffers (list (current-buffer) other)))
+        (insert "* Alpha\n:PROPERTIES:\n:EDIT: a\n:ID: copy\n:END:\n"
+                ":BACKLINKS:\n[[id:b][Beta]]\n:END:\n\n[[id:b][Beta]]\n\n"
+                "                                Edit here")
+        (setq xob-smoke-source (current-buffer) xob-smoke-window (selected-window)
+              xob-smoke-parent (selected-frame) xob-smoke-frames (frame-list))
+        (org-xob-tui-mode 1)
+        (org-xob-tui-toggle 'all)
+        (xob-smoke-host)
+        (xob-smoke-child-count 3)
+        (xob-smoke-send "source-typing" " native-input")
+        (run-at-time 0.1 0.1 #'xob-smoke-check))
+    ((error quit) (xob-smoke-fail err))))
+
+(add-hook 'emacs-startup-hook (lambda () (run-at-time 0.1 nil #'xob-smoke-start)))
+;;; tty-tui.el ends here

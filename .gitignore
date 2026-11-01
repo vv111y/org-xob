@@ -95,3 +95,4 @@ flycheck_*.el
 
 .stignore
 compile-log.txt
+/.deps/
