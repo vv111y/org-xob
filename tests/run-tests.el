@@ -62,8 +62,8 @@
 
 ;; Packages required by the project and tests. Add others as CI reports them missing.
 (defvar run-tests--required-packages
-  '(compat dash helm hydra org-ql org-ql-search org-super-links s transient
-           pulse use-package org-id))
+  '(compat dash helm helm-org hydra org-ql org-ql-search org-super-links s transient
+           pulse use-package))
 
 ;; Recipes for packages that live on GitHub (not on MELPA/GNU).
 ;; Each value is a straight recipe list (with the package symbol as the car).

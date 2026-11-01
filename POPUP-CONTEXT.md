@@ -12,6 +12,8 @@ dependencies. Install `vv111y/emacs-tui` at the tested beta 7 commit
 For example, with straight.el:
 
 ```elisp
+;; Needed by the Helm interface that org-super-links discovers in org-ql.
+(straight-use-package 'helm-org)
 (straight-use-package
  '(emacs-tui :type git :host github :repo "vv111y/emacs-tui"
              :branch "release/0.1.0-beta7"
