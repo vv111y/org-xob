@@ -96,6 +96,14 @@
         (should (plist-get (org-xob-context-snapshot "a" (current-buffer)) :available))
         (should-not (plist-get (org-xob-context-snapshot "missing") :available))))))
 
+(ert-deftest org-xob-tui-style-needs-no-optional-faces ()
+  (with-temp-buffer
+    (emacs-tui-view-mode)
+    (org-xob-tui--style)
+    (should (local-variable-p 'face-remapping-alist))
+    (should (assq 'emacs-tui-selection face-remapping-alist))
+    (should word-wrap)))
+
 (ert-deftest org-xob-tui-unsupported-display-preserves-layout ()
   (org-xob-tui-test--kb
     (let ((windows (window-state-get)))

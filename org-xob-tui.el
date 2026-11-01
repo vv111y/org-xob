@@ -75,7 +75,8 @@
                           :background (face-background 'default nil t)
                           :box nil :weight 'normal)
   (face-remap-add-relative 'emacs-tui-selection
-                          :background (face-background 'hl-line nil t)
+                          :foreground (face-foreground 'shadow nil t)
+                          :background (face-background 'default nil t)
                           :weight 'normal :underline t)
   (setq-local truncate-lines nil word-wrap t))
 
